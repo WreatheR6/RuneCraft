@@ -4,6 +4,7 @@ import com.runecraft.boss.DataBossEntity;
 import com.runecraft.content.systems.SysCombat;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.raids.Invocation;
+import com.runecraft.osrs.content.raids.RaidRealtime;
 import com.runecraft.osrs.content.raids.RaidScaling;
 import com.runecraft.osrs.content.raids.RoomDef;
 import com.runecraft.osrs.content.raids.ToaBossRules;
@@ -212,7 +213,8 @@ final class ToaWardens extends RoomLogic {
                 anchor(b);
             }
         }
-        warn("The obelisk begins to channel energy into the Wardens! Attack it - and block a trough to slow a Warden's charge.");
+        warn("The obelisk begins to channel energy into the Wardens! Attack it - and block a trough to slow a Warden's charge "
+                + "(Elidinis' Warden north, Tumeken's south).");
     }
 
     @Override
@@ -577,7 +579,8 @@ final class ToaWardens extends RoomLogic {
         coresEjected++;
         com.runecraft.content.systems.CombatAchievementService.countNear(warden,
                 com.runecraft.osrs.content.systems.CombatAchievements.COUNT_WARDEN_CORE);
-        warn(name(warden) + " is thrown off balance - its core is ejected! Strike the core now (melee always hits it for its max)!");
+        warn(name(warden) + " is thrown off balance - its core is ejected to its " + RaidRealtime.compass(at.getX() + 0.5 - warden.getX(),
+                at.getZ() + 0.5 - warden.getZ()) + "! Strike the core now (melee always hits it for its max)!");
     }
 
     private void phaseTwoTick(long tick, List<ServerPlayer> players, Set<Invocation> inv) {
@@ -632,23 +635,34 @@ final class ToaWardens extends RoomLogic {
         int max = isElidinis(warden) ? ToaBossRules.ELIDINIS_P2_MAX_HIT : ToaBossRules.TUMEKEN_P2_MAX_HIT;
         for (ServerPlayer p : players) {
             if (p.distanceToSqr(warden) < 3.2 * 3.2) {
-                RaidEffects.hit(warden, p, rnd().nextInt(max + 1), AttackType.CRUSH, false);
+                // OSRS: the melee lands on the swing ("cannot be reacted to"); here after the swing's wind-up, on a player still
+                // in reach. // playability
+                warden.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+                com.runecraft.boss.Mechanics.deliverMelee(warden, p, com.runecraft.osrs.ThreatTiming.MELEE_REACH, () -> {
+                    if (alive(warden) && phase == 2) {
+                        RaidEffects.hit(warden, p, rnd().nextInt(max + 1), AttackType.CRUSH, false);
+                    }
+                });
                 return;
             }
         }
         ServerPlayer target = players.get(rnd().nextInt(players.size()));
         AttackType style = rnd().nextBoolean() ? AttackType.MAGIC : AttackType.RANGED;
-        world().sendParticles(style == AttackType.MAGIC ? new DustParticleOptions(new Vector3f(0.9f, 0.1f, 0.1f), 1.6f)
-                : new DustParticleOptions(new Vector3f(0.9f, 0.9f, 0.9f), 1.6f), warden.getX(), warden.getY() + 2.5, warden.getZ(), 12, 0.3, 0.3, 0.3, 0);
-        // OSRS: like Zebak's, the skulls only hurt on impact, so a late prayer still works.
-        later(2, () -> {
-            if (alive(warden) && phase == 2 && target.isAlive()) {
-                RaidEffects.hit(warden, target, rnd().nextInt(max + 1), style, false);
-            }
-        });
+        // OSRS: a red skull (magic) or a plain skull (ranged); like Zebak's they only hurt on impact, so a late prayer still
+        // works. Drawn here in the style's colour all the way to its target, the prayer read as it lands. // playability
+        RaidEffects.projectile(world(), warden.position().add(0, 2.5, 0), target, style, 2, () -> alive(warden) && phase == 2,
+                () -> RaidEffects.hit(warden, target, rnd().nextInt(max + 1), style, false));
     }
 
-    /** Divine Projectile (above 55%): every overhead switched off, then a scimitar, arrow or spell at everyone. */
+    /** Game ticks the Divine Projectile flies (from the overheads going off to the hit). */
+    static final int DIVINE_FLIGHT_TICKS = 3;
+
+    /**
+     * Divine Projectile (above 55%): every overhead switched off, then a scimitar, arrow or spell at everyone. Its style is
+     * named in the middle of the screen as it leaves, and each projectile is drawn in the style's colour all the way to its
+     * player, landing {@value #DIVINE_FLIGHT_TICKS} game ticks later with the prayer read as it lands. // playability: in
+     * OSRS the style is only told by the projectile's shape and colour (red scimitar, white arrow, blue spell)
+     */
     private void divineProjectile(List<ServerPlayer> players) {
         AttackType style = switch (rnd().nextInt(3)) {
             case 0 -> AttackType.SLASH;
@@ -657,37 +671,48 @@ final class ToaWardens extends RoomLogic {
         };
         String what = style == AttackType.SLASH ? "a red scimitar (melee)" : style == AttackType.RANGED ? "a white arrow (ranged)"
                 : "a blue spell (magic)";
+        String pray = style == AttackType.SLASH ? "Melee" : style == AttackType.RANGED ? "Missiles" : "Magic";
+        divineProjectiles++;
+        divineStyle = style;
+        long launched = RaidEffects.now();
+        Vec3 from = warden.position().add(0, 2.5, 0);
         for (ServerPlayer p : players) {
             RoomLogic.dropOverheads(p, name(warden) + " disables your overhead prayers!");
             Msg.red(p, name(warden) + " fires " + what + " at you!");
+            Msg.telegraph(p, "Divine projectile: " + what + " - pray " + pray + "!", null);
+            RaidEffects.projectile(world(), from, p, style, DIVINE_FLIGHT_TICKS, () -> alive(warden) && phase == 2,
+                    () -> {
+                        if (players().contains(p)) {
+                            divineFlight = RaidEffects.now() - launched;
+                            divinePrayed = RaidEffects.protectedFrom(p, style);
+                            RaidEffects.hit(warden, p, 25 + rnd().nextInt(16), style, false); // approx: "high damage"
+                        }
+                    });
         }
-        later(3, () -> {
-            if (!alive(warden) || phase != 2) {
-                return;
-            }
-            for (ServerPlayer p : players()) {
-                RaidEffects.hit(warden, p, 25 + rnd().nextInt(16), style, false); // approx: "high damage"
-            }
-        });
     }
 
-    /** Imprisonment (below 55%): a dark projectile at where the target stood; staying there encases them in stone. */
+    /** Divine Projectiles launched, the last one's style, and its last landing: game ticks in flight, prayed at impact (self-test). */
+    int divineProjectiles;
+    AttackType divineStyle;
+    long divineFlight = -1;
+    boolean divinePrayed;
+
+    /**
+     * Imprisonment (below 55%): a dark projectile at where the target stood; staying there encases them in stone. The spot
+     * is marked as a raid strike (drawn at once, redrawn until it lands, the real-time floor).
+     */
     private void imprisonment(ServerPlayer target) {
         Vec3 spot = target.position();
         world().sendParticles(ParticleTypes.SQUID_INK, spot.x, spot.y + 0.2, spot.z, 20, 0.4, 0.05, 0.4, 0.01);
         Msg.red(target, name(warden) + " launches a dark projectile at you!");
-        later(3, () -> {
-            if (!alive(warden) || phase != 2) {
-                return;
-            }
-            for (ServerPlayer p : players()) {
-                if (RaidEffects.horizontalDistSq(p.position(), spot) < 0.9 * 0.9) {
+        Msg.telegraph(target, "Imprisonment - step off your spot!", null);
+        RaidEffects.mark(world(), spot, 0.9).delay(3).source(warden).warn(ParticleTypes.SQUID_INK)
+                .live(() -> alive(warden) && phase == 2)
+                .onHit(p -> {
                     Msg.red(p, "You are encased in stone!");
                     SysCombat.freeze(p, 4); // approx: duration
                     RaidEffects.hit(warden, p, 5 + rnd().nextInt(6), null, true);
-                }
-            }
-        });
+                }).start();
     }
 
     /**
@@ -725,6 +750,7 @@ final class ToaWardens extends RoomLogic {
             case 0 -> convergingBeam(max, inv);
             case 1 -> {
                 lightning(new Vector3f(1f, 0.55f, 0f));
+                RaidEffects.telegraph(players(), "Windmill beam: four beams turn anticlockwise - the floor glows just ahead of them!");
                 windmillTicks = 12;
                 windmillAngle = rnd().nextInt(4) * 90 + 45;
                 beamHit.clear();
@@ -752,14 +778,26 @@ final class ToaWardens extends RoomLogic {
         lightning(new Vector3f(0.9f, 0.1f, 0.1f));
         boolean diagonal = rnd().nextBoolean(); // north-west + south-east, or north-east + south-west
         say("Red lightning crackles around the obelisk...");
-        for (int i = 0; i < 24; i++) {
-            double dx = rnd().nextInt(19) + 1;
-            double dz = rnd().nextInt(19) + 1;
-            boolean west = rnd().nextBoolean();
-            boolean north = diagonal == west;
-            Vec3 at = vec(west ? -dx : dx, north ? -dz : dz);
-            world().sendParticles(new DustParticleOptions(new Vector3f(0.9f, 0.1f, 0.1f), 1.0f), at.x, at.y + 0.1, at.z, 2, 0.4, 0, 0.4, 0);
-        }
+        // The safe quarters named by compass, and the two struck quarters dusted red until the beams converge.
+        // // playability: OSRS shows the beams irradiating their quarters; a real-time player gets the safe quarters named
+        String safe = diagonal ? RaidRealtime.quarter(false, true) + " or " + RaidRealtime.quarter(true, false)
+                : RaidRealtime.quarter(true, true) + " or " + RaidRealtime.quarter(false, false);
+        RaidEffects.telegraph(players(), "Converging beam: stand in the " + safe + " quarter!");
+        DustParticleOptions red = new DustParticleOptions(new Vector3f(0.9f, 0.1f, 0.1f), 1.0f);
+        RaidEffects.cue(4, () -> {
+            if (!alive(obelisk) || phase != 2 || core != null) {
+                return false;
+            }
+            for (int i = 0; i < 24; i++) {
+                double dx = rnd().nextInt(19) + 1;
+                double dz = rnd().nextInt(19) + 1;
+                boolean west = rnd().nextBoolean();
+                boolean north = diagonal == west;
+                Vec3 at = vec(west ? -dx : dx, north ? -dz : dz);
+                world().sendParticles(red, at.x, at.y + 0.1, at.z, 2, 0.4, 0, 0.4, 0);
+            }
+            return true;
+        });
         later(4, () -> {
             if (!alive(obelisk) || phase != 2 || core != null) {
                 return;
@@ -806,6 +844,34 @@ final class ToaWardens extends RoomLogic {
         }
     }
 
+    /** The last Lightning Skull volley's skulls (self-test). */
+    List<BlockPos> lastSkulls = List.of();
+
+    private static final DustParticleOptions SKULL_EDGE = new DustParticleOptions(new Vector3f(1f, 0.95f, 0.2f), 1.1f);
+
+    /** One skull's cues: its shadow, the 7x7 burst's outline in yellow and the safe cross in green. */
+    private void drawSkull(BlockPos s) {
+        double cx = s.getX() + 0.5;
+        double cz = s.getZ() + 0.5;
+        double y = s.getY() + 0.1;
+        world().sendParticles(ParticleTypes.SMOKE, cx, y, cz, 4, 0.3, 0.02, 0.3, 0);
+        for (int i = 0; i <= 7; i++) {
+            double f = -3.5 + i;
+            world().sendParticles(SKULL_EDGE, cx + f, y, cz - 3.5, 1, 0, 0, 0, 0);
+            world().sendParticles(SKULL_EDGE, cx + f, y, cz + 3.5, 1, 0, 0, 0, 0);
+            world().sendParticles(SKULL_EDGE, cx - 3.5, y, cz + f, 1, 0, 0, 0, 0);
+            world().sendParticles(SKULL_EDGE, cx + 3.5, y, cz + f, 1, 0, 0, 0, 0);
+        }
+        for (int[] d : SKULL_SAFE) {
+            if (!ToaBossRules.lightningSkullHits(d[0], d[1])) {
+                RaidEffects.safeTile(world(), new Vec3(cx + d[0], s.getY(), cz + d[1]));
+            }
+        }
+    }
+
+    /** The tiles of a skull's safe cross (OSRS: two tiles each way, straight). */
+    static final int[][] SKULL_SAFE = {{1, 0}, {2, 0}, {-1, 0}, {-2, 0}, {0, 1}, {0, 2}, {0, -1}, {0, -2}};
+
     /**
      * Lightning Skull: skulls land around the arena and lightning bursts 7x7 around each, except the two tiles straight
      * north, south, east and west of the skull (OSRS).
@@ -819,9 +885,20 @@ final class ToaWardens extends RoomLogic {
         for (int i = 0; i < 2; i++) {
             skulls.add(at(-14 + rnd().nextInt(26), -16 + rnd().nextInt(33)));
         }
-        for (BlockPos s : skulls) {
-            world().sendParticles(ParticleTypes.SMOKE, s.getX() + 0.5, s.getY() + 0.1, s.getZ() + 0.5, 15, 0.3, 0.02, 0.3, 0);
-        }
+        lastSkulls = skulls;
+        // Until the lightning bursts: each skull's shadow, its 7x7 burst outlined in yellow, and the safe cross (the two tiles
+        // straight north, south, east and west of it) in green. // playability: OSRS shows only the skulls' shadows, and the
+        // safe tiles are read off the tile grid
+        RaidEffects.telegraph(players(), "Lightning skulls: stand on a green tile beside a skull!");
+        RaidEffects.cue(4, () -> {
+            if (!alive(obelisk) || phase != 2) {
+                return false;
+            }
+            for (BlockPos s : skulls) {
+                drawSkull(s);
+            }
+            return true;
+        });
         later(4, () -> {
             if (!alive(obelisk) || phase != 2) {
                 return;
@@ -830,15 +907,32 @@ final class ToaWardens extends RoomLogic {
             for (BlockPos s : skulls) {
                 world().sendParticles(ParticleTypes.ELECTRIC_SPARK, s.getX() + 0.5, s.getY() + 0.5, s.getZ() + 0.5, 60, 2.5, 0.3, 2.5, 0.1);
                 for (ServerPlayer p : players()) {
-                    int dx = p.getBlockX() - s.getX();
-                    int dz = p.getBlockZ() - s.getZ();
-                    if (!hit.contains(p.getUUID()) && ToaBossRules.lightningSkullHits(dx, dz)) {
+                    if (!hit.contains(p.getUUID()) && skullHits(p.position(), s)) {
                         hit.add(p.getUUID());
                         obeliskHit(p, rnd().nextInt(max + 1), inv);
                     }
                 }
             }
         });
+    }
+
+    /**
+     * Whether a skull's burst reaches a player standing at {@code pos}: inside its 7x7 and not on its safe cross. A player
+     * straddling a tile edge with a foot ({@link RaidRealtime#MAZE_EDGE_LENIENCY}) on a safe tile, or outside the 7x7, is
+     * spared. // playability: OSRS judges the one tile the player stands on
+     */
+    static boolean skullHits(Vec3 pos, BlockPos skull) {
+        double m = RaidRealtime.MAZE_EDGE_LENIENCY;
+        for (double ox : new double[]{0, -m, m}) {
+            for (double oz : new double[]{0, -m, m}) {
+                int dx = (int) Math.floor(pos.x + ox) - skull.getX();
+                int dz = (int) Math.floor(pos.z + oz) - skull.getZ();
+                if (!ToaBossRules.lightningSkullHits(dx, dz)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /** The core's pool is spent: the Warden collapses and restores the other one; the obelisk explodes (OSRS). */
@@ -909,24 +1003,50 @@ final class ToaWardens extends RoomLogic {
      * Against a side slam stand at least a tile to the other side of its centre line; against both, stay in the three
      * centre tiles in front of it.
      */
+    /**
+     * Game ticks from the slam's warning to the floor rising. // playability: OSRS raises it about two ticks after the
+     * Warden's animation (the slam travels, so a late step away still works 6-9 tiles out); here the full real-time floor
+     */
+    static final int SLAM_LEAD_TICKS = com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS;
+
+    private static final DustParticleOptions SLAM_DANGER = new DustParticleOptions(new Vector3f(1.0f, 0.4f, 0.1f), 1.3f);
+
+    /** Slams made and their warnings' lead in game ticks (self-test). */
+    int slamsMade;
+    long lastSlamLead;
+
     private void slam(List<ServerPlayer> players) {
         int kind = slam++ % 3;
         wardenAttacks++;
+        slamsMade++;
         String where = kind == 0 ? "to its right" : kind == 1 ? "to its left" : "on both sides";
         say(name(warden) + " raises the floor " + where + "!");
+        // The struck rows in orange, the safe ones in green, redrawn until the floor rises; the side named by compass.
+        // // playability: OSRS shows the Warden's arm and the floor rising, read as "its right" / "its left"
+        RaidEffects.telegraph(players(), RaidRealtime.wardenSlamCue(kind));
         int cz = center().getZ();
-        for (int x = -16; x <= 12; x += 2) {
-            for (int z = -18; z <= 18; z += 3) {
-                if (ToaBossRules.slamHits(kind, z)) {
-                    world().sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, center().getX() + 0.5 + x, center().getY() + 1.1, cz + 0.5 + z, 1, 0.5, 0,
-                            0.5, 0.005);
+        long made = RaidEffects.now();
+        RaidEffects.cue(SLAM_LEAD_TICKS, () -> {
+            if (!alive(warden) || phase != 3) {
+                return false;
+            }
+            for (int x = -16; x <= 12; x += 4) {
+                for (int z = -18; z <= 18; z++) {
+                    boolean hits = ToaBossRules.slamHits(kind, z);
+                    if (hits && Math.floorMod(z, 3) != 0) {
+                        continue; // the struck rows sparser, the safe ones solid
+                    }
+                    world().sendParticles(hits ? SLAM_DANGER : RaidEffects.SAFE, center().getX() + 0.5 + x, center().getY() + 1.1,
+                            cz + 0.5 + z, 1, 0.4, 0, 0.1, 0);
                 }
             }
-        }
-        later(2, () -> {
+            return true;
+        });
+        later(SLAM_LEAD_TICKS, () -> {
             if (!alive(warden) || phase != 3) {
                 return;
             }
+            lastSlamLead = RaidEffects.now() - made;
             for (ServerPlayer p : players()) {
                 if (ToaBossRules.slamHits(kind, p.getBlockZ() - cz)) {
                     world().sendParticles(ParticleTypes.EXPLOSION, p.getX(), p.getY() + 0.3, p.getZ(), 1, 0, 0, 0, 0);
@@ -1212,6 +1332,31 @@ final class ToaWardens extends RoomLogic {
         RaidSelfTest.expect(absorbed[0] == 0, "Wardens: orbs were absorbed on the trough nobody stood on");
         StringBuilder note = new StringBuilder("Wardens: obelisk down after " + guard + " ticks (" + absorbed[1] + " orbs absorbed)");
         t.moveTo(at(P2_X - 4, -3));
+        // The Divine Projectile (round 42): its style named as it leaves and the overheads switched off; the player switches
+        // the named prayer on a game tick (12 MC) later through the prayer keys' path, and it lands no sooner than three game
+        // ticks after it left, read as prayed. // playability
+        divineProjectile(players());
+        AttackType divine = divineStyle;
+        t.tick(1);
+        t.pray(com.runecraft.osrs.PrayerGrace.protectionFor(divine), true);
+        for (int g = 0; divineFlight < 0 && g < 8; g++) {
+            t.tick(1);
+        }
+        RaidSelfTest.expect(divineFlight >= DIVINE_FLIGHT_TICKS, "Wardens: the Divine Projectile landed " + divineFlight
+                + " game ticks after it left (at least " + DIVINE_FLIGHT_TICKS + ")");
+        RaidSelfTest.expect(divinePrayed, "Wardens: the " + divine + " Divine Projectile did not read the prayer switched on after it left");
+        t.pray(com.runecraft.osrs.PrayerGrace.protectionFor(divine), false);
+        // Lightning Skulls: the safe cross spares a player on it (or with a foot on it), the 7x7 around it is struck.
+        BlockPos skull = at(0, 0);
+        Vec3 c = Vec3.atBottomCenterOf(skull);
+        for (int[] d : SKULL_SAFE) {
+            RaidSelfTest.expect(!skullHits(c.add(d[0], 0, d[1]), skull), "Wardens: a skull's safe tile " + d[0] + "," + d[1] + " was struck");
+        }
+        RaidSelfTest.expect(skullHits(c, skull) && skullHits(c.add(1, 0, 1), skull) && skullHits(c.add(3, 0, 0), skull),
+                "Wardens: a skull spared its own tile, a diagonal or the cross's far end");
+        RaidSelfTest.expect(!skullHits(c.add(1.0, 0, 0.7), skull), "Wardens: a foot on the safe cross did not spare the player");
+        RaidSelfTest.expect(!skullHits(c.add(4, 0, 0), skull), "Wardens: a skull struck outside its 7x7");
+        note.append(", divine ").append(divine).append(" prayed after ").append(divineFlight).append(" ticks");
         int p2Ticks = 0;
         while (phase == 2 && p2Ticks++ < 3000) {
             if (core != null && alive(core)) {
@@ -1267,6 +1412,8 @@ final class ToaWardens extends RoomLogic {
                 "Wardens: Tumeken's phantoms were " + phantomsSeen);
         RaidSelfTest.expect(phantomAttacksSeen > 0, "Wardens: the phantoms never attacked");
         RaidSelfTest.expect(enraged, "Wardens: the Warden died without enraging");
+        RaidSelfTest.expect(slamsMade == 0 || lastSlamLead >= SLAM_LEAD_TICKS, "Wardens: a floor slam rose " + lastSlamLead
+                + " game ticks after its warning (at least " + SLAM_LEAD_TICKS + ")");
         RaidSelfTest.expect(raid.attacksOnParty() > attacksBefore, "Wardens: nothing attacked the player");
         return note.append(", ").append(siphonHits).append(" siphon hits, phase 3 in ").append(p3Ticks).append(" ticks").toString();
     }

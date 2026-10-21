@@ -207,6 +207,15 @@ public class RoomLogic {
         });
     }
 
+    /**
+     * True while this attempt of the room runs (as {@link #later} checks): for a strike's or projectile's {@code live} check,
+     * so one made before a wipe can't land on the retry.
+     */
+    public java.util.function.BooleanSupplier current() {
+        int a = attempt;
+        return () -> a == attempt && started && !done;
+    }
+
     /** Removes everything this room spawned. */
     public void cleanup() {
         for (LivingEntity e : spawned) {
@@ -298,6 +307,24 @@ public class RoomLogic {
         return damage;
     }
 
+    /**
+     * {@link #bossOutgoing(DataBossEntity, ServerPlayer, int, AttackType)} for a hit of {@code attack} (null when unknown).
+     * Since round 41 a hit lands after its wind-up, flight or telegraph, so a room that changed an attack as it started
+     * ({@link #bossBeforeAttack}) can tell here which attack is landing.
+     */
+    public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type, AttackDef attack) {
+        return bossOutgoing(boss, player, damage, type);
+    }
+
+    /**
+     * Just before a boss in this room starts {@code attack} (the engine's attack goal, or {@link #autoAttack}): returns the
+     * attack to make instead ({@link AttackDef#idle} for none). Rooms count attacks here, not in {@link #bossOutgoing}: a hit
+     * that fizzles (its target stepped out of reach, a wall in the way) was still an attack, and OSRS counts attacks.
+     */
+    public AttackDef bossBeforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+        return attack;
+    }
+
     public void bossDeath(DataBossEntity boss, ServerPlayer killer) {
     }
 
@@ -369,7 +396,11 @@ public class RoomLogic {
             }
             attack = Mechanics.choose(list, 0, boss.getRandom());
         }
-        Mechanics.perform(boss, target, attack, phaseMultiplier(boss));
+        AttackDef chosen = bossBeforeAttack(boss, target, attack);
+        if (chosen == null || chosen.isIdle()) {
+            return;
+        }
+        Mechanics.perform(boss, target, chosen, phaseMultiplier(boss));
     }
 
     /** Teleports a boss (and stops it walking off). */
@@ -409,6 +440,22 @@ public class RoomLogic {
             com.runecraft.network.ServerNetworking.sync(p);
             Msg.red(p, message);
         }
+    }
+
+    /**
+     * Whether any protection prayer is switched on right now (Olm's prayer spheres punish one that is). Deliberately the
+     * toggle state, not {@link com.runecraft.combat.CombatHandler#isProtected}: the switch grace only ever helps the player,
+     * and read here it would punish a prayer they had just switched off. Protection against a hit goes through
+     * {@link RaidEffects#protectedFrom}.
+     */
+    public static boolean praysOverhead(ServerPlayer p) {
+        com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+        for (com.runecraft.osrs.Prayer pr : com.runecraft.osrs.PrayerGrace.PROTECTIONS) {
+            if (data.isActive(pr)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** A player's current prayer points. */

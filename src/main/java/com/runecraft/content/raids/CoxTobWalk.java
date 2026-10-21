@@ -41,6 +41,11 @@ public final class CoxTobWalk {
     private String room = "lobby";
     /** CoX: walk Challenge Mode (every room, in the fixed order) instead of a random normal layout. */
     private boolean challenge;
+    /**
+     * Every raid strike and projectile that lands during the walk must have been fair (round 42: drawn on creation, the
+     * real-time floors); checked after each room.
+     */
+    private RaidStrikeRecorder recorder;
 
     private CoxTobWalk(RaidInstance raid, ServerPlayer player) {
         this.raid = raid;
@@ -86,6 +91,7 @@ public final class CoxTobWalk {
         RaidInstance raid = RaidManager.of(p);
         expect(raid != null, "RaidManager.enter did not start a raid");
         CoxTobWalk w = new CoxTobWalk(raid, p);
+        w.recorder = RaidStrikeRecorder.start();
         try {
             expect(raid.setMode(com.runecraft.osrs.content.raids.RaidMode.ENTRY), "could not choose Entry mode in the lobby");
             w.begin();
@@ -117,8 +123,12 @@ public final class CoxTobWalk {
                     skills.level(com.runecraft.osrs.Skill.ATTACK)), "a bandage did not boost Attack");
             expect(w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES) == held - 1, "using a bandage did not use it up");
             skills.setBoost(com.runecraft.osrs.Skill.ATTACK, 0);
-            return "two Entry mode wipes reset the Maiden's room and stacked ten bandages each";
+            // the retried Maiden fights on for a while: whatever she throws must still be fair
+            w.tick(15);
+            w.recorder.check("the retried Maiden");
+            return "two Entry mode wipes reset the Maiden's room and stacked ten bandages each (" + w.recorder.summary() + ")";
         } finally {
+            w.recorder.close();
             p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
             if (RaidManager.of(p) == raid) {
                 RaidManager.selfTestClose(raid);
@@ -166,13 +176,15 @@ public final class CoxTobWalk {
         expect(raid != null, "RaidManager.enter did not start a raid (see the log for \"Failed to start a raid\")");
         CoxTobWalk w = new CoxTobWalk(raid, p);
         w.challenge = mode == com.runecraft.osrs.content.raids.RaidMode.CHALLENGE;
+        w.recorder = RaidStrikeRecorder.start();
         try {
             // Challenge Mode is picked by the leader in the CoX lobby (coxLobby); the other modes before the walk.
             expect(w.challenge || (raid.setMode(mode) && raid.mode() == mode), "could not choose " + mode.displayName() + " in the lobby");
-            return w.walk();
+            return w.walk() + "; " + w.recorder.summary();
         } catch (AssertionError e) {
             throw new AssertionError("[" + w.room + "] " + e.getMessage() + " (after " + w.ticks + " ticks; done: " + String.join(", ", w.notes) + ")");
         } finally {
+            w.recorder.close();
             p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
             if (RaidManager.of(p) == raid) {
                 RaidManager.selfTestClose(raid);
@@ -259,6 +271,7 @@ public final class CoxTobWalk {
             RoomLogic logic = raid.logic(i);
             String note = logic instanceof Walkable wk ? wk.walk(this) : killAll(logic);
             until(() -> logic.done, 40, "the room did not complete");
+            recorder.check(def.id());
             expect(raid.world.getBlockState(raid.center(i).offset(RaidBuilder.HALF + 1, 1, 0)).isAir(), "the room's exit did not open");
             notes.add(def.id() + " (" + note + ")");
             if (raid.type == RaidType.COX && !diedOnce && def.combat()) {
@@ -473,6 +486,23 @@ public final class CoxTobWalk {
 
     void note(String s) {
         notes.add(s);
+    }
+
+    /** Whether a prayer is switched on (its toggle state, as the prayer book shows it). */
+    boolean prayerOn(com.runecraft.osrs.Prayer prayer) {
+        return Players.data(player).isActive(prayer);
+    }
+
+    /**
+     * Switches a prayer through the path the prayer keys use ({@code PrayerService.set}), then lets a game tick pass, longer
+     * than the switch grace, so the protection read afterwards sees only the new state. // playability (round 42): walks
+     * switch prayers like a player instead of setting them
+     */
+    void pray(com.runecraft.osrs.Prayer prayer, boolean on) {
+        com.runecraft.combat.PrayerService.set(player, prayer, on);
+        expect(prayerOn(prayer) == on, "could not switch " + prayer + (on ? " on" : " off") + " ("
+                + com.runecraft.combat.PrayerService.lastRefusal + ")");
+        tick(1);
     }
 
     static void expect(boolean ok, String message) {

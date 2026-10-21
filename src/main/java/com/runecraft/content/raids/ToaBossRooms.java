@@ -718,9 +718,11 @@ final class ToaBossRooms {
         @Override
         public void decorate() {
             BlockPos c = center();
-            // The four quadrant symbols: fire, shadow, lightning, ice.
+            // The four quadrant symbols: fire, shadow, lightning, ice. The ice mark is light blue terracotta rather than packed
+            // ice since round 42: steps on a slippery block don't drop trailing orbs (they may be a slide), so an icy mark
+            // was a patch to walk across freely.
             net.minecraft.world.level.block.state.BlockState[] marks = {Blocks.MAGMA_BLOCK.defaultBlockState(), Blocks.CRYING_OBSIDIAN.defaultBlockState(),
-                    Blocks.YELLOW_GLAZED_TERRACOTTA.defaultBlockState(), Blocks.PACKED_ICE.defaultBlockState()};
+                    Blocks.YELLOW_GLAZED_TERRACOTTA.defaultBlockState(), Blocks.LIGHT_BLUE_GLAZED_TERRACOTTA.defaultBlockState()};
             for (int q = 0; q < 4; q++) {
                 Vec3 v = quadrantCentre(q);
                 BlockPos m = BlockPos.containing(v.x, c.getY(), v.z);
@@ -848,42 +850,66 @@ final class ToaBossRooms {
         }
 
         /**
-         * Each of Akkha's attacks: every seventh (sixth with Stay Vigilant) is a special instead of an auto-attack, after
-         * which he changes style; the autos get partial protection, ranged/magic hit everyone, Keep Back.
+         * Each of Akkha's attacks, counted as it starts (a hit that later fizzles was still an attack; round 41 counted
+         * landed hits): every seventh (sixth with Stay Vigilant) is a special instead of an auto-attack, after which he
+         * changes style. With Keep Back his ranged and magic attacks are preceded by a melee swing at anyone next to him.
          */
         @Override
-        public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
-            if (boss != akkha || hidden || finalStand) {
-                return 0;
+        public AttackDef bossBeforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (boss != akkha) {
+                return attack;
+            }
+            if (hidden || finalStand) {
+                return AttackDef.idle(attack.style()); // vanished for Memory Blast, or merged into a shadow: no attacks
             }
             Set<Invocation> inv = raid.invocations();
             lastAttack = now();
             attacks++;
             if (Invocation.akkhaSpecialTurn(inv, attacks)) {
-                // OSRS: six auto-attacks, then the special takes the seventh attack's place.
+                // OSRS: six auto-attacks, then the special takes the seventh attack's place (no auto-attack lands).
                 boolean switches = Invocation.akkhaSwitchesAfter(inv, true, autos);
                 autos = 0;
                 later(1, () -> specials(inv));
                 if (switches) {
                     switchStyle();
                 }
-                return 0;
+                return AttackDef.idle(attack.style());
             }
             autos++;
-            int max = attacks(akkha).get(style).maxHit();
-            if (damage == 0 && RaidEffects.protectedFrom(player, type)) {
+            if (!attack.melee() && Invocation.akkhaKeepBack(inv)) {
+                // OSRS Keep Back: a melee hit on anyone next to him just before his ranged/magic attack, here after the
+                // swing's wind-up and only on a player still in reach. // playability: OSRS lands it on the attack tick
+                int meleeMax = attacks(akkha).get(0).maxHit();
+                akkha.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+                for (ServerPlayer p : players()) {
+                    if (p.distanceToSqr(akkha) < 2.6 * 2.6) {
+                        com.runecraft.boss.Mechanics.deliverMelee(akkha, p, com.runecraft.osrs.ThreatTiming.MELEE_REACH, () -> {
+                            if (alive(akkha) && !hidden && !finalStand) {
+                                hitStyled(p, rnd().nextInt(meleeMax + 1), AttackType.SLASH);
+                            }
+                        });
+                    }
+                }
+            }
+            return attack;
+        }
+
+        /**
+         * One of Akkha's auto-attacks landing: protection only takes part of it off, and his ranged and magic hit everyone
+         * in the arena.
+         */
+        @Override
+        public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type, AttackDef attack) {
+            if (boss != akkha || hidden || finalStand) {
+                return 0;
+            }
+            // the attack that is landing, not his current style (a hit in flight may cross a style switch)
+            int max = attack != null ? attack.maxHit() : attacks(akkha).get(style).maxHit();
+            if (damage == 0 && type != null && RaidEffects.protectedFrom(player, type)) {
                 damage = (int) Math.round(rnd().nextInt(max + 1)
                         * (type.isMelee() ? ToaBossRules.AKKHA_PROTECTED_MELEE : ToaBossRules.AKKHA_PROTECTED_RANGED_MAGIC));
             }
-            if (style != 0) {
-                if (Invocation.akkhaKeepBack(inv)) {
-                    // OSRS Keep Back: a melee hit lands on anyone next to him just before his ranged/magic attack.
-                    for (ServerPlayer p : players()) {
-                        if (p.distanceToSqr(akkha) < 2.6 * 2.6) {
-                            hitStyled(p, rnd().nextInt(attacks(akkha).get(0).maxHit() + 1), AttackType.SLASH);
-                        }
-                    }
-                }
+            if (type != null && !type.isMelee()) {
                 // OSRS: his ranged and magic attacks hit everyone in the arena.
                 for (ServerPlayer p : players()) {
                     if (p != player) {
@@ -1077,11 +1103,7 @@ final class ToaBossRooms {
             for (int sp : pool.subList(0, Math.min(pool.size(), Invocation.akkhaSpecialsAtOnce(inv)))) {
                 switch (sp) {
                     case 0 -> memoryBlast(inv);
-                    case 1 -> {
-                        warn("Magical orbs begin to materialise around you!");
-                        trailTicks = 10;
-                        trailLast.clear();
-                    }
+                    case 1 -> startTrailingOrbs();
                     default -> detonate(inv);
                 }
             }
@@ -1126,6 +1148,63 @@ final class ToaBossRooms {
             later(start + order.size() * gap, () -> hidden = false);
         }
 
+        /** Distance each player walked of their own accord since the last game tick, and where they were a Minecraft tick ago. */
+        private final Map<UUID, Double> walked = new HashMap<>();
+        private final Map<UUID, Vec3> lastMc = new HashMap<>();
+
+        /** Trailing Orbs begin (OSRS: for ten ticks every tile a player walks leaves an orb behind them). */
+        private void startTrailingOrbs() {
+            warn("Magical orbs begin to materialise around you! Stand still - every step leaves an orb.");
+            trailTicks = 10;
+            trailLast.clear();
+            walked.clear();
+            lastMc.clear();
+        }
+
+        /**
+         * Every Minecraft tick while the orbs materialise: adds up each player's own steps ({@link
+         * com.runecraft.osrs.content.raids.RaidRealtime#ownStep}), on the ground or in the air (a jump is a step), less
+         * the part pointing away from a body they overlap (Akkha or a shadow shoving them; walking round him still counts);
+         * not sliding on ice, neither standing still nor teleported. No hit knocks a player back here (OSRS hits never push:
+         * OsrsKnockback), so there is no knockback to leave out.
+         */
+        @Override
+        public void bossTick(DataBossEntity boss) {
+            if (boss != akkha) {
+                return;
+            }
+            if (trailTicks <= 0) {
+                lastMc.clear();
+                return;
+            }
+            for (ServerPlayer p : players()) {
+                addOwnStep(p);
+            }
+        }
+
+        /** One Minecraft tick of {@link #bossTick} for one player. */
+        private void addOwnStep(ServerPlayer p) {
+            Vec3 now = p.position();
+            Vec3 before = lastMc.put(p.getUUID(), now);
+            if (before == null) {
+                return;
+            }
+            // The bodies whose boxes overlap the player's (Minecraft only pushes overlapping boxes, away from the centre).
+            List<net.minecraft.world.entity.Entity> bodies = world().getEntities(p, p.getBoundingBox(),
+                    e -> e instanceof LivingEntity && e.isAlive() && !e.isSpectator());
+            double[] away = new double[bodies.size() * 2];
+            for (int i = 0; i < bodies.size(); i++) {
+                away[2 * i] = now.x - bodies.get(i).getX();
+                away[2 * i + 1] = now.z - bodies.get(i).getZ();
+            }
+            BlockPos below = BlockPos.containing(now.x, now.y - 0.5, now.z);
+            boolean slippery = world().getBlockState(below).getBlock().getFriction() > 0.6f;
+            double own = com.runecraft.osrs.content.raids.RaidRealtime.ownStep(now.x - before.x, now.z - before.z, away, slippery);
+            if (own > 0) {
+                walked.merge(p.getUUID(), own, Double::sum);
+            }
+        }
+
         /** Trailing Orbs: every step a player takes leaves an orb behind (and one ahead with Feeling Special?). */
         private void trailingOrbs(Set<Invocation> inv) {
             trail.removeIf(o -> o[2] < now());
@@ -1148,12 +1227,17 @@ final class ToaBossRooms {
             for (ServerPlayer p : players()) {
                 Vec3 now = p.position();
                 Vec3 last = trailLast.put(p.getUUID(), now);
-                if (last != null && RaidEffects.horizontalDistSq(last, now) > 0.25) {
+                double walked = this.walked.getOrDefault(p.getUUID(), 0.0);
+                this.walked.put(p.getUUID(), 0.0);
+                // Only the player's own steps since the last game tick count, walked or jumped (Akkha's body shoving them,
+                // ice sliding and teleports don't): see bossTick. // playability: OSRS drops an orb on each tile a player
+                // walks off
+                if (last != null && walked >= com.runecraft.osrs.content.raids.RaidRealtime.ORB_STEP) {
                     // CA "Dropped the ball": moving while the orbs materialise drops one behind you.
                     com.runecraft.content.systems.CombatAchievementService.flag(p, ToaLoot.FLAG_AKKHA_ORB_DROPPED);
                     orbsDropped++;
                     trail.add(new double[]{last.x, last.z, now() + 12});
-                    if (Invocation.akkhaTrailingOrbs(inv) > 1) {
+                    if (Invocation.akkhaTrailingOrbs(inv) > 1 && now.subtract(last).horizontalDistanceSqr() > 1e-4) {
                         Vec3 ahead = now.add(now.subtract(last).normalize().scale(1.5));
                         trail.add(new double[]{ahead.x, ahead.z, now() + 12});
                     }
@@ -1243,10 +1327,70 @@ final class ToaBossRooms {
             t.moveTo(BlockPos.containing(a.x + (a.x < center().getX() + 0.5 ? 2 : -2), a.y, a.z));
         }
 
+        /**
+         * Self-test: Trailing Orbs follow the player's own steps, walked on the ground, jumped through the air and walked round
+         * Akkha pressed against him (only the part of a step pointing away from a body is its shove). Entities don't tick
+         * while a check runs, so each Minecraft tick's step is made here (0.2 blocks, walking pace) and Akkha's boss tick,
+         * which adds the steps up, is called by hand; the raid game tick then drops the orbs. The special ends afterwards.
+         */
+        private String selfTestTrailingOrbs(RaidSelfTest t) {
+            ServerPlayer p = t.player();
+            int mcPerTick = com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK;
+            int before = orbsDropped;
+            startTrailingOrbs();
+            Vec3 at = vec(-8, -6);
+            selfTestStep(p, at, true);
+            bossTick(akkha);
+            t.tick(1);
+            for (int leg = 0; leg < 2; leg++) {
+                boolean ground = leg == 0;
+                int legBefore = orbsDropped;
+                for (int g = 0; g < 2; g++) {
+                    for (int mc = 0; mc < mcPerTick; mc++) {
+                        at = at.add(0.2, 0, 0);
+                        // in the air: the top of a jump arc, 0.6 above the floor, not on the ground
+                        selfTestStep(p, ground ? at : at.add(0, 0.6, 0), ground);
+                        bossTick(akkha);
+                    }
+                    t.tick(1);
+                }
+                RaidSelfTest.expect(orbsDropped >= legBefore + 2, "Akkha: two ticks " + (ground ? "walking" : "jumping") + " during Trailing Orbs dropped "
+                        + (orbsDropped - legBefore) + " orbs (one a tick expected)");
+            }
+            // Round Akkha, inside his box the whole way (a melee player pressed against him).
+            Vec3 a = akkha.position();
+            double r = Math.min(0.6, (akkha.getBbWidth() + p.getBbWidth()) / 2 - 0.1);
+            double angle = 0;
+            selfTestStep(p, new Vec3(a.x + r, a.y, a.z), true);
+            bossTick(akkha); // the jump over to him is a teleport: not counted
+            int roundBefore = orbsDropped;
+            for (int mc = 0; mc < mcPerTick; mc++) {
+                angle += 0.2 / r;
+                selfTestStep(p, new Vec3(a.x + r * Math.cos(angle), a.y, a.z + r * Math.sin(angle)), true);
+                RaidSelfTest.expect(p.getBoundingBox().intersects(akkha.getBoundingBox()), "Akkha: the self-test player left his box while walking round him");
+                bossTick(akkha);
+            }
+            t.tick(1);
+            RaidSelfTest.expect(orbsDropped > roundBefore, "Akkha: walking round him pressed against him dropped no trailing orb");
+            trailTicks = 0;
+            trail.clear();
+            trailLast.clear();
+            walked.clear();
+            lastMc.clear();
+            return (orbsDropped - before) + " trailing orbs dropped walking, jumping and pressed against Akkha";
+        }
+
+        /** Self-test: puts the player at {@code at}, on the ground or not, as one Minecraft tick's movement. */
+        private void selfTestStep(ServerPlayer p, Vec3 at, boolean onGround) {
+            p.teleportTo(world(), at.x, at.y, at.z, p.getYRot(), p.getXRot());
+            p.setOnGround(onGround);
+        }
+
         @Override
         String selfTestSolve(RaidSelfTest t) {
             int shadowsKilled = 0;
             int[] kills = {0};
+            String orbs = selfTestTrailingOrbs(t);
             selfTestStandBeside(t);
             String r = grind(t, akkha, AttackType.MAGIC, 30, () -> {
                 if (finalStand || hidden || !shadowsUp() || !alive(akkha)) {
@@ -1275,7 +1419,7 @@ final class ToaBossRooms {
             RaidSelfTest.expect(specialsUsed <= attacks / every && (attacks < 2 * every || specialsUsed >= 1),
                     "Akkha: " + specialsUsed + " specials in " + attacks + " attacks (one every " + every + ")");
             RaidSelfTest.expect(finalStand, "Akkha: he died without his final stand");
-            return r + ", " + (kills[0] + shadowsKilled) + " shadows dispelled";
+            return r + ", " + (kills[0] + shadowsKilled) + " shadows dispelled, " + orbs;
         }
     }
 
@@ -2025,25 +2169,29 @@ final class ToaBossRooms {
             for (ServerPlayer p : here) {
                 if (p.distanceToSqr(zebak) < 3.5 * 3.5) {
                     // OSRS: his melee hits through prayer at reduced damage, and can make you bleed. // approx: half
-                    int roll = rnd().nextInt(ToaBossRules.ZEBAK_MELEE_MAX + 1);
-                    if (RaidEffects.protectedFrom(p, AttackType.STAB)) {
-                        roll /= 2;
-                    }
-                    Msg.red(p, "Zebak's jaws snap at you!");
-                    RaidEffects.hit(zebak, p, roll, null, true);
+                    // // playability: OSRS lands the bite on the attack tick; here after the jaws' wind-up, on a player still in
+                    // reach, the prayer read as it lands
+                    zebak.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+                    Mechanics.deliverMelee(zebak, p, com.runecraft.osrs.ThreatTiming.MELEE_REACH, () -> {
+                        if (!alive(zebak)) {
+                            return;
+                        }
+                        int roll = rnd().nextInt(ToaBossRules.ZEBAK_MELEE_MAX + 1);
+                        if (RaidEffects.protectedFrom(p, AttackType.STAB)) {
+                            roll /= 2;
+                        }
+                        Msg.red(p, "Zebak's jaws snap at you!");
+                        RaidEffects.hit(zebak, p, roll, null, true);
+                    });
                     return;
                 }
             }
             ServerPlayer target = here.get(rnd().nextInt(here.size()));
             AttackType style = rnd().nextBoolean() ? AttackType.RANGED : AttackType.MAGIC;
-            world().sendParticles(style == AttackType.MAGIC ? ParticleTypes.DAMAGE_INDICATOR : ParticleTypes.CRIT, zebak.getX(), zebak.getY() + 2,
-                    zebak.getZ(), 10, 0.3, 0.3, 0.3, 0.05);
-            // OSRS: the projectile only hurts on impact, so it can be prayed against late.
-            later(2, () -> {
-                if (alive(zebak) && target.isAlive()) {
-                    RaidEffects.hit(zebak, target, rnd().nextInt(ToaBossRules.ZEBAK_RANGED_MAX + 1), style, false);
-                }
-            });
+            // OSRS: the rock (ranged) or jug (magic) only hurts on impact, so it can be prayed against late; drawn here in the
+            // style's colour all the way to its target. // playability
+            RaidEffects.projectile(world(), zebak.position().add(0, 2, 0), target, style, 2, () -> alive(zebak),
+                    () -> RaidEffects.hit(zebak, target, rnd().nextInt(ToaBossRules.ZEBAK_RANGED_MAX + 1), style, false));
         }
 
         /** A special: jugs and acid with the Great Roar or the Tidal Waves. */
@@ -2062,6 +2210,15 @@ final class ToaBossRooms {
                 }
                 roarIn = 10; // approx: "several attacks after"
                 roarHits = 3;
+                // The shelters shown in green from the warning until the last of the roar's three hits. // playability
+                RaidEffects.telegraph(players(), "Great Roar coming - shelter in the green behind a rock (west of it)!");
+                RaidEffects.cue(roarIn + roarHits + 1, () -> {
+                    if (!alive(zebak) || rocks.isEmpty()) {
+                        return false;
+                    }
+                    drawShelters();
+                    return true;
+                });
             } else {
                 tidalWaves();
             }
@@ -2141,16 +2298,42 @@ final class ToaBossRooms {
             }
         }
 
-        /** The rock a player shelters behind: west of it (away from Zebak), up to three tiles, in its row. */
-        private BlockPos coverFor(ServerPlayer p) {
-            BlockPos stand = p.blockPosition();
+        /**
+         * The rock a player shelters behind: west of it (away from Zebak), up to three tiles, in its row (OSRS), here in a
+         * cone that widens behind the rock ({@link com.runecraft.osrs.content.raids.RaidRealtime#inShelterCone}).
+         * // playability: OSRS shelters exactly the three tiles behind it
+         */
+        BlockPos coverFor(Vec3 pos) {
             for (BlockPos r : rocks.keySet()) {
-                int behind = r.getX() - stand.getX();
-                if (behind >= 1 && behind <= 3 && Math.abs(r.getZ() - stand.getZ()) <= 0) {
+                double behind = r.getX() + 0.5 - pos.x;
+                double lateral = pos.z - (r.getZ() + 0.5);
+                if (com.runecraft.osrs.content.raids.RaidRealtime.inShelterCone(behind, lateral)) {
                     return r;
                 }
             }
             return null;
+        }
+
+        private BlockPos coverFor(ServerPlayer p) {
+            return coverFor(p.position());
+        }
+
+        /** Each rock's shelter in green on the floor (the cone {@link #coverFor} accepts), until the roar is over. */
+        private void drawShelters() {
+            double y = center().getY() + 1.1;
+            double half = com.runecraft.osrs.content.raids.RaidRealtime.SHELTER_HALF_WIDTH;
+            double spread = com.runecraft.osrs.content.raids.RaidRealtime.SHELTER_SPREAD;
+            for (BlockPos r : rocks.keySet()) {
+                for (double behind = 0.75; behind <= com.runecraft.osrs.content.raids.RaidRealtime.SHELTER_DEPTH; behind += 0.5) {
+                    double w = half + spread * (behind - 0.5) - 0.05;
+                    double x = r.getX() + 0.5 - behind;
+                    world().sendParticles(RaidEffects.SAFE, x, y, r.getZ() + 0.5 - w, 1, 0, 0, 0, 0);
+                    world().sendParticles(RaidEffects.SAFE, x, y, r.getZ() + 0.5 + w, 1, 0, 0, 0, 0);
+                    if (behind == 0.75 || behind >= com.runecraft.osrs.content.raids.RaidRealtime.SHELTER_DEPTH - 0.25) {
+                        world().sendParticles(RaidEffects.SAFE, x, y, r.getZ() + 0.5, 2, 0, 0, w * 0.5, 0);
+                    }
+                }
+            }
         }
 
         /**
@@ -2396,7 +2579,18 @@ final class ToaBossRooms {
         @Override
         String selfTestSolve(RaidSelfTest t) {
             int[] jugsBroken = {0};
+            boolean[] shelterChecked = {false};
             String r = grind(t, zebak, AttackType.RANGED, 25, () -> {
+                if (!shelterChecked[0] && !rocks.isEmpty()) {
+                    // The Great Roar's shelter: the tiles behind a rock in its row (OSRS), widening behind it; not beside it.
+                    shelterChecked[0] = true;
+                    BlockPos rock = rocks.keySet().iterator().next();
+                    Vec3 c = Vec3.atBottomCenterOf(rock);
+                    RaidSelfTest.expect(coverFor(c.add(-2, 0, 0)) != null && coverFor(c.add(-3, 0, 0.9)) != null,
+                            "Zebak: the tiles behind a rock gave no shelter");
+                    RaidSelfTest.expect(coverFor(c.add(2, 0, 0)) == null && coverFor(c.add(-1, 0, 1.2)) == null
+                            || rocks.size() > 1, "Zebak: a rock sheltered a player in front of it or beside it");
+                }
                 if (!jugs.isEmpty() && !acid.isEmpty()) {
                     BlockPos j = jugs.iterator().next();
                     int before = acid.size();

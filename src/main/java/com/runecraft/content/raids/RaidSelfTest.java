@@ -51,35 +51,24 @@ public final class RaidSelfTest {
     void healthy(String where) {
         expect(raid.roomFailures() == 0, where + ": a room tick threw (" + raid.lastRoomFailure() + ")");
         expect(RaidEffects.failures() == taskFailuresBefore, where + ": a delayed raid task threw (" + RaidEffects.lastFailure() + ")");
-        expect(unfairStrikes.isEmpty(), where + ": " + unfairStrikes.size() + " raid strike(s) broke the real-time floor (round 41: drawn "
-                + "on creation, landing at least " + ArenaTiming.MIN_LEAD_MC + " MC later): " + unfairStrikes);
+        if (recorder != null) {
+            recorder.check(where);
+        }
     }
 
     // ------------------------------------------------------------------ human-budget recorder (round 41 playability)
 
-    /** Raid strikes landed during the run that a human couldn't see coming (first few), and how many landed in all. */
-    private final List<String> unfairStrikes = new ArrayList<>();
-    private int strikesLanded;
-    private Consumer<ArenaTiming.StrikeTrace> strikesBefore;
+    /** The run's strike and projectile recorder (every run records since round 42), or null before it starts. */
+    private RaidStrikeRecorder recorder;
 
-    /** Starts recording the raid's strikes: each damaging, non-exact one must be drawn on creation and land >= 36 MC later. */
+    /** Starts recording the raid's strikes and projectiles (see {@link RaidStrikeRecorder}). */
     private void recordStrikes() {
-        strikesBefore = RaidEffects.strikeListener;
-        Consumer<ArenaTiming.StrikeTrace> chained = strikesBefore;
-        RaidEffects.strikeListener = s -> {
-            chained.accept(s);
-            strikesLanded++;
-            String why = s.unfair();
-            if (why != null && unfairStrikes.size() < 5) {
-                unfairStrikes.add(why);
-            }
-        };
+        recorder = RaidStrikeRecorder.start();
     }
 
     private void stopRecording() {
-        if (strikesBefore != null) {
-            RaidEffects.strikeListener = strikesBefore;
-            strikesBefore = null;
+        if (recorder != null) {
+            recorder.close();
         }
     }
 
@@ -147,6 +136,62 @@ public final class RaidSelfTest {
                 + " MC; the raid clock restarts on each game-tick boundary";
     }
 
+    /**
+     * Self-test ({@code raid:realtime_cues}, round 42): the raid cue helpers keep the real-time floors without a raid. A
+     * damaging lane made with a 1-tick delay is drawn as it is made and lands no sooner than the floor; a raid projectile flies
+     * at least two game ticks, and one of another style at the same player lands at least two game ticks after it. Both are
+     * made to fizzle (nobody is hurt); {@code at} is away from every player.
+     */
+    public static String realtimeCheck(net.minecraft.server.level.ServerLevel world, net.minecraft.world.phys.Vec3 at, ServerPlayer target) {
+        List<ArenaTiming.StrikeTrace> strikes = new ArrayList<>();
+        List<RaidEffects.ProjectileTrace> flights = new ArrayList<>();
+        Consumer<ArenaTiming.StrikeTrace> strikesBefore = RaidEffects.strikeListener;
+        Consumer<RaidEffects.ProjectileTrace> flightsBefore = RaidEffects.projectileListener;
+        double tag = 0.737;
+        RaidEffects.strikeListener = s -> {
+            strikesBefore.accept(s);
+            if (s.radius() == tag) {
+                strikes.add(s);
+            }
+        };
+        long first;
+        long second;
+        try {
+            // on a raid game tick, as room logic makes its strikes and projectiles
+            RaidEffects.advance(1);
+            RaidEffects.gameTick();
+            RaidEffects.projectileListener = t -> {
+                flightsBefore.accept(t);
+                flights.add(t);
+            };
+            RaidEffects.lane(world, at, at.add(6, 0, 0), tag).delay(1).damage(1, 1).live(() -> false).start();
+            first = RaidEffects.projectile(world, at, target, AttackType.MAGIC, 1, () -> false, () -> {
+            });
+            second = RaidEffects.projectile(world, at, target, AttackType.RANGED, 1, () -> false, () -> {
+            });
+            for (int i = 0; i < 10 && (strikes.isEmpty() || flights.size() < 2); i++) {
+                RaidEffects.advance(1);
+                RaidEffects.gameTick();
+            }
+        } finally {
+            RaidEffects.strikeListener = strikesBefore;
+            RaidEffects.projectileListener = flightsBefore;
+        }
+        expect(strikes.size() == 1 && flights.size() == 2, "the lane or the projectiles never landed (" + strikes.size() + " lane(s), "
+                + flights.size() + " projectile(s))");
+        ArenaTiming.StrikeTrace lane = strikes.get(0);
+        expect(lane.firstDrawnMc() == lane.createdMc() && lane.unfair() == null, "raid lane: " + lane.unfair());
+        expect(lane.leadMc() >= ArenaTiming.MIN_LEAD_MC, "a 1-tick raid lane landed " + lane.leadMc() + " MC after it was made");
+        long minFlight = (long) com.runecraft.osrs.content.raids.RaidRealtime.PROJECTILE_MIN_TICKS * ArenaTiming.MC_PER_GAME_TICK;
+        expect(flights.get(0).flightMc() >= minFlight, "a 1-tick raid projectile flew " + flights.get(0).flightMc() + " MC");
+        long gap = (second - first) * ArenaTiming.MC_PER_GAME_TICK;
+        expect(flights.get(1).landedMc() - flights.get(0).landedMc() >= 20 && gap >= 20,
+                "a ranged projectile landed " + (flights.get(1).landedMc() - flights.get(0).landedMc()) + " MC after a magic one at the same player");
+        expect(!flights.get(0).landed() && !flights.get(1).landed(), "a fizzled raid projectile landed");
+        return "1-tick lane landed after " + lane.leadMc() + " MC, drawn on creation; projectiles flew " + flights.get(0).flightMc()
+                + " MC, the second style " + gap + " MC after the first";
+    }
+
     // ------------------------------------------------------------------ driver API (used by the rooms' solvers)
 
     RaidInstance raid() {
@@ -199,6 +244,16 @@ public final class RaidSelfTest {
         int dealt = CombatHandler.applyDamage(player, target, d);
         CombatHandler.hookAfterHit(player, target, type, dealt);
         return dealt;
+    }
+
+    /**
+     * Switches a prayer through the path the prayer keys use ({@code PrayerService.set}), as the player reacting to a cue.
+     * // playability (round 42): checks switch prayers like a player instead of setting them
+     */
+    void pray(com.runecraft.osrs.Prayer prayer, boolean on) {
+        com.runecraft.combat.PrayerService.set(player, prayer, on);
+        expect(Players.data(player).isActive(prayer) == on, "could not switch " + prayer + (on ? " on" : " off") + " ("
+                + com.runecraft.combat.PrayerService.lastRefusal + ")");
     }
 
     /** Right-clicks a raid block (the block at {@code pos} must be a raid block). */
@@ -256,7 +311,7 @@ public final class RaidSelfTest {
         RaidSelfTest t = new RaidSelfTest(raid, p);
         t.recordStrikes();
         try {
-            return t.walkToa() + ", " + t.strikesLanded + " strikes landed fair";
+            return t.walkToa() + ", " + t.recorder.summary();
         } finally {
             t.stopRecording();
             if (RaidManager.of(p) == raid) {
@@ -530,6 +585,7 @@ public final class RaidSelfTest {
             RaidInstance raid = RaidManager.of(p);
             expect(raid != null, "RaidManager.enter did not start a raid");
             RaidSelfTest t = new RaidSelfTest(raid, p);
+            t.recordStrikes();
             try {
                 ToaInvocationMenu.preset(p, 0);
                 if (hardcore) {
@@ -554,9 +610,14 @@ public final class RaidSelfTest {
                     expect(raid.logic(room).started && !raid.logic(room).done, "the room was not reset after the wipe");
                     expect(Inv.count(p, ToaSupplies.HONEY_LOCUST) == ToaSupplies.honeyLocustsOnWipe(raid.invocations()),
                             "the wipe handed out " + Inv.count(p, ToaSupplies.HONEY_LOCUST) + " honey locusts");
+                    // the retried room runs on for a while: whatever it strikes must still be fair
+                    t.tick(12);
+                    t.healthy("the retried room");
                     out.append("wipe resets the room with honey locusts; ");
                 }
+                t.recorder.check(hardcore ? "the hardcore wipe" : "the wipe");
             } finally {
+                t.stopRecording();
                 if (RaidManager.of(p) == raid) {
                     RaidManager.selfTestClose(raid);
                 }
@@ -576,6 +637,7 @@ public final class RaidSelfTest {
         RaidInstance raid = RaidManager.of(p);
         expect(raid != null, "RaidManager.enter did not start a raid");
         RaidSelfTest t = new RaidSelfTest(raid, p);
+        t.recordStrikes();
         try {
             ToaInvocationMenu.preset(p, 0);
             t.use(raid.center(0).offset(RaidBuilder.HALF + 1, 1, 0));
@@ -603,9 +665,11 @@ public final class RaidSelfTest {
             expect(RaidManager.of(p) == null, "the lobby exit did not take the player out of the raid");
             expect(!raid.contains(p), "the lobby exit left the player in the instance");
             expect(Inv.count(p, ToaSupplies.HONEY_LOCUST) == 0, "the raid's supplies left the tomb with the player");
-            return "logout mid-fight is a death, rejoin wipes and retries, the exit takes you home; " + shroudChest(p) + "; "
-                    + pickaxeCavity(p);
+            t.recorder.check("rejoin and leave");
+            return "logout mid-fight is a death, rejoin wipes and retries, the exit takes you home (" + t.recorder.summary() + "); "
+                    + shroudChest(p) + "; " + pickaxeCavity(p);
         } finally {
+            t.stopRecording();
             if (RaidManager.of(p) == raid) {
                 RaidManager.selfTestClose(raid);
             }

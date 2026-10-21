@@ -42,8 +42,23 @@ public final class RaidScript implements BossScript {
         return r == null ? damage : r.bossIncoming(boss, attacker, damage, type);
     }
 
+    /**
+     * Rooms count a boss's attacks as they start (a hit that fizzles was still an attack) and may change one; see
+     * {@link RoomLogic#bossBeforeAttack}.
+     */
+    @Override
+    public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+        RoomLogic r = room(boss);
+        return r == null ? attack : r.bossBeforeAttack(boss, target, attack);
+    }
+
     @Override
     public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+        return onHitPlayer(boss, player, damage, type, null);
+    }
+
+    @Override
+    public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type, AttackDef attack) {
         RaidInstance raid = RaidManager.at(boss);
         if (raid == null) {
             return damage;
@@ -67,7 +82,7 @@ public final class RaidScript implements BossScript {
                 damage = (int) Math.round(boss.getRandom().nextInt(max + 1) * leak);
             }
         }
-        int d = r == null ? damage : r.bossOutgoing(boss, player, damage, type);
+        int d = r == null ? damage : r.bossOutgoing(boss, player, damage, type, attack);
         int out = (int) Math.round(d * raid.damageMultiplier(boss));
         RaidManager.deadlyPrayers(player, out);
         return out;
