@@ -129,7 +129,7 @@ public final class RaidEffects {
     }
 
     /** The raid clock in Minecraft ticks: game ticks x 12, plus the Minecraft ticks into the current one. */
-    private static long clockMc() {
+    public static long clockMc() {
         return now() * ArenaTiming.MC_PER_GAME_TICK + mcIntoTick();
     }
 

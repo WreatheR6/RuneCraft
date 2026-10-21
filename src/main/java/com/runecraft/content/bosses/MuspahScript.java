@@ -37,8 +37,8 @@ import net.minecraft.world.phys.Vec3;
  * <p>It spawns in its ranged or melee form and swaps after 100 damage in the ranged form or 80 in the melee form (from its
  * second form on, also only after four hits), slamming up spikes as it does, one marked under the player: step off before
  * it erupts or be hit, knocked aside and heal it. Walking onto a standing spike hurts too. Ranged form: ice shards (61) and
- * now and then a charged magic orb (72, corruption: 3, 6 and 9 prayer) that the right prayer only blocks when it is up as the
- * orb is launched. Melee form: it chases, and the longer it stands still the more of its stab gets through the prayer.
+ * now and then a charged magic orb (72, corruption: 3, 6 and 9 prayer) that the right prayer blocks when it is up as the orb
+ * lands (round 41 playability; OSRS: as it is launched). Melee form: it chases, and the longer it stands still the more of its stab gets through the prayer.
  *
  * <p>At 637 and 425 health: Lightning Clouds (it teleports around a darkened arena, leaving clouds that drift across it) and
  * Homing Spikes (2-4 spikes crawl towards the player a tile every two ticks for 34 ticks, never diagonally, stopped by
@@ -100,8 +100,8 @@ final class MuspahScript extends ScriptedBoss {
     record Cloud(double[] pos, double dx, double dz, int[] life, Set<UUID> hit) {
     }
 
-    /** A magic orb in flight: lands at {@code due}; whether Protect from Magic was up as it was launched. */
-    private record Orb(ServerPlayer target, long due, boolean prayedAtLaunch, int max) {
+    /** A magic orb in flight: lands at {@code due}, where the protection prayer is read. */
+    private record Orb(ServerPlayer target, long due, int max) {
     }
 
     /** The frozen cache opens (used) into one roll of its table (OSRS Wiki "Frozen cache"); hits from outside its rules. */
@@ -257,9 +257,11 @@ final class MuspahScript extends ScriptedBoss {
                 hit(boss, target, "ice_shard", AttackType.RANGED, d);
             }
             case "smite" -> {
-                boolean prayed = BossHits.protectedFrom(target, AttackType.MAGIC);
-                BossFx.warn(boss, n.name() + " launches a purple orb!");
-                orbs.add(new Orb(target, now + MuspahRules.MAGIC_FLIGHT_TICKS, prayed, n.magicMax(shieldedOrAfter())));
+                // The orb flies at least the real-time floor and the prayer is read as it lands (tickOrbs). // playability:
+                // OSRS calculates it as it is launched (2 ticks of flight), so the prayer had to be up before the cue
+                BossFx.warn(boss, n.name() + " launches a purple orb - Protect from Magic!");
+                int flight = Math.max(MuspahRules.MAGIC_FLIGHT_TICKS, com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS);
+                orbs.add(new Orb(target, now + flight, n.magicMax(shieldedOrAfter())));
             }
             case "stomp" -> {
                 // It chased the player into reach: Protect from Melee blocks it; standing still, more gets through.
@@ -341,14 +343,11 @@ final class MuspahScript extends ScriptedBoss {
                 continue;
             }
             it.remove();
-            if (!o.target().isAlive() || o.prayedAtLaunch()) {
-                continue; // prayed against before it was launched: no damage, no corruption
+            if (!o.target().isAlive() || BossHits.protectedFrom(o.target(), AttackType.MAGIC)) {
+                continue; // prayed against as it lands: no damage, no corruption
             }
             Random r = new Random(boss.getRandom().nextLong());
             int d = BossHits.roll(o.target(), AttackType.MAGIC, o.max(), attackRoll(boss, AttackType.MAGIC), false, r);
-            if (BossHits.protectedFrom(o.target(), AttackType.MAGIC)) {
-                d = (int) Math.floor(d * MuspahRules.MAGIC_LATE_PRAYER); // prayed in flight: weakened, but it still corrupts
-            }
             hit(boss, o.target(), "smite", AttackType.MAGIC, d);
             corrupt(o.target(), false);
         }

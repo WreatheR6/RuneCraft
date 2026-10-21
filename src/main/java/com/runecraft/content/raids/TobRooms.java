@@ -3282,6 +3282,45 @@ final class TobRooms {
             AttackType style = rnd().nextBoolean() ? AttackType.RANGED : AttackType.MAGIC;
             int max = enraged ? TobRules.VERZIK_ENRAGED_PROJECTILE_MAX : TobRules.VERZIK_P3_PROJECTILE_MAX;
             for (ServerPlayer p : players) {
+                projectile(p, style, max);
+            }
+        }
+
+        /** Game ticks her phase 3 projectiles fly. // playability: OSRS rolls them as she attacks */
+        static final int P3_PROJECTILE_TICKS = com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS;
+
+        /**
+         * One phase 3 ranged or magic auto: its style named as it leaves her and drawn as a style-coloured trail on its way,
+         * landing {@link #P3_PROJECTILE_TICKS} ticks later, the protection prayer read as it lands (up to 33, 34 enraged;
+         * halved by the right prayer). // playability: in OSRS the style is only seen on the projectile and the prayer must
+         * be right as she attacks, a switch a tick on a 7-tick (enraged 5) cycle
+         */
+        private void projectile(ServerPlayer p, AttackType style, int max) {
+            boolean magic = style == AttackType.MAGIC;
+            Msg.telegraph(p, magic ? "Verzik fires a magic orb!" : "Verzik fires a ranged bolt!", null);
+            int rgb = magic ? Msg.MAGIC_RGB : Msg.RANGED_RGB;
+            net.minecraft.core.particles.DustParticleOptions dust = new net.minecraft.core.particles.DustParticleOptions(
+                    new org.joml.Vector3f(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f), 1.6f);
+            Vec3 from = verzik.position().add(0, verzik.getBbHeight() * 0.7, 0);
+            long launchMc = RaidEffects.clockMc();
+            double flightMc = P3_PROJECTILE_TICKS * (double) ActionManager.MC_TICKS_PER_GAME_TICK;
+            RaidEffects.cue(P3_PROJECTILE_TICKS, () -> {
+                if (!alive(verzik) || !p.isAlive()) {
+                    return false;
+                }
+                double f = Math.min(1.0, (RaidEffects.clockMc() - launchMc) / flightMc);
+                Vec3 to = p.position().add(0, 1.0, 0);
+                for (int k = 0; k < 3; k++) {
+                    double t = Math.max(0, f - k * 0.08);
+                    Vec3 at = from.lerp(to, t);
+                    world().sendParticles(dust, at.x, at.y, at.z, 2, 0.05, 0.05, 0.05, 0.0);
+                }
+                return true;
+            });
+            later(P3_PROJECTILE_TICKS, () -> {
+                if (!alive(verzik) || !p.isAlive() || !players().contains(p)) {
+                    return;
+                }
                 int dmg = rnd().nextInt(max + 1);
                 boolean prayed = RaidEffects.protectedFrom(p, style);
                 if (prayed) {
@@ -3291,7 +3330,7 @@ final class TobRooms {
                 if (RaidEffects.hit(verzik, p, dmg, null, true) > 0 && !prayed) {
                     fail();
                 }
-            }
+            });
         }
 
         /** Sticky webs: she moves to the middle (invulnerable) and throws webs at the players; a web left too long snaps. */

@@ -851,6 +851,11 @@ final class SlayerScripts {
                     BossFx.warn(boss, "The Alchemical Hydra sways its heads back... it switches to " + (magicStyle ? "magic" : "ranged") + "!");
                 }
                 styleCount++;
+                if (styleCount >= SlayerBosses.HYDRA_STYLE_EVERY) {
+                    // The last attack of this style: the switch is announced one attack early. // playability: OSRS players
+                    // count the attacks and switch as the next one leaves; the cycle length stays
+                    BossFx.warn(boss, "The Alchemical Hydra will switch to " + (magicStyle ? "ranged" : "magic") + " after this attack!");
+                }
             }
             autos++;
             return magicStyle ? SlayerBosses.HYDRA_MAGIC : SlayerBosses.HYDRA_RANGED;
