@@ -40,6 +40,73 @@ class FloorShapesTest {
         }
     }
 
+    /**
+     * A safe spot's disc (review repair): every block shown is safe all over (its farthest corner inside the test's circle), so
+     * a player anywhere on a cyan block is safe; every block wholly inside is shown; the block under the centre always is.
+     */
+    @Test
+    void safeDiscsShowOnlyBlocksWhollyInside() {
+        // block-centred: the Titans' 1.5 circle is its own tile (the 3x3's edges reach 1.58), the Eclipse's 1.6 a plus, the
+        // Doom's 2.5-block earthen shield the 3x3 (the next ring out reaches 2.55)
+        assertEquals(1, FloorShapes.discInside(10.5, 20.5, 1.5).size());
+        assertEquals(5, FloorShapes.discInside(10.5, 20.5, 1.6).size());
+        assertEquals(9, FloorShapes.discInside(10.5, 20.5, 2.5).size());
+        assertEquals(1, FloorShapes.discInside(10.5, 20.5, 0.2).size(), "the block under the centre is always shown");
+        // the reviewer's case: a safe spot at (100.3, 200.3) radius 1.5; the strike disc marked (101, 201), whose far corner
+        // (102, 202) is 2.47 away, a player standing at (101.9, 201.9) is 1.98 away and takes the blast
+        assertTrue(FloorShapes.contains(FloorShapes.disc(100.3, 200.3, 1.5), 101, 201), "the danger disc leans outward");
+        List<int[]> titans = FloorShapes.discInside(100.3, 200.3, 1.5);
+        assertFalse(FloorShapes.contains(titans, 101, 201));
+        assertTrue(FloorShapes.contains(titans, 100, 200) && FloorShapes.contains(titans, 99, 200)
+                && FloorShapes.contains(titans, 100, 199));
+        java.util.Random rnd = new java.util.Random(43);
+        for (int i = 0; i < 400; i++) {
+            double cx = rnd.nextDouble() * 40 - 20;
+            double cz = rnd.nextDouble() * 40 - 20;
+            double r = 1.42 + rnd.nextDouble() * 2.5;
+            List<int[]> d = FloorShapes.discInside(cx, cz, r);
+            assertTrue(d.size() <= FloorShapes.MAX_BLOCKS);
+            for (int[] c : d) {
+                for (int k = 0; k < 20; k++) {
+                    double px = c[0] + rnd.nextDouble();
+                    double pz = c[1] + rnd.nextDouble();
+                    assertTrue(Math.hypot(px - cx, pz - cz) <= r, "a point on shown block " + c[0] + "," + c[1] + " is outside the "
+                            + r + " safe circle round " + cx + "," + cz);
+                }
+            }
+            for (int x = (int) Math.floor(cx - r) - 1; x <= (int) Math.floor(cx + r) + 1; x++) {
+                for (int z = (int) Math.floor(cz - r) - 1; z <= (int) Math.floor(cz + r) + 1; z++) {
+                    if (FloorShapes.farthestCorner(new int[]{x, z}, cx, cz) <= r) {
+                        assertTrue(FloorShapes.contains(d, x, z), "block " + x + "," + z + " wholly inside isn't shown");
+                    }
+                }
+            }
+            int[] mid = FloorShapes.column(cx, cz);
+            assertTrue(FloorShapes.contains(d, mid[0], mid[1]));
+        }
+        // too big to fill: a band inside the edge, still only blocks wholly inside
+        List<int[]> big = FloorShapes.discInside(0.5, 0.5, 9.0);
+        assertTrue(big.size() < FloorShapes.annulus(0.5, 0.5, -1, 9.0).size());
+        assertFalse(FloorShapes.contains(big, 0, 0));
+        for (int[] c : big) {
+            assertTrue(FloorShapes.farthestCorner(c, 0.5, 0.5) <= 9.0);
+        }
+    }
+
+    /** {@link FloorShapes#inside} keeps the columns whose every corner passes the area's test. */
+    @Test
+    void insideKeepsWholeColumns() {
+        List<int[]> row = FloorShapes.square(-3, 0, 3, 0);
+        // a half-plane x >= 0.5: the column at 0 straddles it, 1..3 are wholly in
+        List<int[]> in = FloorShapes.inside(row, (x, z) -> x >= 0.5);
+        assertEquals(3, in.size());
+        assertFalse(FloorShapes.contains(in, 0, 0));
+        assertTrue(FloorShapes.contains(in, 1, 0) && FloorShapes.contains(in, 3, 0));
+        assertEquals(Math.hypot(3, 1), FloorShapes.farthestCorner(new int[]{0, 0}, 3, 0), 1e-9);
+        assertEquals(Math.hypot(0.5, 0.5), FloorShapes.farthestCorner(new int[]{0, 0}, 0.5, 0.5), 1e-9);
+        assertEquals(Math.hypot(2.5, 1.5), FloorShapes.farthestCorner(new int[]{1, 1}, -0.5, 0.5), 1e-9);
+    }
+
     @Test
     void bigDiscsMarkTheirRim() {
         List<int[]> big = FloorShapes.disc(0.5, 0.5, 8.0);

@@ -717,12 +717,12 @@ final class MoonScripts {
             w.sendParticles(ParticleTypes.END_ROD, sh.x, sh.y + 1, sh.z, 6, 0.5, 0.6, 0.5, 0);
             Vec3 safe = shelter(boss);
             w.sendParticles(GLYPH_LIT, safe.x, safe.y + 0.1, safe.z, 3, 0.3, 0.02, 0.3, 0);
-            // round 43: the shelter (where the rays miss: within 1.6 blocks of it) as a cyan floor spot that moves on with the
-            // shield. // playability: OSRS players read the shield's shadow
+            // round 43: the shelter (where the rays miss: within 1.6 blocks of it) as cyan floor blocks wholly inside that circle,
+            // moving on with the shield. // playability: OSRS players read the shield's shadow
             if (shelterFloor == null) {
                 shelterFloor = new com.runecraft.boss.FloorMarkers.Layer(boss);
             }
-            shelterFloor.show(new com.runecraft.boss.FloorMarkers.Shape(w).disc(safe, 1.6, com.runecraft.boss.HazardKind.SAFE));
+            shelterFloor.show(new com.runecraft.boss.FloorMarkers.Shape(w).discInside(safe, 1.6, com.runecraft.boss.HazardKind.SAFE));
             return specialTick >= 16;
         }
 

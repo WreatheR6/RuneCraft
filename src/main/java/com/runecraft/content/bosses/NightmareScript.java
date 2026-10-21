@@ -943,8 +943,9 @@ final class NightmareScript extends ScriptedBoss {
 
     /**
      * Round 43 floor markers, refreshed every game tick and as each special starts: every spore's burst square (a tile either
-     * way of it, the test in {@link #tickSpores}) grey; the corpse flowers' four rows, cyan along the two that border the safe
-     * quadrant and blood red along the berry rows, from sprouting to wilting; the surge's path at its true width purple until
+     * way of it, the test in {@link #tickSpores}) grey; the corpse flowers' rows, blood red along the two berry rows and cyan one
+     * block inside the safe quadrant beside the two blossom rows (each blossom row's own border blocks are half in the
+     * quadrant next door, so they stay plain), from sprouting to wilting; the surge's path at its true width purple until
      * she surges. Put back as each ends, when she dies or is reset, and when the server stops. // playability: OSRS shows the
      * spores, the flowers and her charge only as models and animations
      */
@@ -959,10 +960,19 @@ final class NightmareScript extends ScriptedBoss {
         }
         if (flowerSafe >= 0 && flowerTicks > 0 && flowerCentre != null) {
             double[][] dirs = {{0, -1}, {-1, 0}, {0, 1}, {1, 0}};
+            int from = NightmareRules.FLOWER_ROW_FROM;
+            int to = NightmareRules.FLOWER_ROW_TO;
             for (int d = 0; d < 4; d++) {
-                Vec3 from = flowerCentre.add(dirs[d][0] * 2, 0, dirs[d][1] * 2);
-                Vec3 to = flowerCentre.add(dirs[d][0] * 13, 0, dirs[d][1] * 13);
-                shape.line(from, to, 0.3, borders(d, flowerSafe) ? com.runecraft.boss.HazardKind.SAFE : com.runecraft.boss.HazardKind.BLOOD);
+                if (borders(d, flowerSafe)) {
+                    // a blossom row runs along the border, half of it in the quadrant next door: cyan one block into the safe
+                    // quadrant instead, only blocks wholly in it
+                    shape.columns(NightmareRules.blossomFloor(flowerSafe, d, flowerCentre.x, flowerCentre.z), flowerCentre.y,
+                            com.runecraft.boss.HazardKind.SAFE);
+                } else {
+                    // a berry row: both quadrants it splits take berry damage, so the whole row is red
+                    shape.line(flowerCentre.add(dirs[d][0] * from, 0, dirs[d][1] * from),
+                            flowerCentre.add(dirs[d][0] * to, 0, dirs[d][1] * to), 0.3, com.runecraft.boss.HazardKind.BLOOD);
+                }
             }
         }
         if (surgeIn > 0 && surgeFrom != null && surgeTo != null) {
@@ -1026,12 +1036,7 @@ final class NightmareScript extends ScriptedBoss {
 
     /** Whether half-line {@code line} (0 north, 1 west, 2 south, 3 east) is a side of quadrant {@code q} (0 NE, 1 NW, 2 SW, 3 SE). */
     static boolean borders(int line, int q) {
-        return switch (q) {
-            case 0 -> line == 0 || line == 3;
-            case 1 -> line == 0 || line == 1;
-            case 2 -> line == 2 || line == 1;
-            default -> line == 2 || line == 3;
-        };
+        return NightmareRules.rowBorders(line, q);
     }
 
     // ---------------- Curse

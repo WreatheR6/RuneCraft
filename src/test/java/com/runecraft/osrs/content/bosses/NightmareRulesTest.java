@@ -138,6 +138,34 @@ class NightmareRulesTest {
             assertEquals(1, NightmareRules.berrySides(safe, (safe + 3) % 4));
             assertEquals(2, NightmareRules.berrySides(safe, (safe + 2) % 4)); // berries on both sides: twice the damage
         }
+        // the cyan floor beside the blossom rows (review repair): wholly inside the safe quadrant, never on the border row
+        // (half of which lies in the quadrant next door), a full row of blocks beside each blossom row; none for berry rows
+        double cx = 100.5;
+        double cz = -40.5;
+        java.util.Random rnd = new java.util.Random(43);
+        for (int safe = 0; safe < 4; safe++) {
+            int rows = 0;
+            for (int line = 0; line < 4; line++) {
+                List<int[]> cols = NightmareRules.blossomFloor(safe, line, cx, cz);
+                if (!NightmareRules.rowBorders(line, safe)) {
+                    assertTrue(cols.isEmpty(), "a berry row shows safe blocks");
+                    continue;
+                }
+                rows++;
+                assertEquals(NightmareRules.FLOWER_ROW_TO - NightmareRules.FLOWER_ROW_FROM + 1, cols.size(),
+                        "safe " + safe + " row " + line);
+                for (int[] c : cols) {
+                    assertFalse(c[0] == 100 || c[1] == -41, "a cyan block on the quadrant border");
+                    for (int k = 0; k < 16; k++) {
+                        double px = c[0] + rnd.nextDouble();
+                        double pz = c[1] + rnd.nextDouble();
+                        assertEquals(0, NightmareRules.berrySides(safe, NightmareRules.quadrant(px - cx, pz - cz)),
+                                "a point on cyan block " + c[0] + "," + c[1] + " takes berry damage (safe " + safe + ")");
+                    }
+                }
+            }
+            assertEquals(2, rows);
+        }
         assertEquals(5, NightmareRules.FLOWER_BLOOM_TICKS);
         assertEquals(20, NightmareRules.FLOWER_MAX);
         assertEquals(2, NightmareRules.FLOWER_HEAL_MULTIPLIER);

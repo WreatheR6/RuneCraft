@@ -1188,8 +1188,8 @@ final class DoomDelveService {
 
         /**
          * Round 43 floor markers, every game tick: each acid blood splat lime (the 0.8-block test in {@link #tickAcid}); from the
-         * countdown to the last shockwave, a red ring closing on the Doom like the dust one; the earthen shield's circle cyan
-         * where it stands (added last, so it shows through the rest). Put back as they go, when the Doom dies or leaves, and when
+         * countdown to the last shockwave, a red ring closing on the Doom like the dust one; the blocks wholly inside the
+         * earthen shield's circle cyan where it stands (added last, so it shows through the rest). Put back as they go, when the Doom dies or leaves, and when
          * the server stops. // playability: OSRS shows the splats, the volatile earth and the shield only
          */
         private void showFloor(DataBossEntity boss) {
@@ -1207,7 +1207,7 @@ final class DoomDelveService {
                     shape.ring(boss.position(), r - 1, r, com.runecraft.boss.HazardKind.STRIKE);
                 }
                 if (earthenShield != null) {
-                    shape.disc(earthenShield, DoomDelves.EARTHEN_SHIELD_BLOCKS, com.runecraft.boss.HazardKind.SAFE);
+                    shape.discInside(earthenShield, DoomDelves.EARTHEN_SHIELD_BLOCKS, com.runecraft.boss.HazardKind.SAFE);
                 }
             }
             doomFloor.show(shape);

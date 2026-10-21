@@ -71,6 +71,68 @@ public final class FloorShapes {
         return out;
     }
 
+    /**
+     * A safe area's disc (round 43 repair): only the columns lying wholly inside the circle of {@code radius} round ({@code cx},
+     * {@code cz}) (their farthest corner within it), and the column under the centre. A safe spot leans the other way from a
+     * strike: every block shown cyan is safe wherever on it the player stands, and the test's circle stays a little larger than
+     * what is shown. Capped like {@link #disc}: past {@link #MAX_BLOCKS} only a band two blocks deep inside the edge is kept.
+     */
+    public static List<int[]> discInside(double cx, double cz, double radius) {
+        double r = Math.max(0, radius);
+        List<int[]> full = new ArrayList<>();
+        int[] middle = column(cx, cz);
+        full.add(middle);
+        for (int[] c : annulus(cx, cz, -1, r)) {
+            if ((c[0] != middle[0] || c[1] != middle[1]) && farthestCorner(c, cx, cz) <= r) {
+                full.add(c);
+            }
+        }
+        if (full.size() <= MAX_BLOCKS) {
+            return full;
+        }
+        List<int[]> rim = new ArrayList<>();
+        for (int[] c : full) {
+            if (farthestCorner(c, cx, cz) > r - 2 * RIM) {
+                rim.add(c);
+            }
+        }
+        return rim;
+    }
+
+    /** A test of a point ({@code x}, {@code z}) in blocks: whether a mechanic's area holds it. */
+    @FunctionalInterface
+    public interface PointTest {
+        boolean test(double x, double z);
+    }
+
+    /** How far short of its east and south edges {@link #inside} samples a column (a column is [x, x+1) wide). */
+    public static final double CORNER_INSET = 1e-9;
+
+    /**
+     * The columns of {@code shape} lying wholly in an area: all four corners of the column ([x, x+1) by [z, z+1)) pass
+     * {@code test}. For a safe area whose test is a half-plane, a strip or a circle, a column whose corners are all safe is
+     * safe all over.
+     */
+    public static List<int[]> inside(List<int[]> shape, PointTest test) {
+        List<int[]> out = new ArrayList<>();
+        double lo = 0;
+        double hi = 1 - CORNER_INSET;
+        for (int[] c : shape) {
+            if (test.test(c[0] + lo, c[1] + lo) && test.test(c[0] + hi, c[1] + lo) && test.test(c[0] + lo, c[1] + hi)
+                    && test.test(c[0] + hi, c[1] + hi)) {
+                out.add(c);
+            }
+        }
+        return out;
+    }
+
+    /** The distance from ({@code cx}, {@code cz}) to the farthest corner of column {@code c}. */
+    public static double farthestCorner(int[] c, double cx, double cz) {
+        double dx = Math.max(Math.abs(c[0] - cx), Math.abs(c[0] + 1 - cx));
+        double dz = Math.max(Math.abs(c[1] - cz), Math.abs(c[1] + 1 - cz));
+        return Math.hypot(dx, dz);
+    }
+
     /** Every column of the block rectangle from ({@code x0}, {@code z0}) to ({@code x1}, {@code z1}), corners in either order. */
     public static List<int[]> square(int x0, int z0, int x1, int z1) {
         List<int[]> out = new ArrayList<>();

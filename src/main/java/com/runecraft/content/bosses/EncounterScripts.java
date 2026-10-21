@@ -1939,8 +1939,8 @@ final class EncounterScripts {
         /**
          * Round 43 floor markers, refreshed every game tick: a forming wall's tiles (2x2 blocks, the cells a player standing on
          * gets hit and stops) orange for fire, light blue for icicles, until the wall stands; an elemental's 3-block blast
-         * circle in its element's colour for its last 3 ticks; the Elemental Blast's safe spot cyan while it charges and fires
-         * (added last, so it shows through the rest). // playability: OSRS shows the forming wall and the safe tile's glow
+         * circle in its element's colour for its last 3 ticks; the blocks wholly inside the Elemental Blast's 1.5-block safe
+         * circle cyan while it charges and fires (added last, so it shows through the rest). // playability: OSRS shows the forming wall and the safe tile's glow
          */
         private void showTitanFloor(DataBossEntity boss, ServerLevel w) {
             if (titanFloor == null) {
@@ -1967,7 +1967,7 @@ final class EncounterScripts {
                 }
             }
             if (safe != null && (charging() || blastsLeft > 0)) {
-                shape.disc(safe, 1.5, com.runecraft.boss.HazardKind.SAFE);
+                shape.discInside(safe, 1.5, com.runecraft.boss.HazardKind.SAFE);
             }
             titanFloor.show(shape);
         }

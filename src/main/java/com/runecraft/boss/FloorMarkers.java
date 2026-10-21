@@ -273,6 +273,14 @@ public final class FloorMarkers {
             return columns(com.runecraft.osrs.FloorShapes.disc(centre.x, centre.z, radius), centre.y, kind);
         }
 
+        /**
+         * A safe spot's disc: only the floor wholly within {@code radius} of {@code centre}, and the block under it
+         * ({@link com.runecraft.osrs.FloorShapes#discInside}), so every block shown safe is safe all over.
+         */
+        public Shape discInside(Vec3 centre, double radius, HazardKind kind) {
+            return columns(com.runecraft.osrs.FloorShapes.discInside(centre.x, centre.z, radius), centre.y, kind);
+        }
+
         /** A ring between two radii round {@code centre}. */
         public Shape ring(Vec3 centre, double inner, double outer, HazardKind kind) {
             return columns(com.runecraft.osrs.FloorShapes.annulus(centre.x, centre.z, inner, outer), centre.y, kind);
