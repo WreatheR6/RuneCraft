@@ -259,6 +259,7 @@ public final class SolHereditScript extends ScriptedBoss {
                 rooted = SolHeredit.AOE_ROOT_TICKS - 1; // this tick plus the next AOE_ROOT_TICKS - 1
                 boss.getNavigation().stop();
                 BossFx.warn(boss, a.spear() ? "Sol Heredit draws back his spear!" : "Sol Heredit raises his shield!");
+                BossFx.cast(boss, a.spear() ? "Spear" : "Shield", null, SolHeredit.AOE_LAND_TICKS * ArenaTiming.MC_PER_GAME_TICK, 24); // round 43
                 drawAoe(BossFx.world(boss), true);
             }
         }
@@ -371,6 +372,8 @@ public final class SolHereditScript extends ScriptedBoss {
         if (tripleCued < tripleHit && now >= tripleNext - SolHeredit.TRIPLE_CUE_TICKS) {
             tripleCued = tripleHit;
             cueTriple(boss, tripleHit);
+            BossFx.cast(boss, "Triple " + (tripleHit + 1) + "/3", AttackType.STAB, // round 43: Protect from Melee as it lands
+                    (int) Math.max(0, tripleNext - now) * ArenaTiming.MC_PER_GAME_TICK, 24);
         }
         if (now < tripleNext) {
             return;
