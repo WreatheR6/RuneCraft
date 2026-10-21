@@ -74,9 +74,13 @@ class BossLairTest {
     /** A melee boss stranded by terrain (no path that reaches its target, out of reach) steps up after a few game ticks. */
     @Test
     void terrainSafespotsDontLast() {
-        assertTrue(BossLair.strandedBy(6, 3, false));
-        assertFalse(BossLair.strandedBy(6, 3, true), "a walkable target is chased, not jumped to");
-        assertFalse(BossLair.strandedBy(3.5, 3, false), "within a step of melee reach");
+        double none = Double.POSITIVE_INFINITY; // no path at all
+        assertTrue(BossLair.strandedBy(6, 0, none, 0));
+        assertFalse(BossLair.strandedBy(6, 0, 0.8, 0), "a target it can walk into reach of is chased, not jumped to");
+        assertFalse(BossLair.strandedBy(1.2, 0, none, 0), "already in melee reach (a 1.5-block gap)");
+        // Branda summoned 3 blocks from her target (a 1.6-block gap) with her own walls in the way: her best path ends 1.76 away
+        assertTrue(BossLair.strandedBy(1.6, 0, 1.76, 0), "just past the round-41 reach with no way in: no step's grace");
+        assertTrue(BossLair.strandedBy(4, 3, 0.5, 3), "a path to the foot of a pillar ends out of reach (the height)");
         int t = 0;
         for (int i = 1; i < BossLair.SAFESPOT_TICKS; i++) {
             t = BossLair.stranded(t, true);

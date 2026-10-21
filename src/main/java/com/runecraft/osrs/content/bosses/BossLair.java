@@ -87,11 +87,17 @@ public final class BossLair {
     }
 
     /**
-     * Whether a target is out of a melee boss's reach where the boss can't walk to it: further than a step from melee range
-     * ({@code distance} beyond {@code meleeReach}) and no path that ends next to it.
+     * Whether a target is out of a melee boss's reach where the boss can't walk into reach: out of the attack goal's melee reach
+     * ({@link com.runecraft.osrs.ThreatTiming#inMeleeReach}: the bounding-box gap and the height between them) from where the boss
+     * stands, and from where the best path it can find ends ({@code pathEndGap} infinite when it finds none).
+     *
+     * <p>Round 41 made melee reach a 1.5-block gap; the old rule (centre distance past width/2 + 2 blocks plus a step, and no path
+     * reaching the target's block) left a band of about a block past the new reach where a boss that couldn't take that step
+     * (Branda behind her own fire and icicle walls) stood idle in reach of nothing for good.
      */
-    public static boolean strandedBy(double distance, double meleeReach, boolean pathReaches) {
-        return distance > meleeReach + 1.0 && !pathReaches;
+    public static boolean strandedBy(double gap, double dy, double pathEndGap, double pathEndDy) {
+        return !com.runecraft.osrs.ThreatTiming.inMeleeReach(gap, dy)
+                && !com.runecraft.osrs.ThreatTiming.inMeleeReach(pathEndGap, pathEndDy);
     }
 
     /** Spots around a centre a stranded boss tries (eight compass points). */

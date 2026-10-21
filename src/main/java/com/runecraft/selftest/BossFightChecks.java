@@ -175,6 +175,10 @@ final class BossFightChecks {
         final Set<UUID> bosses = new HashSet<>();
         final Map<String, Integer> attacks = new LinkedHashMap<>();
         int otherRolls;
+        /** What the hits from other sources were: "attacker:attack" (attacker "none" for a typeless hit) -> count. */
+        final Map<String, Integer> others = new LinkedHashMap<>();
+        /** The smallest bounding-box gap (blocks) between the boss and the player at the end of a game tick. */
+        double closestGap = Double.POSITIVE_INFINITY;
         int firstAttackTick = -1;
         int tick;
         /** Rolled damage of the player's last attack (before the boss's own rules), -1 when none was seen. */
@@ -208,6 +212,8 @@ final class BossFightChecks {
                 r.attack(attacker, attack != null ? attack : style != null ? style.name().toLowerCase(Locale.ROOT) : "typeless");
             } else {
                 r.otherRolls++;
+                r.others.merge((attacker == null ? "none" : name(attacker)) + ":"
+                        + (attack != null ? attack : style != null ? style.name().toLowerCase(Locale.ROOT) : "typeless"), 1, Integer::sum);
             }
         });
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
@@ -411,6 +417,8 @@ final class BossFightChecks {
                     continue;
                 }
                 seen.add(boss.getUUID());
+                rec.closestGap = Math.min(rec.closestGap, com.runecraft.osrs.ThreatTiming.gap(p.getX() - boss.getX(),
+                        p.getZ() - boss.getZ(), boss.getBbWidth(), p.getBbWidth()));
                 boolean engaged = (passive || rec.firstAttackTick >= 0) && firstHitTick >= 0;
                 if (killStart < 0 && ((engaged && tick >= 8) || tick >= ENGAGE_TICKS)) {
                     // on to the kill: what lands on the ground or in the pack from here on is loot
@@ -473,8 +481,10 @@ final class BossFightChecks {
                         + "human: " + unfairStrikes);
             }
             if (rec.firstAttackTick < 0 && !passive && c.realPlayer()) {
-                throw new AssertionError("never attacked the player in " + tick + " game ticks"
-                        + (rec.otherRolls > 0 ? " (" + rec.otherRolls + " hits from other sources)" : ""));
+                throw new AssertionError("never attacked the player in " + tick + " game ticks (closest "
+                        + String.format(Locale.ROOT, "%.1f", rec.closestGap) + " blocks between them; melee reach "
+                        + com.runecraft.osrs.ThreatTiming.MELEE_REACH + ")"
+                        + (rec.otherRolls > 0 ? " (" + rec.otherRolls + " hits from other sources " + rec.others + ")" : ""));
             }
             if (firstHitTick < 0) {
                 throw new AssertionError("the player's attacks never took hitpoints off it: " + describe(landed)

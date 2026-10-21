@@ -305,6 +305,11 @@ public final class TestContext {
         for (Entity e : world.getEntitiesOfClass(Entity.class, box, e -> !(e instanceof Player))) {
             e.discard();
         }
+        // Ground hazards and hits in flight aren't entities: a hazard outlives the boss that placed it (it then hits typeless) and
+        // a projectile from a boss that just died still lands. Amoxliatl's icy pools under the player kept hitting through the
+        // next check, Branda's, as 8 "hits from other sources".
+        com.runecraft.boss.Mechanics.clearHazards(world, box);
+        com.runecraft.boss.Mechanics.clearPendingForSelfTest(world, box);
         player.getInventory().clearContent();
     }
 
