@@ -452,6 +452,8 @@ final class TobRooms {
      * her by twice its hitpoints. Blood spawns leave trails that hurt and heal her, drying in 20-30 seconds.
      */
     static final class Maiden extends TobRoom {
+        private static final net.minecraft.core.particles.DustParticleOptions TRAIL =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.55f, 0.0f, 0.0f), 1.5f);
         private DataBossEntity maiden;
         private final Set<Integer> thresholds = new HashSet<>();
         private int fed;
@@ -542,6 +544,10 @@ final class TobRooms {
                 }
             }
             trail.entrySet().removeIf(e -> e.getValue() < t);
+            // Every blood trail tile shows (dark red), not only one stood in. // playability: OSRS draws the trail on the floor
+            for (Vec3 tr : trail.keySet()) {
+                world().sendParticles(TRAIL, tr.x, tr.y + 0.1, tr.z, 1, 0.25, 0, 0.25, 0);
+            }
             for (ServerPlayer p : players()) {
                 for (Vec3 tr : trail.keySet()) {
                     if (RaidEffects.horizontalDistSq(p.position(), tr) < 0.8 * 0.8) {
@@ -591,17 +597,13 @@ final class TobRooms {
                 return;
             }
             splatCooldown--;
-            Vec3 a = maiden.getEyePosition();
-            Vec3 b = target.getEyePosition();
-            for (int i = 0; i <= 8; i++) {
-                Vec3 v = a.lerp(b, i / 8.0);
-                world().sendParticles(ParticleTypes.DAMAGE_INDICATOR, v.x, v.y, v.z, 1, 0, 0, 0, 0);
-            }
             int max = TobRules.maidenBlackstormMax(fed);
-            later(2, () -> {
-                if (!alive(maiden) || !target.isAlive() || !inside(target.position())) {
-                    return;
-                }
+            // Blackstorm flies as a magic projectile, drawn all the way; the prayer is read as it lands. // playability: it was
+            // a line of particles drawn once
+            DataBossEntity source = maiden;
+            java.util.function.BooleanSupplier current = current();
+            RaidEffects.projectile(world(), maiden.getEyePosition(), target, AttackType.MAGIC, 2,
+                    () -> alive(source) && current.getAsBoolean() && inside(target.position()), () -> {
                 int dmg = 1 + rnd().nextInt(max);
                 boolean prayed = RaidEffects.protectedFrom(target, AttackType.MAGIC);
                 if (prayed) {
@@ -653,38 +655,46 @@ final class TobRooms {
                 spots.add(far.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2));
             }
             lastSplats = spots.size();
-            for (Vec3 at : spots) {
-                world().sendParticles(ParticleTypes.DAMAGE_INDICATOR, at.x, at.y + 0.2, at.z, 6, 0.4, 0.1, 0.4, 0);
-            }
-            later(3, () -> {
-                if (!alive(maiden)) {
-                    return;
-                }
-                boolean anyStepped = false;
-                List<Vec3> spawnAt = new ArrayList<>();
-                for (Vec3 at : spots) {
-                    boolean stepped = false;
-                    for (ServerPlayer p : players()) {
-                        if (RaidEffects.horizontalDistSq(p.position(), at) < 0.9 * 0.9) {
-                            stepped = true;
-                            int dealt = hurt(maiden, p, TobRules.maidenSplat(fed), null, true);
-                            raid.heal(maiden, dealt);
+            // Each spot is a raid strike (round 42): outlined from the throw at its true size, redrawn until it lands, recorded.
+            // The last one to land decides the blood spawns. // playability: OSRS marks the tiles once, a tick or two ahead
+            boolean[] stepped = new boolean[spots.size()];
+            DataBossEntity source = maiden;
+            java.util.function.BooleanSupplier current = current();
+            for (int i = 0; i < spots.size(); i++) {
+                int k = i;
+                Vec3 at = spots.get(i);
+                RaidEffects.Marker m = RaidEffects.mark(world(), at, 0.9).delay(3).source(source).warn(ParticleTypes.DAMAGE_INDICATOR)
+                        .live(() -> alive(source) && current.getAsBoolean())
+                        .onHit(p -> {
+                            stepped[k] = true;
+                            int dealt = hurt(source, p, TobRules.maidenSplat(fed), null, true);
+                            raid.heal(source, dealt);
                             var data = Players.data(p);
                             data.setPrayerPoints(Math.max(0, data.prayerPoints() - 5)); // approx: "prayer points are also drained"
-                        }
-                    }
-                    anyStepped |= stepped;
-                    if (rnd().nextDouble() < TobRules.bloodSpawnChance(stepped)) {
-                        spawnAt.add(at);
-                    }
+                        });
+                if (i == spots.size() - 1) {
+                    m.onLand(() -> splatSpawns(spots, stepped));
                 }
-                int allowed = TobRules.bloodSpawnsFromThrow(anyStepped, spawnAt.size());
-                // At most eight blood spawns appear in the whole fight (OSRS wiki "Blood spawn"), killed ones included.
-                for (int i = 0; i < allowed && bloodSpawns < TobRules.MAIDEN_BLOOD_SPAWN_CAP; i++) {
-                    spawnMob("blood_spawn", BlockPos.containing(spawnAt.get(i)), false);
-                    bloodSpawns++;
+                m.start();
+            }
+        }
+
+        /** After a blood throw landed: each spot becomes a blood spawn by chance (more likely where stepped on), capped. */
+        private void splatSpawns(List<Vec3> spots, boolean[] stepped) {
+            boolean anyStepped = false;
+            List<Vec3> spawnAt = new ArrayList<>();
+            for (int i = 0; i < spots.size(); i++) {
+                anyStepped |= stepped[i];
+                if (rnd().nextDouble() < TobRules.bloodSpawnChance(stepped[i])) {
+                    spawnAt.add(spots.get(i));
                 }
-            });
+            }
+            int allowed = TobRules.bloodSpawnsFromThrow(anyStepped, spawnAt.size());
+            // At most eight blood spawns appear in the whole fight (OSRS wiki "Blood spawn"), killed ones included.
+            for (int i = 0; i < allowed && bloodSpawns < TobRules.MAIDEN_BLOOD_SPAWN_CAP; i++) {
+                spawnMob("blood_spawn", BlockPos.containing(spawnAt.get(i)), false);
+                bloodSpawns++;
+            }
         }
 
         @Override
@@ -752,6 +762,8 @@ final class TobRooms {
      * health.
      */
     static final class Bloat extends TobRoom {
+        /** The stomp's reach is outlined this many game ticks before it lands. */
+        private static final int STOMP_WARNING_TICKS = com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS;
         private DataBossEntity bloat;
         private boolean walking = true;
         private int stateTicks;
@@ -891,24 +903,32 @@ final class TobRooms {
                 if (hard() && t % 3 == 0 && !players.isEmpty()) {
                     hands(players);
                 }
-                if (stateTicks == TobRules.BLOAT_STOMP_TICK) {
-                    world().sendParticles(ParticleTypes.EXPLOSION_EMITTER, bloat.getX(), bloat.getY(), bloat.getZ(), 1, 0, 0, 0, 0);
-                    // OSRS: the stomp restores any Defence drained from it.
-                    if (com.runecraft.content.systems.SysCombat.drainedStatLevel(bloat, Skill.DEFENCE)
-                            < com.runecraft.content.systems.SysCombat.baseStatLevel(bloat, Skill.DEFENCE)) {
-                        com.runecraft.content.systems.SysCombat.drain(bloat).defence = 0;
-                        stompRestores++;
-                    }
-                    for (ServerPlayer p : players) {
-                        if (p.distanceToSqr(bloat) < 4.5 * 4.5) {
-                            hurt(bloat, p, TobRules.BLOAT_STOMP_MIN + rnd().nextInt(TobRules.BLOAT_STOMP_MAX - TobRules.BLOAT_STOMP_MIN + 1),
-                                    null, true);
-                            Vec3 push = p.position().subtract(bloat.position()).normalize().scale(1.2);
-                            p.push(push.x, 0.5, push.z);
-                            p.hurtMarked = true;
-                            Msg.red(p, "The Bloat stomps on you!");
-                        }
-                    }
+                if (stateTicks == TobRules.BLOAT_STOMP_TICK - STOMP_WARNING_TICKS) {
+                    // The stomp on its 30th shutdown tick, as a raid strike outlined around the Bloat for its last moments.
+                    // // playability: OSRS shows the Bloat rearing up; here its reach is drawn from 3 ticks out
+                    DataBossEntity source = bloat;
+                    Vec3 at = bloat.position();
+                    RaidEffects.telegraph(players, "The Bloat is about to stomp - get away from it!");
+                    RaidEffects.mark(world(), at, 4.5).delay(STOMP_WARNING_TICKS).source(source).warn(ParticleTypes.SMOKE)
+                            .live(() -> alive(source) && !walking)
+                            .onHit(p -> {
+                                hurt(source, p, TobRules.BLOAT_STOMP_MIN + rnd().nextInt(TobRules.BLOAT_STOMP_MAX - TobRules.BLOAT_STOMP_MIN + 1),
+                                        null, true);
+                                Vec3 push = p.position().subtract(source.position()).multiply(1, 0, 1);
+                                push = push.lengthSqr() < 1e-4 ? new Vec3(1.2, 0, 0) : push.normalize().scale(1.2);
+                                p.push(push.x, 0.5, push.z);
+                                p.hurtMarked = true;
+                                Msg.red(p, "The Bloat stomps on you!");
+                            })
+                            .onLand(() -> {
+                                world().sendParticles(ParticleTypes.EXPLOSION_EMITTER, source.getX(), source.getY(), source.getZ(), 1, 0, 0, 0, 0);
+                                // OSRS: the stomp restores any Defence drained from it.
+                                if (com.runecraft.content.systems.SysCombat.drainedStatLevel(source, Skill.DEFENCE)
+                                        < com.runecraft.content.systems.SysCombat.baseStatLevel(source, Skill.DEFENCE)) {
+                                    com.runecraft.content.systems.SysCombat.drain(source).defence = 0;
+                                    stompRestores++;
+                                }
+                            }).start();
                 }
                 if (stateTicks >= stateLength) {
                     walking = true;
@@ -940,21 +960,24 @@ final class TobRooms {
             return struck;
         }
 
-        /** Hands fall from the ceiling: 30-50 and a short stun. */
+        /**
+         * Hands fall from the ceiling: 30-50 and a short stun. Each lands as a raid strike, its spot outlined from when it
+         * starts to fall. // playability: OSRS shows the limb's shadow; here the spot's true size, redrawn until it lands
+         */
         private void hands(List<ServerPlayer> players) {
             ServerPlayer p = players.get(rnd().nextInt(players.size()));
             Vec3 at = p.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2);
             world().sendParticles(ParticleTypes.FALLING_LAVA, at.x, at.y + 3, at.z, 10, 0.4, 0.2, 0.4, 0);
-            later(3, () -> {
-                for (ServerPlayer q : players()) {
-                    if (RaidEffects.horizontalDistSq(q.position(), at) < 1.0) {
-                        hurt(bloat, q, TobRules.BLOAT_HANDS_MIN + rnd().nextInt(TobRules.BLOAT_HANDS_MAX - TobRules.BLOAT_HANDS_MIN + 1),
-                                null, true);
-                        com.runecraft.content.systems.SysCombat.freeze(q, 3);
-                    }
-                }
-            });
+            DataBossEntity source = bloat;
+            RaidEffects.mark(world(), at, 1.0).delay(3).source(source).warn(ParticleTypes.FALLING_LAVA).live(current()).onHit(q -> {
+                handsLanded++;
+                hurt(source, q, TobRules.BLOAT_HANDS_MIN + rnd().nextInt(TobRules.BLOAT_HANDS_MAX - TobRules.BLOAT_HANDS_MIN + 1), null, true);
+                com.runecraft.content.systems.SysCombat.freeze(q, 3);
+            }).start();
         }
+
+        /** Falling hands that landed on a player (self-test). */
+        int handsLanded;
 
         @Override
         protected void onComplete() {
@@ -1229,6 +1252,10 @@ final class TobRooms {
                     it.remove();
                     continue;
                 }
+                if (n.age == TobNylocas.LIFETIME_TICKS - NYLO_WARNING_TICKS) {
+                    // An old nylocas about to explode shows its blast ring around it. // playability: OSRS shows it swelling
+                    RaidEffects.fuse(n.mob, n.big ? 2.5 : 1.8, NYLO_WARNING_TICKS);
+                }
                 if (n.aggressive) {
                     if (!(n.mob.getTarget() instanceof ServerPlayer current) || !current.isAlive()) {
                         ServerPlayer target = randomPlayer();
@@ -1250,10 +1277,13 @@ final class TobRooms {
                         n.mob.getNavigation().moveTo(pc.x, pc.y, pc.z, 1.0);
                     }
                 } else if (n.age % 3 == 0) {
+                    int before = pillarHp[p];
                     pillarHp[p] -= TobNylocas.pillarDamage(n.big, rnd());
                     world().sendParticles(ParticleTypes.CRIT, pc.x, pc.y + 1, pc.z, 2, 0.6, 0.6, 0.6, 0.01);
                     if (pillarHp[p] <= 0) {
                         collapse(p);
+                    } else {
+                        pillarWarning(p, before);
                     }
                 }
             }
@@ -1281,6 +1311,30 @@ final class TobRooms {
                 }
             }
             return best;
+        }
+
+        /** An old nylocas's blast ring shows for its last this-many game ticks. */
+        private static final int NYLO_WARNING_TICKS = com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS;
+
+        /** Supports' health warnings given (self-test). */
+        int pillarWarnings;
+
+        /**
+         * A support crossing half or a quarter of its health is called out by compass, so the party knows where to clear the
+         * nylocas before it falls. // playability: OSRS shows each support's health bar over it
+         */
+        private void pillarWarning(int p, int before) {
+            int now = pillarHp[p];
+            for (int threshold : new int[]{TobNylocas.PILLAR_HP / 2, TobNylocas.PILLAR_HP / 4}) {
+                if (before > threshold && now <= threshold) {
+                    pillarWarnings++;
+                    BlockPos b = pillarBase(p);
+                    String where = com.runecraft.osrs.content.raids.RaidRealtime.compass(b.getX() + 0.5 - (center().getX() + 0.5),
+                            b.getZ() + 0.5 - (center().getZ() + 0.5));
+                    warn("The " + where + " support is cracking! (" + Math.max(0, now) + "/" + TobNylocas.PILLAR_HP + ")");
+                    world().sendParticles(ParticleTypes.LARGE_SMOKE, b.getX() + 0.5, b.getY() + 3, b.getZ() + 0.5, 12, 0.6, 1.2, 0.6, 0.02);
+                }
+            }
         }
 
         private void explode(Nylo n) {
@@ -1608,6 +1662,7 @@ final class TobRooms {
             mazes++;
             path.clear();
             pathOrder.clear();
+            walkedTiles.clear();
             tornado = -1;
             int col = rnd().nextInt(COLS);
             for (int r = 0; r < ROWS; r++) {
@@ -1691,12 +1746,14 @@ final class TobRooms {
             ServerPlayer target = party.get(rnd().nextInt(party.size()));
             if (target.distanceToSqr(sotetseg) < 3.5 * 3.5 && rnd().nextBoolean()) {
                 int roll = rnd().nextInt(TobRules.SOTETSEG_MELEE_MAX + 1);
-                boolean prayed = RaidEffects.protectedFrom(target, AttackType.CRUSH);
-                int dmg = prayed ? roll / 2 : roll;
-                // OSRS: the melee hitsplat lands a tick after the lunge.
-                later(1, () -> {
-                    if (alive(sotetseg) && target.isAlive() && inside(target.position())) {
-                        int dealt = RaidEffects.hit(sotetseg, target, dmg, null, true);
+                // OSRS: the melee hitsplat lands a tick after the lunge; here after the lunge's wind-up, on a player still in
+                // reach, the prayer read as it lands. // playability
+                sotetseg.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+                java.util.function.BooleanSupplier current = current();
+                com.runecraft.boss.Mechanics.deliverMelee(sotetseg, target, com.runecraft.osrs.ThreatTiming.MELEE_REACH, () -> {
+                    if (alive(sotetseg) && current.getAsBoolean() && inside(target.position())) {
+                        boolean prayed = RaidEffects.protectedFrom(target, AttackType.CRUSH);
+                        int dealt = RaidEffects.hit(sotetseg, target, prayed ? roll / 2 : roll, null, true);
                         nonBallHit |= dealt > 0;
                         if (dealt > 0 && !prayed) {
                             fail(); // "Perfect Sotetseg": no damage off prayer
@@ -1716,36 +1773,52 @@ final class TobRooms {
             orb(target, AttackType.MAGIC, true);
         }
 
-        /** A red (magic) or black (ranged) orb; the first one splits into up to two more at other players. */
+        /** Game ticks an orb flies (OSRS: it hits three ticks after it leaves). */
+        private static final int ORB_TICKS = 3;
+
+        /**
+         * A red (magic) or black (ranged) orb; the first one splits into up to two more at other players. Each flies as a
+         * projectile in its style's colour (magic blue, ranged green), its colour and prayer named to its player as it leaves;
+         * two orbs of different styles at one player land at least two game ticks apart, in order. // playability: OSRS lands
+         * a split orb of the other style a tick after the next, and the colour is the only cue
+         */
         private void orb(ServerPlayer target, AttackType style, boolean split) {
-            Vec3 a = sotetseg.getEyePosition();
-            Vec3 b = target.getEyePosition();
-            for (int i = 0; i <= 8; i++) {
-                Vec3 v = a.lerp(b, i / 8.0);
-                world().sendParticles(style == AttackType.MAGIC ? ParticleTypes.FLAME : ParticleTypes.SMOKE, v.x, v.y, v.z, 1, 0, 0, 0, 0);
-            }
-            later(3, () -> {
-                if (!alive(sotetseg) || !target.isAlive() || !inside(target.position())) {
-                    return;
-                }
-                if (!RaidEffects.protectedFrom(target, style)) {
-                    nonBallHit |= hurt(sotetseg, target, 1 + rnd().nextInt(TobRules.SOTETSEG_ORB_MAX), null, true) > 0;
-                    dropOverheads(target, "Sotetseg's orb knocks out your protection prayers!");
-                }
-                if (split) {
-                    List<ServerPlayer> others = new ArrayList<>(players());
-                    others.remove(target);
-                    java.util.Collections.shuffle(others, new java.util.Random(rnd().nextLong()));
-                    for (int i = 0; i < Math.min(2, others.size()); i++) {
-                        orb(others.get(i), rnd().nextBoolean() ? AttackType.MAGIC : AttackType.RANGED, false);
-                    }
-                }
-            });
+            boolean magic = style == AttackType.MAGIC;
+            Msg.telegraph(target, magic ? "Red orb (magic) - pray Magic!" : "Black orb (ranged) - pray Missiles!", null);
+            orbs++;
+            java.util.function.BooleanSupplier current = current();
+            RaidEffects.projectile(world(), sotetseg.getEyePosition(), target, style, ORB_TICKS,
+                    () -> alive(sotetseg) && current.getAsBoolean() && inside(target.position()), () -> {
+                        if (!RaidEffects.protectedFrom(target, style)) {
+                            nonBallHit |= hurt(sotetseg, target, 1 + rnd().nextInt(TobRules.SOTETSEG_ORB_MAX), null, true) > 0;
+                            dropOverheads(target, "Sotetseg's orb knocks out your protection prayers!");
+                        }
+                        if (split) {
+                            List<ServerPlayer> others = new ArrayList<>(players());
+                            others.remove(target);
+                            java.util.Collections.shuffle(others, new java.util.Random(rnd().nextLong()));
+                            for (int i = 0; i < Math.min(2, others.size()); i++) {
+                                orb(others.get(i), rnd().nextBoolean() ? AttackType.MAGIC : AttackType.RANGED, false);
+                            }
+                        }
+                    });
         }
+
+        /** Orbs fired (self-test). */
+        int orbs;
 
         private void deathBall(ServerPlayer target) {
             balls++;
             warn(target.getName().getString() + " has discovered a large ball of energy coming their way... Stand together to share it!");
+            // Who shares it: everyone inside the green ring around its target when it lands. // playability: OSRS shares it
+            // with the 3x3 around the target, read off the tiles
+            RaidEffects.cue(4, () -> {
+                if (!target.isAlive() || !alive(sotetseg)) {
+                    return false;
+                }
+                com.runecraft.boss.ThreatCues.ring(world(), target.position(), 3.5, 0x73FF73, null, false);
+                return true;
+            });
             later(4, () -> {
                 if (!target.isAlive() || !alive(sotetseg) || !runners.isEmpty()) {
                     return;
@@ -1786,6 +1859,39 @@ final class TobRooms {
             }
         }
 
+        private static final net.minecraft.core.particles.DustParticleOptions MAZE_PATH =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.55f, 0.75f, 1.0f), 1.1f);
+        private static final net.minecraft.core.particles.DustParticleOptions MAZE_NEXT =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(1.0f, 1.0f, 1.0f), 1.4f);
+        private static final net.minecraft.core.particles.DustParticleOptions MAZE_WALKED =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.95f, 0.15f, 0.15f), 1.2f);
+
+        /** The path tiles the maze runner has walked, in order (lit on the arena floor for the others). */
+        private final List<Long> walkedTiles = new ArrayList<>();
+
+        /** A maze tile's 2x2 outline on a grid starting at {@code o}. */
+        private void drawTile(BlockPos o, int c, int r, net.minecraft.core.particles.DustParticleOptions dust) {
+            double x0 = o.getX() + c * 2 + 0.15;
+            double z0 = o.getZ() + r * 2 + 0.15;
+            double y = o.getY() + 1.1;
+            for (int i = 0; i <= 3; i++) {
+                double f = i * 1.7 / 3;
+                world().sendParticles(dust, x0 + f, y, z0, 1, 0, 0, 0, 0);
+                world().sendParticles(dust, x0 + f, y, z0 + 1.7, 1, 0, 0, 0, 0);
+                world().sendParticles(dust, x0, y, z0 + f, 1, 0, 0, 0, 0);
+                world().sendParticles(dust, x0 + 1.7, y, z0 + f, 1, 0, 0, 0, 0);
+            }
+        }
+
+        /**
+         * Whether a position on a maze grid starting at {@code o} is off the path, with the edge leniency of
+         * {@link com.runecraft.osrs.content.raids.RaidRealtime#offPath}. // playability: OSRS judges the tile stood on
+         */
+        private boolean offPath(BlockPos o, Vec3 pos) {
+            return com.runecraft.osrs.content.raids.RaidRealtime.offPath(pos.x - o.getX(), pos.z - o.getZ(), 2, COLS, ROWS,
+                    (c, r) -> path.contains(key(c, r)));
+        }
+
         /** The tile (column, row) a position stands on in a maze grid starting at {@code o}, or null off the grid. */
         private int[] tileOf(BlockPos o, Vec3 pos) {
             int c = (int) Math.floor((pos.x - o.getX()) / 2);
@@ -1823,21 +1929,26 @@ final class TobRooms {
                 if (mazeTicks % 7 == 0) {
                     RaidEffects.hit(sotetseg, p, 1 + rnd().nextInt(3), null, true);
                 }
-                if (col >= 0 && col < COLS && row >= 0 && row < ROWS && !path.contains(key(col, row))) {
+                if (offPath(o, p.position())) {
                     hurtRaw(sotetseg, p, TobRules.mazeWrongTile(Math.round(p.getHealth()), raid.mode()));
                     wrongTiles++;
                     nonBallHit = true;
                     fail();
                     Msg.red(p, "The shadows lash at you!");
                 }
+                // The next three rows of the path, each tile outlined in pale blue, redrawn until the next game tick.
+                // // playability: OSRS lights the path's tiles for the runner; here their whole 2x2 outline, in walking order
                 int from = Math.max(0, row);
-                for (int r = from; r < Math.min(ROWS, from + 3); r++) {
-                    for (int c = 0; c < COLS; c++) {
-                        if (path.contains(key(c, r))) {
-                            world().sendParticles(ParticleTypes.SOUL, o.getX() + c * 2 + 1, o.getY() + 1.1, o.getZ() + r * 2 + 1, 1, 0.3, 0, 0.3, 0);
+                RaidEffects.cue(1, () -> {
+                    for (int r = from; r < Math.min(ROWS, from + 3); r++) {
+                        for (int c = 0; c < COLS; c++) {
+                            if (path.contains(key(c, r))) {
+                                drawTile(o, c, r, r == from ? MAZE_NEXT : MAZE_PATH);
+                            }
                         }
                     }
-                }
+                    return true;
+                });
                 if (row > leadRow) {
                     lead = p;
                     leadRow = row;
@@ -1855,7 +1966,21 @@ final class TobRooms {
             if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
                 world().sendParticles(ParticleTypes.CRIMSON_SPORE, a.getX() + col * 2 + 1, a.getY() + 1.1, a.getZ() + row * 2 + 1, 6, 0.5,
                         0.1, 0.5, 0);
+                long k = key(col, row);
+                if (path.contains(k) && (walkedTiles.isEmpty() || walkedTiles.get(walkedTiles.size() - 1) != k) && !walkedTiles.contains(k)) {
+                    walkedTiles.add(k);
+                }
             }
+            // Every path tile the runner has walked stays lit on the arena floor, in order (the newest brightest), so the
+            // others can follow at their own pace. // playability: OSRS lights the tile the runner stands on, read tick by tick
+            List<Long> lit = new ArrayList<>(walkedTiles);
+            RaidEffects.cue(1, () -> {
+                for (int i = 0; i < lit.size(); i++) {
+                    long t2 = lit.get(i);
+                    drawTile(a, (int) (t2 >> 32), (int) t2, i == lit.size() - 1 ? MAZE_NEXT : MAZE_WALKED);
+                }
+                return true;
+            });
             List<ServerPlayer> followers = new ArrayList<>();
             int furthest = leadRow;
             for (ServerPlayer p : players()) {
@@ -1868,7 +1993,7 @@ final class TobRooms {
                     continue;
                 }
                 furthest = Math.max(furthest, tile[1]);
-                if (!path.contains(key(tile[0], tile[1]))) {
+                if (offPath(a, p.position())) {
                     hurtRaw(sotetseg, p, TobRules.mazeWrongTile(Math.round(p.getHealth()), raid.mode()));
                     wrongTiles++;
                     nonBallHit = true;
@@ -1972,6 +2097,16 @@ final class TobRooms {
                     w.moveTo(new Vec3(o.getX() + wrongCol * 2 + 1, o.getY() + 1, o.getZ() + 1));
                     w.tick(1);
                     w.expect(wrongTiles > before, "standing on a wrong maze tile did nothing");
+                }
+                // A foot over the edge of a path tile is forgiven; the middle of the wrong tile next to it is not (round 42).
+                for (int c = 0; c < COLS; c++) {
+                    if (path.contains(key(c, 0)) && c + 1 < COLS && !path.contains(key(c + 1, 0))) {
+                        double edge = o.getX() + (c + 1) * 2;
+                        w.expect(!offPath(o, new Vec3(edge + 0.25, o.getY() + 1, o.getZ() + 1)),
+                                "a foot over the edge of a maze path tile counted as a wrong tile");
+                        w.expect(offPath(o, new Vec3(edge + 1, o.getY() + 1, o.getZ() + 1)), "the middle of a wrong maze tile was forgiven");
+                        break;
+                    }
                 }
             }
             for (int r = 0; r < ROWS; r++) {
@@ -2107,6 +2242,15 @@ final class TobRooms {
             return new float[]{-45, 45, 135, -135}[Math.floorMod(q, 4)];
         }
 
+        /** How close (squared, horizontally) a player must stand to an exhumed to stop it. */
+        private static final double EXHUMED_REACH_SQ = 1.2;
+
+        /** The corner Xarpus stares at, by compass ("north-east"...). */
+        String stareCompass() {
+            double a = Math.toRadians(yaw(quadrant));
+            return com.runecraft.osrs.content.raids.RaidRealtime.compass(-Math.sin(a), Math.cos(a));
+        }
+
         @Override
         public void bossTick(DataBossEntity boss) {
             if (phase == 3) {
@@ -2130,7 +2274,17 @@ final class TobRooms {
                 int total = TobRules.xarpusExhumeds(raid.partySize());
                 if (t % TobRules.XARPUS_EXHUMED_INTERVAL == 0 && resolved + exhumeds.size() < total && !players.isEmpty()) {
                     ServerPlayer p = players.get(rnd().nextInt(players.size()));
-                    exhumeds.add(new Exhumed(exhumedTile(p), t + TobRules.XARPUS_EXHUMED_TICKS));
+                    Exhumed e = new Exhumed(exhumedTile(p), t + TobRules.XARPUS_EXHUMED_TICKS);
+                    exhumeds.add(e);
+                    // Where to stand to stop it: its true reach in green until it is resolved. // playability: OSRS shows the
+                    // acid bubbling up on one tile
+                    RaidEffects.cue(TobRules.XARPUS_EXHUMED_TICKS, () -> {
+                        if (!exhumeds.contains(e)) {
+                            return false;
+                        }
+                        com.runecraft.boss.ThreatCues.ring(world(), e.pos(), Math.sqrt(EXHUMED_REACH_SQ), 0x73FF73, null, false);
+                        return true;
+                    });
                 }
                 for (int i = exhumeds.size() - 1; i >= 0; i--) {
                     Exhumed e = exhumeds.get(i);
@@ -2142,7 +2296,7 @@ final class TobRooms {
                     resolved++;
                     ServerPlayer absorber = null;
                     for (ServerPlayer p : players) {
-                        if (RaidEffects.horizontalDistSq(p.position(), e.pos()) < 1.2) {
+                        if (RaidEffects.horizontalDistSq(p.position(), e.pos()) < EXHUMED_REACH_SQ) {
                             absorber = p;
                             break;
                         }
@@ -2180,25 +2334,25 @@ final class TobRooms {
                 ServerPlayer p = players.get(rnd().nextInt(players.size()));
                 Vec3 at = p.position();
                 world().sendParticles(ParticleTypes.ITEM_SLIME, at.x, at.y + 0.2, at.z, 10, 0.8, 0.05, 0.8, 0);
-                later(3, () -> {
-                    for (ServerPlayer q : players()) {
-                        if (RaidEffects.horizontalDistSq(q.position(), at) <= 1.5 * 1.5) {
-                            hurt(xarpus, q, 1 + rnd().nextInt(4), null, true); // the splash "lightly damages"
-                        }
-                    }
-                    pools.add(at);
-                });
+                // The spit lands as a raid strike, its splash outlined from the spit. // playability: OSRS shows the projectile
+                DataBossEntity source = xarpus;
+                RaidEffects.mark(world(), at, 1.5).delay(3).source(source).warn(ParticleTypes.ITEM_SLIME).live(current())
+                        .onHit(q -> hurt(source, q, 1 + rnd().nextInt(4), null, true)) // the splash "lightly damages"
+                        .onLand(() -> pools.add(at)).start();
             }
             if (phase == 2 && raid.healthFraction(xarpus) <= TobRules.XARPUS_SCREECH_AT) {
                 phase = 3;
                 quadrant = rnd().nextInt(4);
                 turnTimer = TobRules.XARPUS_TURN_TICKS;
                 warn("Xarpus shrieks and stares intently at one corner! Do not attack him from where he looks!");
+                RaidEffects.telegraph(players, "Xarpus stares " + stareCompass() + " - don't attack him from there!");
             }
             if (phase == 3 && --turnTimer <= 0) {
                 turnTimer = TobRules.XARPUS_TURN_TICKS;
                 quadrant = TobRules.xarpusNextQuadrant(quadrant, rnd());
                 say("Xarpus turns to stare at another corner.");
+                // the corner named by compass. // playability: OSRS shows only his head turning
+                RaidEffects.telegraph(players, "Xarpus stares " + stareCompass() + " - don't attack him from there!");
             }
         }
 
@@ -2830,50 +2984,63 @@ final class TobRooms {
                 healingSpell(players.get(rnd().nextInt(players.size())));
                 return;
             }
+            java.util.function.BooleanSupplier current = current();
+            DataBossEntity source = verzik;
             for (ServerPlayer p : players) {
                 double d = p.distanceToSqr(verzik);
                 if (d < 1.2 * 1.2) {
-                    // Stomp: anyone underneath, always lands; Protect from Melee doesn't help.
-                    hurt(verzik, p, rnd().nextInt(TobRules.VERZIK_STOMP_MAX + 1), null, true);
-                    knockBack(p, 3);
-                    bounced = true;
-                    Msg.red(p, "Verzik Vitur: There's nothing for you there!");
+                    // Stomp: anyone underneath, always lands; Protect from Melee doesn't help. // playability: OSRS lands it on
+                    // the attack tick; here after her wind-up, on a player still under her
+                    verzik.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+                    com.runecraft.boss.Mechanics.deliverMelee(source, p, 0.0, () -> {
+                        if (alive(source) && current.getAsBoolean()) {
+                            hurt(source, p, rnd().nextInt(TobRules.VERZIK_STOMP_MAX + 1), null, true);
+                            knockBack(p, 3);
+                            bounced = true;
+                            Msg.red(p, "Verzik Vitur: There's nothing for you there!");
+                        }
+                    });
                     return;
                 }
             }
             for (ServerPlayer p : players) {
                 if (p.distanceToSqr(verzik) < 2.8 * 2.8 && rnd().nextInt(4) != 0) {
                     // The body slam ("bounce"): up to 50, rolled against crush; knocked back and stunned (wiki infobox).
-                    hurt(verzik, p, rnd().nextInt(TobRules.VERZIK_SLAM_MAX + 1), null, true);
-                    knockBack(p, 3);
-                    com.runecraft.content.systems.SysCombat.freeze(p, 5);
-                    bounced = true;
-                    slams++;
-                    Msg.red(p, "Verzik body slams you!");
+                    // // playability: OSRS lands it on the attack tick; here after her wind-up, on a player still in reach
+                    verzik.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+                    com.runecraft.boss.Mechanics.deliverMelee(source, p, com.runecraft.osrs.ThreatTiming.MELEE_REACH, () -> {
+                        if (alive(source) && current.getAsBoolean()) {
+                            hurt(source, p, rnd().nextInt(TobRules.VERZIK_SLAM_MAX + 1), null, true);
+                            knockBack(p, 3);
+                            com.runecraft.content.systems.SysCombat.freeze(p, 5);
+                            bounced = true;
+                            slams++;
+                            Msg.red(p, "Verzik body slams you!");
+                        }
+                    });
                     return;
                 }
             }
-            // Urnbombs at every player's spot, landing a few ticks later (Hard mode: harder, and a poison pool stays).
+            // Urnbombs at every player's spot, landing a few ticks later (Hard mode: harder, and a poison pool stays). Each is a
+            // raid strike outlined from the throw. // playability: it was a flame burst on the throw only
             int urnMax = TobRules.verzikUrnMax(raid.mode());
             for (ServerPlayer p : players) {
                 Vec3 at = p.position();
-                world().sendParticles(ParticleTypes.FLAME, at.x, at.y + 0.2, at.z, 8, 0.3, 0.05, 0.3, 0);
-                later(3, () -> {
-                    urnsLanded++;
-                    for (ServerPlayer q : players()) {
-                        if (RaidEffects.horizontalDistSq(q.position(), at) < 0.8 * 0.8) {
+                RaidEffects.mark(world(), at, 0.8).delay(3).source(source).warn(ParticleTypes.FLAME).live(current)
+                        .onHit(q -> {
                             int dmg = 1 + rnd().nextInt(urnMax);
                             if (RaidEffects.protectedFrom(q, AttackType.RANGED)) {
                                 dmg /= 2;
                             }
-                            hurt(verzik, q, dmg, null, true);
-                        }
-                    }
-                    if (hard()) {
-                        urnPools.put(at, t + TobRules.VERZIK_HARD_POOL_TICKS);
-                        urnPoolsMade++;
-                    }
-                });
+                            hurt(source, q, dmg, null, true);
+                        })
+                        .onLand(() -> {
+                            urnsLanded++;
+                            if (hard()) {
+                                urnPools.put(at, t + TobRules.VERZIK_HARD_POOL_TICKS);
+                                urnPoolsMade++;
+                            }
+                        }).start();
             }
         }
 
@@ -2915,21 +3082,40 @@ final class TobRooms {
             lightnings++;
             ServerPlayer at = players.get(rnd().nextInt(players.size()));
             say("Verzik fires a ball of lightning!");
-            for (int bounce = 0; bounce < 4; bounce++) {
-                if (players.size() > 1 && rnd().nextBoolean()) {
-                    // approx: a well-spread team bounces it through her half the time
-                    com.runecraft.combat.CombatHandler.applyDamage(null, verzik, 15 + rnd().nextInt(6));
-                    say("The lightning arcs through Verzik!");
-                    return;
-                }
+            boolean through = false;
+            for (int bounce = 0; bounce < 4 && !through; bounce++) {
+                // approx: a well-spread team bounces it through her half the time
+                through = players.size() > 1 && rnd().nextBoolean();
             }
-            boolean insulated = "insulated_boots".equals(Inv.idOf(at.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET)));
-            lastLightningMax = insulated ? TobRules.VERZIK_LIGHTNING_INSULATED_MAX : TobRules.VERZIK_LIGHTNING_MAX;
-            hurt(verzik, at, rnd().nextInt(lastLightningMax + 1), null, true);
-            if (lightnings % 3 == 0 && !alive(athanatos) && !p25 && rnd().nextDouble() < TobRules.VERZIK_RESUMMON_CHANCE) {
+            // The ball flies (typeless orange) and is named to its target as it leaves; it lands three game ticks later, on
+            // the target or, bounced back, on Verzik. // playability: OSRS resolves the bounces as it fires, the ball flying
+            // about a tick between players
+            Msg.telegraph(at, "Verzik's lightning ball is coming at you" + (through ? "!" : " - insulated boots soften it!"), null);
+            DataBossEntity source = verzik;
+            java.util.function.BooleanSupplier current = current();
+            boolean arc = through;
+            long launched = RaidEffects.now();
+            RaidEffects.projectile(world(), verzik.getEyePosition(), at, null, LIGHTNING_TICKS,
+                    () -> alive(source) && current.getAsBoolean(), () -> {
+                        lastLightningFlight = RaidEffects.now() - launched;
+                        if (arc) {
+                            world().sendParticles(ParticleTypes.ELECTRIC_SPARK, source.getX(), source.getY() + 2, source.getZ(), 30, 0.6, 1, 0.6, 0.1);
+                            com.runecraft.combat.CombatHandler.applyDamage(null, source, 15 + rnd().nextInt(6));
+                            say("The lightning arcs through Verzik!");
+                            return;
+                        }
+                        boolean insulated = "insulated_boots".equals(Inv.idOf(at.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET)));
+                        lastLightningMax = insulated ? TobRules.VERZIK_LIGHTNING_INSULATED_MAX : TobRules.VERZIK_LIGHTNING_MAX;
+                        hurt(source, at, rnd().nextInt(lastLightningMax + 1), null, true);
+                    });
+            if (!through && lightnings % 3 == 0 && !alive(athanatos) && !p25 && rnd().nextDouble() < TobRules.VERZIK_RESUMMON_CHANCE) {
                 summonNylocas(false);
             }
         }
+
+        /** Game ticks the lightning ball flies (and its last flight, self-test). */
+        static final int LIGHTNING_TICKS = com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS;
+        long lastLightningFlight = -1;
 
         private void healingSpell(ServerPlayer target) {
             int total = 0;
@@ -3649,7 +3835,11 @@ final class TobRooms {
             // Insulated boots soften the lightning (25 instead of 48).
             w.player().setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, Inv.stack("insulated_boots", 1));
             int balls = lightnings;
+            lastLightningFlight = -1;
             w.until(() -> lightnings > balls, 30, "no lightning ball came in phase 2");
+            // since round 42 the ball flies three game ticks, named to its target as it leaves
+            w.until(() -> lastLightningFlight >= 0, LIGHTNING_TICKS + 3, "the lightning ball never landed");
+            w.expect(lastLightningFlight >= LIGHTNING_TICKS, "the lightning ball landed " + lastLightningFlight + " game ticks after it left");
             w.expect(lastLightningMax == TobRules.VERZIK_LIGHTNING_INSULATED_MAX, "insulated boots did not soften the lightning ball ("
                     + lastLightningMax + ")");
             w.player().setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, ItemStack.EMPTY);

@@ -207,6 +207,15 @@ public class RoomLogic {
         });
     }
 
+    /**
+     * True while this attempt of the room runs (as {@link #later} checks): for a strike's or projectile's {@code live} check,
+     * so one made before a wipe can't land on the retry.
+     */
+    public java.util.function.BooleanSupplier current() {
+        int a = attempt;
+        return () -> a == attempt && started && !done;
+    }
+
     /** Removes everything this room spawned. */
     public void cleanup() {
         for (LivingEntity e : spawned) {
