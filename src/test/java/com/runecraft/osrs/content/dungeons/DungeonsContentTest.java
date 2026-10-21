@@ -93,7 +93,7 @@ class DungeonsContentTest {
         for (BlockDef b : MODULE.blocks()) {
             assertTrue(b.id().startsWith("dng_"), b.id());
         }
-        assertEquals(68, Dungeons.all().size());
+        assertEquals(69, Dungeons.all().size());
     }
 
     @Test
@@ -326,8 +326,12 @@ class DungeonsContentTest {
         assertEquals(Map.of("locust_rider_ranger", 18, "locust_rider", 11, "scarab_mage", 28, "mummy", 1), caps("dng_sophanem_dungeon"));
         assertEquals(Map.of("dagannoth", 15, "dagannoth_lvl92", 7), caps("dng_lighthouse_dungeon"));
         assertEquals(Map.of("kalphite_worker", 18, "kalphite_soldier", 20, "kalphite_guardian", 5), caps("dng_kalphite_cave"));
-        assertEquals(Map.of("ice_giant", 6, "ankou", 10, "lesser_demon", 7, "black_demon", 4, "black_dragon", 3, "green_dragon", 6,
-                "greater_demon", 10, "hellhound", 5, "rat", 3, "wilderness_bandit", 1), caps("dng_wilderness_slayer_cave"));
+        // The Wilderness Slayer Cave: the wiki's counts (more ice giants, ankou and hellhounds than the cache) and the
+        // 2022 task-only rooms.
+        assertEquals(Map.ofEntries(Map.entry("ice_giant", 14), Map.entry("ankou", 16), Map.entry("lesser_demon", 7),
+                Map.entry("black_demon", 4), Map.entry("black_dragon", 3), Map.entry("green_dragon", 6), Map.entry("greater_demon", 10),
+                Map.entry("hellhound", 9), Map.entry("rat", 3), Map.entry("wilderness_bandit", 1), Map.entry("greater_nechryael", 8),
+                Map.entry("abyssal_demon", 8), Map.entry("jelly", 14), Map.entry("dust_devil", 9)), caps("dng_wilderness_slayer_cave"));
         assertEquals(Map.of("temple_spider", 21, "undead_druid", 18, "red_dragon", 6, "baby_red_dragon", 5), caps("dng_forthos_dungeon"));
         assertEquals(Map.of("moss_giant", 10, "hill_giant", 8, "fire_giant_lvl104", 4, "fire_giant_lvl109", 4), caps("dng_giants_den"));
         assertEquals(Map.of("blue_dragon", 4, "baby_blue_dragon", 3, "fire_giant", 8, "greater_demon", 7, "iron_dragon", 3,
@@ -407,7 +411,8 @@ class DungeonsContentTest {
         // Two lift ends each (Tapoyauik's on its own hut, Tonali's in the entrance hut), the two doors and the exit.
         assertEquals(Map.of("dng_ruins_of_tapoyauik:dng_lift_platform", 2, "dng_ruins_of_tapoyauik:dng_imposing_door", 1,
                 "dng_tonali_cavern:dng_lift_platform", 2, "dng_tonali_cavern:dng_mokhaiotl_entrance", 1,
-                "dng_troll_stronghold:dng_secret_exit", 1, "dng_temple_of_marimbo_dungeon:dng_marimbo_crevice", 2), passages);
+                "dng_troll_stronghold:dng_secret_exit", 1, "dng_temple_of_marimbo_dungeon:dng_marimbo_crevice", 2,
+                "dng_karuulm_slayer_dungeon:dng_imposing_door", 1), passages);
         // The Tonali lift's surface platform stands in the hut on the crypt's entrance tile (1309, 3104); Tapoyauik's
         // lift hut is on the Tower of Ascension's tile (1641, 3221) and its entrance hut on (1693, 3232).
         Dungeons.Dungeon tap = Dungeons.all().stream().filter(x -> x.id().equals("dng_ruins_of_tapoyauik")).findFirst().orElseThrow();

@@ -143,20 +143,14 @@ public final class SlayerGear {
     public static final String HOT_FLOOR_DUNGEON = "dng_karuulm_slayer_dungeon";
     public static final int HOT_FLOOR_DAMAGE = 4;
     public static final List<String> HOT_FLOOR_BOOTS = List.of("boots_of_stone", "boots_of_brimstone", "granite_boots");
-    /** The dungeon's entrance tile (its carved entrance chamber spans this many blocks around it and is safe). */
+    /** The dungeon's entrance tile (its ladder lands in the entrance chamber, which is safe). */
     public static final int KARUULM_ENTRANCE_X = 1299;
     public static final int KARUULM_ENTRANCE_Y = 3806;
-    public static final int ENTRANCE_CHAMBER_RADIUS = 7;
     public static final String HOT_FLOOR_MESSAGE = "The volcanic floor of the dungeon burns your feet!";
 
-    /** True if a player standing at this block is on the Karuulm Slayer Dungeon's burning floor. */
+    /** True if a player standing at this block is on the Karuulm Slayer Dungeon's burning floor (beyond the entrance chamber). */
     public static boolean hotFloorAt(int x, int y, int z) {
-        if (!Dungeons.inside(HOT_FLOOR_DUNGEON, x, y, z)) {
-            return false;
-        }
-        int ex = StructureDef.bx(KARUULM_ENTRANCE_X);
-        int ez = StructureDef.bz(KARUULM_ENTRANCE_Y);
-        return Math.max(Math.abs(x - ex), Math.abs(z - ez)) > ENTRANCE_CHAMBER_RADIUS;
+        return Dungeons.inside(HOT_FLOOR_DUNGEON, x, y, z) && !Dungeons.karuulmEntranceChamber(x, z);
     }
 
     /** Burn damage per tick for a player on the hot floor wearing {@code feet} (0 when protected). */

@@ -45,11 +45,37 @@ public final class Dungeons {
 
     /**
      * One dungeon. {@code passages} are its lifts, doors and exits ({@link Passage}); {@code multi} are block boxes
-     * {x1, y1, z1, x2, y2, z2} of the parts that are multicombat in OSRS where the rest is single-way.
+     * {x1, y1, z1, x2, y2, z2} of the parts that are multicombat in OSRS where the rest is single-way; {@code taskOnly}
+     * are its Slayer task-only parts ({@link TaskOnlyArea}).
      */
     public record Dungeon(String id, String name, StructureDef structure, List<Entrance> entrances, List<Camp> camps,
-                          List<AgilityShortcuts.BlockEnds> shortcuts, List<Passage> passages, List<int[]> multi) {
+                          List<AgilityShortcuts.BlockEnds> shortcuts, List<Passage> passages, List<int[]> multi,
+                          List<TaskOnlyArea> taskOnly) {
     }
+
+    /**
+     * A part of a dungeon whose monsters can only be fought on a Slayer task to kill them (OSRS Wiki "Slayer guardians":
+     * the guardian, e.g. Peeve or Garbek quo Maten, stops anyone else attacking them; entering is free). {@code task} is
+     * the category the area is known for ({@link #ANY_TASK} when it holds several kinds, like the Stronghold Slayer Cave);
+     * the gate itself lets a player hurt whatever counts towards their own task. The box is block coordinates of the
+     * area's air, {@code y1} its floor.
+     */
+    public record TaskOnlyArea(String dungeon, String task, String guardian, int x1, int y1, int z1, int x2, int y2, int z2) {
+        public boolean contains(int x, int y, int z) {
+            return x >= x1 && x <= x2 && y >= y1 && y <= y2 && z >= z1 && z <= z2;
+        }
+
+        public int centreX() {
+            return (x1 + x2) / 2;
+        }
+
+        public int centreZ() {
+            return (z1 + z2) / 2;
+        }
+    }
+
+    /** {@link TaskOnlyArea#task()} of an area whose monsters count for whatever task the player has. */
+    public static final String ANY_TASK = "any";
 
     /**
      * A lift, door or exit: using the scripted {@code block} at (x, y, z) takes the player to stand at feet block
@@ -160,24 +186,57 @@ public final class Dungeons {
      * Dungeons whose monsters can only be fought on a Slayer task, by dungeon id: the task they are known for (the gate
      * itself lets a player hurt whatever counts towards their own task, so a waterfiend task works in the Kraken Cove).
      * OSRS Wiki: the Kalphite Cave's kalphites, everything in the Kraken Cove, the Smoke Devil Dungeon and the Slayer Tower
-     * basement, and the Lizardman Caves' shamans can only be attacked on a matching task.
+     * basement, the Lizardman Caves' shamans and every monster of the Stronghold Slayer Cave ("players can only attack the
+     * Slayer monster they were assigned") can only be attacked on a matching task. Parts of other dungeons are task-only
+     * too: see {@link Dungeon#taskOnly()}.
      */
     public static final java.util.Map<String, String> TASK_ONLY = java.util.Map.of("dng_kalphite_cave", "kalphite",
             "dng_kraken_cove", "cave_kraken", "dng_smoke_devil_dungeon", "smoke_devils", "dng_lizardman_caves", "lizardmen",
-            "dng_slayer_tower_basement", "nechryael");
+            "dng_slayer_tower_basement", "nechryael", "dng_stronghold_slayer_cave", ANY_TASK);
 
-    /** The Slayer task category needed to fight at this block (inside a {@link #TASK_ONLY} dungeon's carved air), or null. */
+    /** The Slayer guardian of each {@link #TASK_ONLY} dungeon (OSRS Wiki "Slayer guardians"). */
+    public static final java.util.Map<String, String> GUARDIANS = java.util.Map.of("dng_kalphite_cave", "Entomologist",
+            "dng_kraken_cove", "Lieve McCracken", "dng_smoke_devil_dungeon", "Breive", "dng_lizardman_caves", "Captain Cleive",
+            "dng_slayer_tower_basement", "Raulyn", "dng_stronghold_slayer_cave", "Nieve");
+
+    /** The Slayer task category needed to fight at this block (a task-only area or dungeon), or null. */
     public static String taskOnly(int x, int y, int z) {
+        TaskOnlyArea a = taskOnlyArea(x, y, z);
+        return a == null ? null : a.task();
+    }
+
+    /**
+     * The task-only area at this block: one of a dungeon's task-only parts ({@link Dungeon#taskOnly()}), else the carved air
+     * of a {@link #TASK_ONLY} dungeon (as an area spanning the whole dungeon), or null.
+     */
+    public static TaskOnlyArea taskOnlyArea(int x, int y, int z) {
         if (y > DEEP_TOP) {
             return null;
         }
         for (Dungeon d : all()) {
+            for (TaskOnlyArea a : d.taskOnly()) {
+                if (a.contains(x, y, z)) {
+                    return a;
+                }
+            }
+        }
+        for (Dungeon d : all()) {
             String task = TASK_ONLY.get(d.id());
             if (task != null && carved(d, x, y, z)) {
-                return task;
+                StructureDef s = d.structure();
+                return new TaskOnlyArea(d.id(), task, GUARDIANS.get(d.id()), s.minX(), -64, s.minZ(), s.maxX(), DEEP_TOP, s.maxZ());
             }
         }
         return null;
+    }
+
+    /** Every task-only part of a dungeon ({@link Dungeon#taskOnly()}; whole {@link #TASK_ONLY} dungeons are not listed). */
+    public static List<TaskOnlyArea> taskOnlyAreas() {
+        List<TaskOnlyArea> out = new ArrayList<>();
+        for (Dungeon d : all()) {
+            out.addAll(d.taskOnly());
+        }
+        return out;
     }
 
     /** True if the block lies in the carved air of the dungeon {@code id} (its rooms and halls below {@link #DEEP_TOP}). */
@@ -201,6 +260,14 @@ public final class Dungeons {
             }
         }
         return false;
+    }
+
+    /**
+     * True if block column (x, z) lies in the Karuulm Slayer Dungeon's entrance chamber (the Tasakaal's), the only part of
+     * the dungeon whose volcanic floor doesn't burn.
+     */
+    public static boolean karuulmEntranceChamber(int x, int z) {
+        return DungeonsZeah.inKaruulmChamber(x, z);
     }
 
     /** The Abyss rifts (positions are filled in when the Abyss is built). */

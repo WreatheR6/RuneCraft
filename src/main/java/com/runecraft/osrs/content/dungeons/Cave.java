@@ -35,6 +35,7 @@ final class Cave {
     final List<com.runecraft.osrs.content.skilling.AgilityShortcuts.BlockEnds> shortcuts = new ArrayList<>();
     final List<Dungeons.Passage> passages = new ArrayList<>();
     final List<int[]> multi = new ArrayList<>();
+    final List<Dungeons.TaskOnlyArea> taskOnly = new ArrayList<>();
     private final List<int[]> innerWalls = new ArrayList<>();
     private boolean carved;
 
@@ -544,8 +545,18 @@ final class Cave {
         return this;
     }
 
+    /**
+     * Marks the air over x1..x2, z1..z2 above floor f (h blocks high) as a Slayer task-only area ({@link Dungeons.TaskOnlyArea}):
+     * its monsters can only be fought on a {@code task} task, as {@code guardian} reminds whoever tries.
+     */
+    Cave taskOnly(String task, String guardian, int x1, int z1, int x2, int z2, int f, int h) {
+        taskOnly.add(new Dungeons.TaskOnlyArea(id, task, guardian, Math.min(x1, x2), f, Math.min(z1, z2), Math.max(x1, x2), f + h,
+                Math.max(z1, z2)));
+        return this;
+    }
+
     Dungeons.Dungeon build() {
         return new Dungeons.Dungeon(id, name, b.build(), List.copyOf(entrances), List.copyOf(camps), List.copyOf(shortcuts),
-                List.copyOf(passages), List.copyOf(multi));
+                List.copyOf(passages), List.copyOf(multi), List.copyOf(taskOnly));
     }
 }
