@@ -44,6 +44,37 @@ import org.joml.Vector3f;
  * {@link Invocation}, the other numbers from {@link ToaBossRules}.
  */
 final class ToaBossRooms {
+    /**
+     * Players encased in Akkha's ice and the raid game tick it thaws (OSRS: their attacks are a tick slower until then): each
+     * attack they make adds a game tick to their weapon delay (round 43).
+     */
+    static final Map<UUID, Long> ICED = new HashMap<>();
+    /** The weapon delay each iced player was last slowed at, so one multi-hit attack is slowed once. */
+    private static final Map<UUID, Long> ICED_AT = new HashMap<>();
+
+    /** Combat hooks of the ToA bosses (round 43): Akkha's ice slows the attacks of whoever it encases. */
+    static void init() {
+        com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
+            @Override
+            public void afterHit(ServerPlayer player, LivingEntity target, AttackType type, int dealt) {
+                Long until = ICED.get(player.getUUID());
+                if (until == null) {
+                    return;
+                }
+                if (RaidEffects.now() >= until) {
+                    ICED.remove(player.getUUID());
+                    ICED_AT.remove(player.getUUID());
+                    return;
+                }
+                PlayerData d = Players.data(player);
+                if (ICED_AT.getOrDefault(player.getUUID(), Long.MIN_VALUE) == d.lastAttackTick) {
+                    return;
+                }
+                com.runecraft.combat.AttackTimer.addDelay(player, com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
+                ICED_AT.put(player.getUUID(), d.lastAttackTick);
+            }
+        });
+    }
     private ToaBossRooms() {
     }
 
@@ -689,6 +720,8 @@ final class ToaBossRooms {
      */
     static final class Akkha extends PathBoss {
         private static final String[] STYLES = {"melee", "ranged", "magic"};
+        /** Game ticks the ice quadrant's element lasts. // approx */
+        static final int ICE_TICKS = 10;
         DataBossEntity akkha;
         int style;
         /** Attacks made (autos and specials), and auto-attacks since the last special. */
@@ -1022,17 +1055,57 @@ final class ToaBossRooms {
                             0.3, 0.2, 0.3, 0.01);
                 }
                 if (shadowCharge[q] >= 40) {
-                    shadowCharge[q] = 0;
-                    warn("The shadow in the " + ToaBossRules.QUADRANTS[q] + " quadrant slams its spear down!");
-                    for (ServerPlayer p : players()) {
-                        if (quadrant(p.position()) == q) {
-                            // OSRS: a heavy hit, Akkha's Shadow's infobox max hit of 22, plus the quadrant's element.
-                            hurt(akkha, p, ToaBossRules.AKKHA_SHADOW_MAX_HIT / 2 + rnd().nextInt(ToaBossRules.AKKHA_SHADOW_MAX_HIT / 2 + 1));
-                            element(p, q);
-                        }
-                    }
+                    shadowSlam(q);
                 }
             }
+        }
+
+        /** Shadow slams landed, and the game ticks between the last one's warning and its landing (self-test). */
+        int shadowSlams;
+        long lastShadowSlamLead = -1;
+
+        /**
+         * A shadow's hourglass is full: it raises its spear and the whole quadrant is marked on the floor, then the slam envelops
+         * whoever is still in it (Akkha's Shadow's infobox max hit of 22, plus the quadrant's element). A shadow killed meanwhile
+         * spares it. Its charge then starts again from below zero (OSRS: it resumes after a short time). // playability: OSRS
+         * slams as the hourglass fills, the element spreading from the edge to the centre
+         */
+        void shadowSlam(int q) {
+            int lead = com.runecraft.osrs.content.raids.RaidRealtime.SHADOW_SLAM_LEAD_TICKS;
+            shadowCharge[q] = -lead;
+            String where = com.runecraft.osrs.content.raids.RaidRealtime.quarter(q == 0 || q == 3, q <= 1);
+            warn("The shadow in the " + ToaBossRules.QUADRANTS[q] + " quadrant (" + where + ") raises its spear - leave that quadrant!");
+            markQuadrant(q, RaidFloor.DANGER, lead);
+            LivingEntity shadow = shadows[q];
+            long made = now();
+            later(lead, () -> {
+                if (!alive(akkha) || !alive(shadow) || finalStand) {
+                    return;
+                }
+                shadowSlams++;
+                lastShadowSlamLead = now() - made;
+                say("The shadow in the " + ToaBossRules.QUADRANTS[q] + " quadrant slams its spear down!");
+                for (ServerPlayer p : players()) {
+                    if (quadrant(p.position()) == q) {
+                        hurt(akkha, p, ToaBossRules.AKKHA_SHADOW_MAX_HIT / 2 + rnd().nextInt(ToaBossRules.AKKHA_SHADOW_MAX_HIT / 2 + 1));
+                        element(p, q);
+                    }
+                }
+            });
+        }
+
+        /**
+         * Marks a quadrant's floor (both centre lines left plain) with {@code kind} for {@code gameTicks} game ticks (round 43).
+         * // playability: OSRS shows the quadrant's element spreading over its tiles
+         */
+        RaidFloor.Group markQuadrant(int q, com.runecraft.boss.HazardKind kind, int gameTicks) {
+            BlockPos c = center();
+            boolean west = q == 0 || q == 3;
+            boolean north = q <= 1;
+            int x0 = west ? c.getX() - RaidBuilder.HALF + 1 : c.getX() + 1;
+            int z0 = north ? c.getZ() - RaidBuilder.HALF + 1 : c.getZ() + 1;
+            return RaidFloor.rect(world(), x0, z0, x0 + RaidBuilder.HALF - 2, z0 + RaidBuilder.HALF - 2, c.getY() + 1, kind, gameTicks,
+                    akkha);
         }
 
         /** A quadrant's element on a player hit there by a special (OSRS). */
@@ -1057,11 +1130,23 @@ final class ToaBossRooms {
                 }
                 case 2 -> dropOverheads(p, "Lightning disables your protection prayers!");
                 default -> {
-                    // Ice: attacks one tick slower until it thaws. // approx: shown as a slow
-                    Msg.red(p, "Ice encases your limbs, slowing you.");
-                    p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 120, 1, false, true));
-                    p.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 120, 1, false, true));
-                    later(10, () -> Msg.game(p, "The ice around you melts away."));
+                    // Ice (OSRS): attacks one tick slower until it thaws. Round 43: on the attack clock (it was a movement slow,
+                    // which OSRS doesn't have). // approx: thaws after 10 ticks
+                    Msg.red(p, "Ice encases your limbs, slowing your attacks.");
+                    long until = now() + ICE_TICKS;
+                    ICED.put(p.getUUID(), until);
+                    RaidEffects.cue(ICE_TICKS, center().getCenter(), () -> {
+                        if (!p.isAlive() || ICED.getOrDefault(p.getUUID(), 0L) != until) {
+                            return false;
+                        }
+                        world().sendParticles(ParticleTypes.SNOWFLAKE, p.getX(), p.getY() + 1.2, p.getZ(), 3, 0.3, 0.4, 0.3, 0.01);
+                        return true;
+                    });
+                    later(ICE_TICKS, () -> {
+                        if (ICED.remove(p.getUUID(), until)) {
+                            Msg.game(p, "The ice around you melts away.");
+                        }
+                    });
                 }
             }
         }
@@ -1118,7 +1203,11 @@ final class ToaBossRooms {
             hidden = true;
             warn("Sections of the room start to glow...");
             List<Integer> order = ToaBossRules.memoryBlastOrder(ToaBossRules.memoryBlastRounds(raid.pathLevel()), rnd());
-            int gap = Invocation.akkhaMemoryBlastTicks(inv);
+            // At least the strike floor between blasts (36 MC). // playability: OSRS gives four ticks, two with Feeling Special?
+            int gap = com.runecraft.osrs.content.raids.RaidRealtime.memoryBlastGap(Invocation.akkhaMemoryBlastTicks(inv));
+            lastMemoryBlastGap = gap;
+            memoryOrder.clear();
+            memoryOrder.addAll(order);
             for (int k = 0; k < order.size(); k++) {
                 int shown = order.get(k);
                 later(1 + 2 * k, () -> {
@@ -1126,15 +1215,32 @@ final class ToaBossRooms {
                     world().sendParticles(ParticleTypes.SOUL_FIRE_FLAME, c.x, c.y + 1, c.z, 60, 3, 0.5, 3, 0.01);
                     world().playSound(null, BlockPos.containing(c), SoundEvents.NOTE_BLOCK_PLING.value(), SoundSource.HOSTILE, 1f,
                             0.7f + shown * 0.15f);
+                    // Round 43: the quadrant's symbol and the floor round it glow yellow while it is shown (the order to
+                    // remember). // playability: OSRS lights the symbol's tiles
+                    BlockPos m = BlockPos.containing(c);
+                    RaidFloor.rect(world(), m.getX() - 2, m.getZ() - 2, m.getX() + 2, m.getZ() + 2, c.y, RaidFloor.SAFE, 2, akkha);
+                    memoryGlows++;
                 });
             }
             int start = 3 + 2 * order.size();
+            later(start - 2, () -> RaidEffects.telegraph(players(), "Memory Blast: " + order.size() + " blasts, "
+                    + String.format(java.util.Locale.ROOT, "%.1f", gap * 0.6) + " s apart - stand in each quadrant in the order it glowed!"));
             for (int k = 0; k < order.size(); k++) {
                 int safe = order.get(k);
+                long due = now() + start + (long) k * gap;
+                // a rising bell in each blast's last moments. // playability
+                RaidEffects.cue(start + k * gap, center().getCenter(), () -> {
+                    long dueMc = due * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK;
+                    if (com.runecraft.osrs.ArenaTiming.finalCue(dueMc, RaidEffects.clockMc())) {
+                        com.runecraft.boss.StrikeMarkers.bell(world(), vec(0, 0), dueMc - RaidEffects.clockMc());
+                    }
+                    return alive(akkha);
+                });
                 later(start + k * gap, () -> {
                     if (!alive(akkha)) {
                         return;
                     }
+                    memoryBlasts++;
                     for (ServerPlayer p : players()) {
                         int q = quadrant(p.position());
                         if (q != safe) {
@@ -1147,6 +1253,12 @@ final class ToaBossRooms {
             }
             later(start + order.size() * gap, () -> hidden = false);
         }
+
+        /** Memory Blast self-test notes: quadrant glows shown, blasts landed, the last gap and order. */
+        int memoryGlows;
+        int memoryBlasts;
+        int lastMemoryBlastGap = -1;
+        final List<Integer> memoryOrder = new ArrayList<>();
 
         /** Distance each player walked of their own accord since the last game tick, and where they were a Minecraft tick ago. */
         private final Map<UUID, Double> walked = new HashMap<>();
@@ -1386,10 +1498,76 @@ final class ToaBossRooms {
             p.setOnGround(onGround);
         }
 
+        /**
+         * Self-test (round 43): Memory Blast glows each quadrant's floor in turn, and a player who stands in each glowing quadrant
+         * in that order, stepping over after each blast, is never hit; the blasts are at least the strike floor apart. A full
+         * shadow marks its quadrant's floor before it slams, and a player who steps out in time is spared. The ice quadrant's
+         * element slows attacks (not movement) until it thaws.
+         */
+        private String selfTestMemoryAndSlam(RaidSelfTest t) {
+            ServerPlayer p = t.player();
+            Set<Invocation> inv = raid.invocations();
+            int hitsBefore = raid.attacksOnParty();
+            memoryBlast(inv);
+            int rounds = memoryOrder.size();
+            RaidSelfTest.expect(rounds > 0 && lastMemoryBlastGap >= com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS,
+                    "Akkha: Memory Blast had " + rounds + " rounds " + lastMemoryBlastGap + " ticks apart");
+            t.tick(1);
+            BlockPos glow = BlockPos.containing(quadrantCentre(memoryOrder.get(0))).below();
+            RaidSelfTest.expect(com.runecraft.boss.FloorMarkers.marked(world(), glow), "Akkha: the first glowing quadrant's floor was not marked");
+            // stand in the first safe quadrant, then step on to each next one as the blast before it lands
+            t.moveTo(BlockPos.containing(quadrantCentre(memoryOrder.get(0))));
+            // the first blast lands 3 + 2 x rounds ticks after the special; one tick has passed, stop a tick before it
+            t.tick(1 + 2 * rounds);
+            for (int k = 0; k < rounds; k++) {
+                t.tick(1); // blast k lands with the player in its safe quadrant
+                RaidSelfTest.expect(memoryBlasts == k + 1, "Akkha: Memory Blast " + (k + 1) + " did not land (" + memoryBlasts + ")");
+                if (k + 1 < rounds) {
+                    t.moveTo(BlockPos.containing(quadrantCentre(memoryOrder.get(k + 1))));
+                    t.tick(lastMemoryBlastGap - 1);
+                }
+            }
+            RaidSelfTest.expect(raid.attacksOnParty() == hitsBefore, "Akkha: the Memory Blast hit a player standing in each safe quadrant");
+            RaidSelfTest.expect(memoryGlows == rounds, "Akkha: " + memoryGlows + " quadrant glows for " + rounds + " blasts");
+            t.tick(lastMemoryBlastGap);
+            RaidSelfTest.expect(!hidden, "Akkha did not come back after his Memory Blast");
+            // A shadow's slam: its quadrant is marked, and stepping out in time spares the player.
+            spawnShadows(true);
+            int q = quadrant(p.position());
+            shadowSlam(q);
+            BlockPos inside = BlockPos.containing(quadrantCentre(q)).offset(3, -1, 3);
+            RaidSelfTest.expect(com.runecraft.boss.FloorMarkers.marked(world(), inside), "Akkha: a full shadow's quadrant was not marked");
+            int other = (q + 1) % 4;
+            t.moveTo(BlockPos.containing(quadrantCentre(other)));
+            int slamsBefore = shadowSlams;
+            hitsBefore = raid.attacksOnParty();
+            t.tick(com.runecraft.osrs.content.raids.RaidRealtime.SHADOW_SLAM_LEAD_TICKS + 1);
+            RaidSelfTest.expect(shadowSlams == slamsBefore + 1 && lastShadowSlamLead >= com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS,
+                    "Akkha: the shadow's slam landed " + lastShadowSlamLead + " ticks after its warning");
+            RaidSelfTest.expect(raid.attacksOnParty() == hitsBefore, "Akkha: the shadow's slam hit a player who had left its quadrant");
+            RaidSelfTest.expect(!com.runecraft.boss.FloorMarkers.marked(world(), inside), "Akkha: the slammed quadrant's floor stayed marked");
+            for (int k = 0; k < 4; k++) {
+                if (alive(shadows[k])) {
+                    shadows[k].discard();
+                }
+                shadows[k] = null;
+                shadowCharge[k] = 0;
+            }
+            // Ice: attacks a tick slower until it thaws, and no movement slow.
+            element(p, 3);
+            RaidSelfTest.expect(ICED.containsKey(p.getUUID()) && !p.hasEffect(MobEffects.MOVEMENT_SLOWDOWN),
+                    "Akkha: the ice quadrant's element did not slow attacks (or slowed movement)");
+            t.tick(ICE_TICKS + 1);
+            RaidSelfTest.expect(!ICED.containsKey(p.getUUID()), "Akkha: the ice never thawed");
+            return rounds + " memory blasts dodged " + lastMemoryBlastGap + " ticks apart, a shadow slam dodged after " + lastShadowSlamLead
+                    + " ticks, ice slowed attacks";
+        }
+
         @Override
         String selfTestSolve(RaidSelfTest t) {
             int shadowsKilled = 0;
             int[] kills = {0};
+            String memory = selfTestMemoryAndSlam(t);
             String orbs = selfTestTrailingOrbs(t);
             selfTestStandBeside(t);
             String r = grind(t, akkha, AttackType.MAGIC, 30, () -> {
@@ -1419,7 +1597,7 @@ final class ToaBossRooms {
             RaidSelfTest.expect(specialsUsed <= attacks / every && (attacks < 2 * every || specialsUsed >= 1),
                     "Akkha: " + specialsUsed + " specials in " + attacks + " attacks (one every " + every + ")");
             RaidSelfTest.expect(finalStand, "Akkha: he died without his final stand");
-            return r + ", " + (kills[0] + shadowsKilled) + " shadows dispelled, " + orbs;
+            return r + ", " + (kills[0] + shadowsKilled) + " shadows dispelled, " + orbs + ", " + memory;
         }
     }
 

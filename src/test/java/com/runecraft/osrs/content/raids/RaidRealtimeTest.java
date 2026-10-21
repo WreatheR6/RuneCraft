@@ -125,6 +125,128 @@ class RaidRealtimeTest {
     }
 
     @Test
+    void floorColumns() {
+        // a 1.5-block disc round a block centre: the 3x3 plus the four columns two out along the axes (13)
+        List<int[]> disc = RaidRealtime.discColumns(10.5, 20.5, 1.5);
+        assertEquals(9, disc.size(), "the 3x3 (corners at 1.41) and nothing two out (2.0 > 1.5)");
+        assertEquals(13, RaidRealtime.discColumns(10.5, 20.5, 2.0).size());
+        // a tiny disc still marks the column under it
+        List<int[]> dot = RaidRealtime.discColumns(3.2, -4.7, 0.1);
+        assertEquals(1, dot.size());
+        assertEquals(3, dot.get(0)[0]);
+        assertEquals(-5, dot.get(0)[1]);
+        // a lane one column wide from x 0 to 5 at z 0.5
+        List<int[]> lane = RaidRealtime.laneColumns(0.5, 0.5, 5.5, 0.5, 0.4);
+        assertEquals(6, lane.size());
+        for (int[] c : lane) {
+            assertEquals(0, c[1]);
+        }
+        assertEquals(12, RaidRealtime.rectColumns(0, 0, 2, 3).size());
+        assertEquals(12, RaidRealtime.rectColumns(2, 3, 0, 0).size(), "corners in any order");
+    }
+
+    @Test
+    void memoryBlastAndShadows() {
+        // the OSRS four ticks stay; Feeling Special?'s two become the strike floor (36 MC)
+        assertEquals(4, RaidRealtime.memoryBlastGap(4));
+        assertEquals(3, RaidRealtime.memoryBlastGap(2));
+        assertTrue(RaidRealtime.MEMORY_BLAST_MIN_GAP * 12 >= com.runecraft.osrs.ArenaTiming.MIN_LEAD_MC);
+        assertTrue(RaidRealtime.SHADOW_SLAM_LEAD_TICKS * 12 >= com.runecraft.osrs.ArenaTiming.MIN_LEAD_MC);
+        assertTrue(RaidRealtime.HET_BEAM_LEAD_TICKS * 12 >= com.runecraft.osrs.ArenaTiming.MIN_LEAD_MC);
+    }
+
+    @Test
+    void olmZones() {
+        // on the north wall the Olm faces south: its left is east
+        assertEquals(RaidRealtime.OLM_MIDDLE, RaidRealtime.olmZone(0, false));
+        assertEquals(RaidRealtime.OLM_LEFT, RaidRealtime.olmZone(10, false));
+        assertEquals(RaidRealtime.OLM_RIGHT, RaidRealtime.olmZone(-10, false));
+        // on the south wall it faces north: its left is west
+        assertEquals(RaidRealtime.OLM_LEFT, RaidRealtime.olmZone(-10, true));
+        assertEquals(RaidRealtime.OLM_RIGHT, RaidRealtime.olmZone(10, true));
+        assertEquals("east", RaidRealtime.olmZoneCompass(RaidRealtime.OLM_LEFT, false));
+        assertEquals("west", RaidRealtime.olmZoneCompass(RaidRealtime.OLM_LEFT, true));
+        assertEquals("centre", RaidRealtime.olmZoneCompass(RaidRealtime.OLM_MIDDLE, true));
+    }
+
+    @Test
+    void olmHeadSwerves() {
+        RaidRealtime.OlmHead head = new RaidRealtime.OlmHead();
+        int[] middle = {0, 1, 0};
+        int[] left = {2, 0, 1};
+        // a player in the zone it faces: it acts
+        RaidRealtime.OlmHead.Step s = head.step(middle, true, -1);
+        assertTrue(s.act() && !s.turned() && !s.catchUp());
+        // nobody there: it swerves to the zone with the most players and skips the step
+        s = head.step(left, true, -1);
+        assertFalse(s.act());
+        assertTrue(s.turned());
+        assertEquals(RaidRealtime.OLM_LEFT, s.facing());
+        // the skipped standard attack is caught up on the next step, beside that step's own action (a special here)
+        s = head.step(left, false, -1);
+        assertTrue(s.act() && s.catchUp());
+        // ... once
+        s = head.step(left, true, -1);
+        assertTrue(s.act() && !s.catchUp());
+        // a skipped special is never caught up
+        s = head.step(new int[]{0, 0, 1}, false, -1);
+        assertFalse(s.act());
+        assertEquals(RaidRealtime.OLM_RIGHT, s.facing());
+        s = head.step(new int[]{0, 0, 1}, true, -1);
+        assertTrue(s.act() && !s.catchUp());
+        // only the step just before is caught up: two skipped steps don't cascade
+        head.step(new int[]{1, 0, 0}, true, -1); // turns left, owes one
+        head.step(new int[]{0, 1, 0}, false, -1); // turns middle, skipping a special: the standard owed before is gone
+        s = head.step(new int[]{0, 1, 0}, true, -1);
+        assertTrue(s.act() && !s.catchUp());
+        // a hand damaged within four ticks draws the head to its side when it scans nobody
+        RaidRealtime.OlmHead h2 = new RaidRealtime.OlmHead();
+        s = h2.step(new int[]{0, 0, 0}, true, RaidRealtime.OLM_RIGHT);
+        assertEquals(RaidRealtime.OLM_RIGHT, s.facing());
+        assertFalse(s.act());
+        // nobody anywhere: it stays and skips
+        RaidRealtime.OlmHead h3 = new RaidRealtime.OlmHead();
+        s = h3.step(new int[]{0, 0, 0}, true, -1);
+        assertEquals(RaidRealtime.OLM_MIDDLE, s.facing());
+        assertFalse(s.turned() || s.act());
+        // ties go to the middle
+        RaidRealtime.OlmHead h4 = new RaidRealtime.OlmHead();
+        h4.step(new int[]{1, 0, 0}, true, -1);
+        s = h4.step(new int[]{0, 1, 1}, true, -1);
+        assertEquals(RaidRealtime.OLM_MIDDLE, s.facing());
+    }
+
+    @Test
+    void verzikLightningBall() {
+        // two players either side of Verzik (at the origin): the ball arcs through her
+        double[][] across = {{-4, 0}, {4, 0}};
+        assertEquals(RaidRealtime.Chain.THROUGH_VERZIK, RaidRealtime.lightningBounce(1, 0, across, 0, 0, 0).chain());
+        // two players side by side to her north: it jumps between them
+        double[][] together = {{-2, -6}, {2, -6}};
+        RaidRealtime.Bounce b = RaidRealtime.lightningBounce(1, 0, together, 0, 0, 0);
+        assertEquals(RaidRealtime.Chain.NEXT, b.chain());
+        assertEquals(1, b.next());
+        b = RaidRealtime.lightningBounce(2, 1, together, 0, 0, 7);
+        assertEquals(0, b.next(), "back to the only teammate in range");
+        // the fourth player it reaches is struck (OSRS: "chained between 4 players")
+        assertEquals(RaidRealtime.Chain.STRIKE, RaidRealtime.lightningBounce(RaidRealtime.VERZIK_LIGHTNING_PLAYERS, 0, together, 0, 0, 0).chain());
+        // nobody within range: the one it reached is struck
+        double[][] apart = {{-12, 0}, {12, 0}};
+        assertEquals(RaidRealtime.Chain.STRIKE, RaidRealtime.lightningBounce(1, 0, apart, 0, -20, 0).chain());
+        // solo: always struck
+        assertEquals(RaidRealtime.Chain.STRIKE, RaidRealtime.lightningBounce(1, 0, new double[][]{{3, 3}}, 0, 0, 0).chain());
+        // three players: the pick chooses among the teammates in range, never the holder
+        double[][] three = {{0, -6}, {3, -6}, {-3, -6}};
+        java.util.Set<Integer> seen = new java.util.HashSet<>();
+        for (int pick = 0; pick < 6; pick++) {
+            RaidRealtime.Bounce x = RaidRealtime.lightningBounce(1, 0, three, 0, 0, pick);
+            assertEquals(RaidRealtime.Chain.NEXT, x.chain());
+            seen.add(x.next());
+        }
+        assertEquals(Set.of(1, 2), seen);
+    }
+
+    @Test
     void words() {
         assertEquals("north", RaidRealtime.compass(0, -5));
         assertEquals("south-east", RaidRealtime.compass(3, 3));

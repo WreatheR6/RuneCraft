@@ -259,4 +259,241 @@ public final class RaidRealtime {
             default -> "Floor slams NORTH and SOUTH - stand in the centre three rows!";
         };
     }
+
+    // ------------------------------------------------------------------ floor marks (round 43)
+
+    /**
+     * The floor columns (block x, z) a circle of {@code radius} blocks round ({@code cx}, {@code cz}) covers: every column whose
+     * centre lies inside it, and always the column under the centre. Raid floor marks colour these blocks.
+     */
+    public static List<int[]> discColumns(double cx, double cz, double radius) {
+        List<int[]> out = new ArrayList<>();
+        int x0 = (int) Math.floor(cx - radius);
+        int x1 = (int) Math.floor(cx + radius);
+        int z0 = (int) Math.floor(cz - radius);
+        int z1 = (int) Math.floor(cz + radius);
+        int ux = (int) Math.floor(cx);
+        int uz = (int) Math.floor(cz);
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                double dx = x + 0.5 - cx;
+                double dz = z + 0.5 - cz;
+                if (dx * dx + dz * dz <= radius * radius || (x == ux && z == uz)) {
+                    out.add(new int[]{x, z});
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * The floor columns a lane covers: every column whose centre lies within {@code halfWidth} of the segment from ({@code ax},
+     * {@code az}) to ({@code bx}, {@code bz}) ({@link #inLane}), and always the columns under its two ends.
+     */
+    public static List<int[]> laneColumns(double ax, double az, double bx, double bz, double halfWidth) {
+        List<int[]> out = new ArrayList<>();
+        int x0 = (int) Math.floor(Math.min(ax, bx) - halfWidth);
+        int x1 = (int) Math.floor(Math.max(ax, bx) + halfWidth);
+        int z0 = (int) Math.floor(Math.min(az, bz) - halfWidth);
+        int z1 = (int) Math.floor(Math.max(az, bz) + halfWidth);
+        int ax0 = (int) Math.floor(ax);
+        int az0 = (int) Math.floor(az);
+        int bx0 = (int) Math.floor(bx);
+        int bz0 = (int) Math.floor(bz);
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                boolean end = (x == ax0 && z == az0) || (x == bx0 && z == bz0);
+                if (end || inLane(x + 0.5, z + 0.5, ax, az, bx, bz, halfWidth)) {
+                    out.add(new int[]{x, z});
+                }
+            }
+        }
+        return out;
+    }
+
+    /** The floor columns of the block rectangle from ({@code x0}, {@code z0}) to ({@code x1}, {@code z1}), both corners included. */
+    public static List<int[]> rectColumns(int x0, int z0, int x1, int z1) {
+        List<int[]> out = new ArrayList<>();
+        for (int x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) {
+            for (int z = Math.min(z0, z1); z <= Math.max(z0, z1); z++) {
+                out.add(new int[]{x, z});
+            }
+        }
+        return out;
+    }
+
+    // ------------------------------------------------------------------ Akkha (round 43)
+
+    /**
+     * The shortest gap (game ticks) between two of Akkha's Memory Blasts: the real-time strike floor (36 MC), so the step into
+     * the next safe quadrant gets a fair window. // playability: OSRS gives four ticks, two with Feeling Special?
+     */
+    public static final int MEMORY_BLAST_MIN_GAP = 3;
+
+    /** The gap between Memory Blasts for the invocations' OSRS gap ({@code osrsGap}: 4, or 2 with Feeling Special?). */
+    public static int memoryBlastGap(int osrsGap) {
+        return Math.max(MEMORY_BLAST_MIN_GAP, osrsGap);
+    }
+
+    /**
+     * Game ticks between a quadrant shadow's full charge (its warning) and its spear slam enveloping the quadrant. // playability:
+     * OSRS slams as the hourglass fills (the element spreads from the edge to the centre, so a quick step still escapes it)
+     */
+    public static final int SHADOW_SLAM_LEAD_TICKS = 3;
+
+    // ------------------------------------------------------------------ the Great Olm's head (round 43)
+
+    /** The Olm's attack zones, as it faces the chamber from its wall. */
+    public static final int OLM_LEFT = 0;
+    public static final int OLM_MIDDLE = 1;
+    public static final int OLM_RIGHT = 2;
+    /** Blocks either side of the Olm's head that its middle zone spans. // approx: the chamber in thirds */
+    public static final double OLM_MIDDLE_HALF_WIDTH = 6.5;
+
+    /**
+     * The Olm's attack zone holding a player {@code dxEast} blocks east of its head. The head on the north wall faces south, so
+     * its left is east; on the south wall its left is west.
+     */
+    public static int olmZone(double dxEast, boolean southWall) {
+        if (Math.abs(dxEast) < OLM_MIDDLE_HALF_WIDTH) {
+            return OLM_MIDDLE;
+        }
+        boolean east = dxEast > 0;
+        return east != southWall ? OLM_LEFT : OLM_RIGHT;
+    }
+
+    /** "left", "middle" or "right". */
+    public static String olmZoneName(int zone) {
+        return zone == OLM_LEFT ? "left" : zone == OLM_RIGHT ? "right" : "middle";
+    }
+
+    /** The compass side of an Olm zone: its left is east on the north wall, west on the south wall. */
+    public static String olmZoneCompass(int zone, boolean southWall) {
+        if (zone == OLM_MIDDLE) {
+            return "centre";
+        }
+        return (zone == OLM_LEFT) != southWall ? "east" : "west";
+    }
+
+    /**
+     * The Great Olm's head (OSRS wiki, Great Olm): it faces one of three zones and attacks only players in it. At each step of its
+     * rotation it scans the zone it faces: with a player there it acts (and catches up a standard attack it skipped on the step
+     * before); with nobody there it swerves to the zone with the most players (to a hand's side when that hand was damaged
+     * within four ticks) and skips the step: a skipped standard attack is caught up on the next step, a skipped special
+     * (Crystal Burst, Lightning, Teleport) is lost.
+     */
+    public static final class OlmHead {
+        /** One step's outcome: where the head now faces, whether it turned, acts, and catches up a skipped standard attack. */
+        public record Step(int facing, boolean turned, boolean act, boolean catchUp) {
+        }
+
+        private int facing = OLM_MIDDLE;
+        private boolean owed;
+
+        public int facing() {
+            return facing;
+        }
+
+        /** A new phase: the head rises facing the middle, owing nothing. */
+        public void reset() {
+            facing = OLM_MIDDLE;
+            owed = false;
+        }
+
+        /**
+         * One rotation step. {@code counts}: players in the left, middle and right zones; {@code standard}: this step is a
+         * standard attack; {@code damagedHandZone}: the zone of a hand damaged within four ticks, or -1.
+         */
+        public Step step(int[] counts, boolean standard, int damagedHandZone) {
+            if (counts[facing] > 0) {
+                boolean catchUp = owed;
+                owed = false;
+                return new Step(facing, false, true, catchUp);
+            }
+            int to = facing;
+            if (damagedHandZone >= 0) {
+                to = damagedHandZone;
+            } else {
+                int best = -1;
+                // the most players; ties go to the middle, then the left
+                for (int z : new int[]{OLM_MIDDLE, OLM_LEFT, OLM_RIGHT}) {
+                    if (counts[z] > 0 && (best < 0 || counts[z] > counts[best])) {
+                        best = z;
+                    }
+                }
+                if (best >= 0) {
+                    to = best;
+                }
+            }
+            boolean turned = to != facing;
+            facing = to;
+            // only the step just skipped can be caught up (no cascade); specials never are
+            owed = standard;
+            return new Step(facing, turned, false, false);
+        }
+    }
+
+    // ------------------------------------------------------------------ Verzik's lightning ball (round 43)
+
+    /** Players the lightning ball reaches before it strikes the last of them (OSRS wiki: "chained between 4 players"). */
+    public static final int VERZIK_LIGHTNING_PLAYERS = 4;
+    /** Blocks within which a teammate can take the ball on. // approx: the wiki only says "too far from any teammates" */
+    public static final double VERZIK_LIGHTNING_CHAIN_RANGE = 10.0;
+    /** Blocks either side of the ball's path within which Verzik's body catches it (about half her width). */
+    public static final double VERZIK_LIGHTNING_CATCH = 1.6;
+
+    /** What the lightning ball does on reaching a player. */
+    public enum Chain {
+        /** It jumps on to the next player. */
+        NEXT,
+        /** Verzik stands in its path to the next player: it arcs through her (15-20 to her). */
+        THROUGH_VERZIK,
+        /** It strikes the player it reached (up to 48; 25 in insulated boots). */
+        STRIKE
+    }
+
+    /** The lightning ball's next move: what it does and the player it jumps to (-1 when it doesn't jump). */
+    public record Bounce(Chain chain, int next) {
+    }
+
+    /**
+     * Verzik's lightning ball reaching player {@code holder}, the {@code reached}th player it has reached (OSRS wiki, Verzik
+     * Vitur and the ToB strategies): the fourth is struck; a player with no teammate within {@link #VERZIK_LIGHTNING_CHAIN_RANGE}
+     * is struck; otherwise it jumps to the {@code pick}th (modulo) teammate in range, a random sequence, and when Verzik stands
+     * within {@link #VERZIK_LIGHTNING_CATCH} of that path it arcs through her instead. {@code xz}: every player's horizontal
+     * position (x, z), the holder's included; ({@code vx}, {@code vz}): Verzik's. // playability: OSRS resolves the chain as the
+     * ball leaves; here each jump is decided as the ball arrives, from where everyone stands then, so the team can still move
+     */
+    public static Bounce lightningBounce(int reached, int holder, double[][] xz, double vx, double vz, int pick) {
+        if (reached >= VERZIK_LIGHTNING_PLAYERS) {
+            return new Bounce(Chain.STRIKE, -1);
+        }
+        List<Integer> mates = new ArrayList<>();
+        for (int i = 0; i < xz.length; i++) {
+            if (i != holder && Math.hypot(xz[i][0] - xz[holder][0], xz[i][1] - xz[holder][1]) <= VERZIK_LIGHTNING_CHAIN_RANGE) {
+                mates.add(i);
+            }
+        }
+        if (mates.isEmpty()) {
+            return new Bounce(Chain.STRIKE, -1);
+        }
+        int next = mates.get(Math.floorMod(pick, mates.size()));
+        if (inLane(vx, vz, xz[holder][0], xz[holder][1], xz[next][0], xz[next][1], VERZIK_LIGHTNING_CATCH)) {
+            return new Bounce(Chain.THROUGH_VERZIK, -1);
+        }
+        return new Bounce(Chain.NEXT, next);
+    }
+
+    // ------------------------------------------------------------------ the Path of Het's beam (round 43)
+
+    /**
+     * Game ticks the caster statue's beam path glows before the beam fires. // playability: OSRS fires it with the statue's
+     * animation, the path shown as it burns
+     */
+    public static final int HET_BEAM_LEAD_TICKS = 3;
+    /**
+     * Blocks either side of a beam's line that it burns: a player whose foot is just over a beam tile's edge is not burnt.
+     * // playability: OSRS burns the tiles the beam crosses
+     */
+    public static final double HET_BEAM_HALF_WIDTH = 0.35;
 }

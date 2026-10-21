@@ -189,6 +189,11 @@ public class RoomLogic {
         attempt++;
         cleanup();
         started = false;
+        // Round 43: the strikes, projectiles, cues, ground hazards and floor marks of the failed attempt go with it, so none lands
+        // on the retry or lingers on its floor.
+        net.minecraft.world.phys.AABB box = RaidBuilder.roomBox(raid.slot, index);
+        RaidEffects.clear(world(), box);
+        Mechanics.clearHazards(world(), box);
     }
 
     /** Bumped whenever the room resets (a ToA wipe), so delayed effects of an earlier attempt are dropped. */
