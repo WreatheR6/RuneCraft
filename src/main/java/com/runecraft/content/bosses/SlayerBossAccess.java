@@ -46,7 +46,7 @@ public final class SlayerBossAccess {
                     || player.getRandom().nextInt(SlayerBossRules.BRITTLE_KEY_RATE) != 0) {
                 return;
             }
-            entity.spawnAtLocation(Inv.stack(SlayerBossRules.BRITTLE_KEY, 1));
+            com.runecraft.combat.LootDrops.spawn(entity, Inv.stack(SlayerBossRules.BRITTLE_KEY, 1), player);
             CollectionLog.obtain(player, SlayerBossRules.BRITTLE_KEY);
             Msg.red(player, "A brittle key falls to the floor.");
         });

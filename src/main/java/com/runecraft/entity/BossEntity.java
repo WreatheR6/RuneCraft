@@ -117,9 +117,16 @@ public class BossEntity extends OsrsMonsterEntity {
         return ModEntities.boss(getType());
     }
 
+    /**
+     * A boss attacks any player whatever their combat level, unless the wiki infobox calls it not aggressive (round 43,
+     * {@link com.runecraft.osrs.data.MonsterAggression}: Delrith): then it only fights the player who disturbed it (summoned at its
+     * stone: its first target) or attacked it, never hunting anyone new. Its lair keeps its leash and reset rules.
+     */
     @Override
     protected boolean shouldAggro(net.minecraft.world.entity.LivingEntity entity) {
-        return entity instanceof ServerPlayer p && !p.isCreative() && !p.isSpectator();
+        Boss boss = boss();
+        return entity instanceof ServerPlayer p && !p.isCreative() && !p.isSpectator()
+                && (boss == null || com.runecraft.osrs.data.MonsterAggression.aggressive(boss.entityId(), true));
     }
 
     @Override
@@ -521,7 +528,7 @@ public class BossEntity extends OsrsMonsterEntity {
         // As in OSRS the Barrows brothers drop nothing: their tables are rolled by the Barrows chest.
         if (boss.lair() != com.runecraft.osrs.Landmark.BARROWS) {
             for (Drops.Rolled r : Drops.roll(boss.drops(), getRandom(), false)) {
-                Inv.spawnAtLocation(this, Drops.withDoses(Inv.stack(r.item(), r.count()), r.doses()));
+                com.runecraft.combat.LootDrops.spawn(this, Drops.withDoses(Inv.stack(r.item(), r.count()), r.doses()), player);
                 CollectionLog.obtain(player, r.item());
             }
         }

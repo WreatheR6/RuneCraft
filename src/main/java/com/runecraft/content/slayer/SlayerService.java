@@ -580,7 +580,7 @@ public final class SlayerService {
     }
 
     private static void reward(ServerPlayer player, LivingEntity at, String item, String message) {
-        at.spawnAtLocation(Inv.stack(item, 1));
+        com.runecraft.combat.LootDrops.spawn(at, Inv.stack(item, 1), player);
         CollectionLog.obtain(player, item);
         Msg.red(player, message);
     }

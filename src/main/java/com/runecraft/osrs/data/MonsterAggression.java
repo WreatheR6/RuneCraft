@@ -36,6 +36,37 @@ public final class MonsterAggression {
         return java.util.Collections.unmodifiableMap(ROWS);
     }
 
+    /**
+     * Vanilla stand-ins the generator gives no definite row (no traits row of their own, or a wiki version it can't match), read
+     * off the same wiki dump by hand (round 43): the villager stands in for the Man ("aggressive = No"), the witch for the level 20
+     * Dark wizard ("Yes"), the skeleton for the level 22 Skeleton ("Yes"); sheep and pigs are Infobox NPCs in OSRS (they can't be
+     * attacked), so they never start a fight.
+     */
+    private static final Map<String, Boolean> STAND_INS = Map.of(
+            "Monster.VILLAGER", Boolean.FALSE,
+            "Monster.WITCH", Boolean.TRUE,
+            "Monster.SKELETON", Boolean.TRUE,
+            "Monster.SHEEP", Boolean.FALSE,
+            "Monster.PIG", Boolean.FALSE);
+
+    /**
+     * The aggressiveness of a built-in {@link Monster} (the vanilla stand-ins in Gielinor): its wiki row, else its hand-read
+     * stand-in row ({@link #STAND_INS}), else its own flag.
+     */
+    public static boolean aggressive(Monster m) {
+        String key = MonsterTraits.key(m);
+        Boolean w = wiki(key);
+        if (w == null) {
+            w = STAND_INS.get(key);
+        }
+        return w != null ? w : m.aggressive();
+    }
+
+    /** The hand-read stand-in rows (for the tests). */
+    public static Map<String, Boolean> standIns() {
+        return STAND_INS;
+    }
+
     // BEGIN GENERATED (combat/generator/monster_aggression.py)
     private static final String[] AGGRESSIVE = {
             "Monster.BLACK_DEMON", "Monster.DARK_WIZARD", "Monster.GHOUL", "Monster.GIANT_RAT", "Monster.GIANT_SPIDER",

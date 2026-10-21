@@ -176,11 +176,8 @@ public final class AraxxorCorpse {
         for (Loot l : c.loot()) {
             if (!l.stack().isEmpty()) {
                 // one entity per full stack: one holding more than 99 (Araxxor's 1,200 pure essence) can't be saved
-                Inv.splitStacks(l.stack().copy(), stack -> {
-                    ItemEntity e = new ItemEntity(c.world(), c.at().x, c.at().y + 0.5, c.at().z, stack);
-                    e.setDefaultPickUpDelay();
-                    c.world().addFreshEntity(e);
-                });
+                // laid still where Araxxor died, the harvester's for 60 s (round 43, as every monster drop)
+                com.runecraft.combat.LootDrops.spawnAt(c.world(), c.at(), l.stack().copy(), p, null);
             }
             CollectionLog.obtain(p, l.rolled().item());
         }

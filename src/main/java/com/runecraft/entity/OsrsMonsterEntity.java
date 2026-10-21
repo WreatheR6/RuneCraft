@@ -78,6 +78,7 @@ public class OsrsMonsterEntity extends Monster implements OsrsCombatant {
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
+        this.goalSelector.addGoal(1, new OsrsRetreatGoal(this));
         this.goalSelector.addGoal(2, new OsrsAttackGoal(this));
         this.goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.8));
         this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 8.0f));
@@ -100,7 +101,9 @@ public class OsrsMonsterEntity extends Monster implements OsrsCombatant {
      * OSRS aggression: only attacks players whose combat level is at most double its own (any level in the
      * Wilderness), and stops once the player has been in the area for 10 minutes (tolerance; some monsters never tolerate).
      * An open-world creature takes its aggressiveness from the wiki ({@link com.runecraft.osrs.data.MonsterAggression}, round 42:
-     * most Slayer creatures are passive); encounter creatures (bosses, raids, minigames, quest spawns) keep their own flag.
+     * most Slayer creatures are passive); encounter creatures (bosses, raids, minigames, quest spawns) keep their own flag and, when
+     * aggressive, attack any player whatever their combat level or how long they have stayed (round 43: a boss's or quest's
+     * summons, a clue guardian or a superior is part of its fight, as the vanilla stand-ins' summons already were).
      */
     protected boolean shouldAggro(net.minecraft.world.entity.LivingEntity entity) {
         MonsterStats s = stats();
@@ -109,8 +112,9 @@ public class OsrsMonsterEntity extends Monster implements OsrsCombatant {
         }
         boolean own = s.monster() != null ? s.monster().aggressive() : s.profile().aggressive;
         String key = s.traitsKey();
-        boolean aggressive = isOpenWorld() ? com.runecraft.osrs.data.MonsterAggression.aggressive(key, own) : own;
-        return OsrsTargetGoal.osrsAggression(this, player, aggressive, s.combatLevel(), key);
+        boolean openWorld = isOpenWorld();
+        boolean aggressive = openWorld ? com.runecraft.osrs.data.MonsterAggression.aggressive(key, own) : own;
+        return OsrsTargetGoal.osrsAggression(this, player, aggressive, s.combatLevel(), key, !openWorld);
     }
 
     /** True for a monster a world spawner placed (it has a spawn point to stay near), false for encounter monsters. */
@@ -347,6 +351,7 @@ public class OsrsMonsterEntity extends Monster implements OsrsCombatant {
         if (tickCount % com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK == 0) {
             com.runecraft.combat.PoisonService.tick(this, com.runecraft.action.ActionManager.gameTick());
         }
+        OsrsTargetGoal.regenerate(this); // round 43: 1 hitpoint a minute (bosses, raid and minigame creatures excepted)
     }
 
     @Override

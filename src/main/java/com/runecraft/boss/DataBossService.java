@@ -100,8 +100,9 @@ public final class DataBossService {
         java.util.List<com.runecraft.skill.Drops.Rolled> loot = rollLoot(killer, died, bossId, table);
         LootRoll roll = lastRoll;
         for (com.runecraft.skill.Drops.Rolled r : loot) {
-            Inv.spawnAtLocation(at, com.runecraft.skill.Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(killer, died,
-                    r.item(), r.count()), r.doses()), roll.dropped()::add);
+            // laid still on its tile (a big boss's south-westernmost one), the killer's for 60 s (round 43, as every monster drop)
+            com.runecraft.combat.LootDrops.spawn(at, com.runecraft.skill.Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(
+                    killer, died, r.item(), r.count()), r.doses()), killer, roll.dropped()::add);
             com.runecraft.collection.CollectionLog.obtain(killer, r.item());
         }
     }
@@ -205,6 +206,9 @@ public final class DataBossService {
         // raises in onSpawn (Eldric beside Branda): set before that, as they copy its lair rules when they rise
         DataBossEntity entity = spawn(world, at, boss, player,
                 arena != null && at.getX() == arena.x() && at.getZ() == arena.z() ? arena.radius() + 8 : 24, true);
+        if (entity != null) {
+            entity.summoner(player.getUUID());
+        }
         if (entity != null && variant != null) {
             entity.applyVariant(variant);
         }

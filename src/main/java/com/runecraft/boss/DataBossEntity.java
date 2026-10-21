@@ -53,6 +53,8 @@ public class DataBossEntity extends OsrsMonsterEntity {
      */
     private net.minecraft.core.BlockPos home;
     private int leash;
+    /** The player who summoned this boss at its stone (null for bosses spawned by other code). Saved with the entity. */
+    private java.util.UUID summoner;
     /** Game ticks in a row with no player around (a summoned boss resets after {@link BossLair#RESET_TICKS}). */
     private int lonelyTicks;
     /** A summoned boss with nobody near it for this long (game ticks: one minute) resets, like an OSRS instance left. */
@@ -100,6 +102,15 @@ public class DataBossEntity extends OsrsMonsterEntity {
     public void markSummoned(net.minecraft.core.BlockPos at, int leash) {
         this.home = at.immutable();
         this.leash = Math.max(8, leash);
+    }
+
+    /** The player who summoned this boss at its stone, or null (a Doom delve level belongs to the summoner's run). */
+    public java.util.UUID summoner() {
+        return summoner;
+    }
+
+    public void summoner(java.util.UUID player) {
+        this.summoner = player;
     }
 
     /** A boss's next form or companion (Zulrah's forms, Dawn, Eldric) shares its lair: the same leash and reset. */
@@ -323,6 +334,9 @@ public class DataBossEntity extends OsrsMonsterEntity {
             nbt.putInt("RcLeash", leash);
             nbt.putBoolean("RcSafespots", breakSafespots);
         }
+        if (summoner != null) {
+            nbt.putUUID("RcSummoner", summoner);
+        }
         CompoundTag scriptData = new CompoundTag();
         script.writeNbt(this, scriptData);
         if (!scriptData.isEmpty()) {
@@ -349,14 +363,35 @@ public class DataBossEntity extends OsrsMonsterEntity {
             markSummoned(net.minecraft.core.BlockPos.of(nbt.getLong("RcHome")), nbt.getInt("RcLeash"));
             breakSafespots = nbt.getBoolean("RcSafespots");
         }
+        if (nbt.hasUUID("RcSummoner")) {
+            summoner = nbt.getUUID("RcSummoner");
+        }
         if (nbt.contains("RcScript")) {
             script.readNbt(this, nbt.getCompound("RcScript"));
         }
     }
 
+    /**
+     * A boss attacks any player whatever their combat level, unless the wiki infobox calls it not aggressive (round 43,
+     * {@link com.runecraft.osrs.data.MonsterAggression}: the Kraken, the Giant Mole, Vorkath, the Abyssal Sire, the Nightmare, the
+     * Thermonuclear smoke devil, the Grotesque Guardians, Vardorvis and some quest bosses): then it only fights the player who
+     * disturbed it (summoned at its stone or beside its quest's player: its first target) or attacked it, never hunting anyone new
+     * (the Giant Mole that dug away must be chased, as on the wiki). Its lair keeps its leash and reset rules. Raid and minigame
+     * bosses stay aggressive: their rooms set everything on the party.
+     */
     @Override
     protected boolean shouldAggro(LivingEntity entity) {
-        return entity instanceof ServerPlayer p && !p.isCreative() && !p.isSpectator();
+        if (!(entity instanceof ServerPlayer p) || p.isCreative() || p.isSpectator()) {
+            return false;
+        }
+        BossDef def = def();
+        if (def == null || def.raidOnly || instanceTag != null && (instanceTag.startsWith("raid:")
+                || instanceTag.startsWith(com.runecraft.content.minigames.MinigameSession.TAG))
+                || getTags().contains(com.runecraft.content.minigames.MinigameSession.TAG)
+                || com.runecraft.content.raids.RaidBuilder.slotAt(getX(), getZ()) >= 0) {
+            return true;
+        }
+        return com.runecraft.osrs.data.MonsterAggression.aggressive(def.id, true);
     }
 
     @Override

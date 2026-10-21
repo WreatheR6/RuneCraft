@@ -17,10 +17,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 /**
- * Monster drops as OSRS lays them (round 42): on the monster's tile, not flung about (zero velocity), and the winner's alone for 60
- * seconds, in the Wilderness too (an untradeable item stays theirs); a tradeable drop is gone 2 minutes after the kill, an
- * untradeable one after 3 (wiki, Drops). // approx: OSRS hides a private drop from other players; here they see it but can't pick
- * it up.
+ * Monster drops as OSRS lays them (round 42): on the monster's tile (a monster bigger than a tile: its south-westernmost one,
+ * round 43), not flung about (zero velocity), and the winner's alone for 60 seconds, in the Wilderness too (an untradeable item
+ * stays theirs); a tradeable drop is gone 2 minutes after the kill, an untradeable one after 3 (wiki, Drops). Every path that puts
+ * a kill's loot on the ground goes through here (round 43: boss tables, revenants, clue scrolls and keys, quest drops, champion
+ * scrolls, the looting bag, Slayer keys, God Wars key pieces). // approx: OSRS hides a private drop from other players; here they
+ * see it but can't pick it up.
  */
 public final class LootDrops {
     /** Tag on a drop that is still private to its winner. */
@@ -53,11 +55,27 @@ public final class LootDrops {
 
     /** Lays {@code stack} where {@code dead} fell, private to {@code winner} (null: everyone's). */
     public static void spawn(LivingEntity dead, ItemStack stack, ServerPlayer winner) {
-        if (stack.isEmpty() || !(dead.level() instanceof ServerLevel level)) {
+        spawn(dead, stack, winner, null);
+    }
+
+    /**
+     * Lays {@code stack} where {@code at} stands (the monster that died, or the player a boss's loot goes under), private to
+     * {@code winner} (null: everyone's); {@code spawned} (nullable) is handed each item entity that joined the world.
+     */
+    public static void spawn(Entity at, ItemStack stack, ServerPlayer winner, java.util.function.Consumer<ItemEntity> spawned) {
+        if (at.level() instanceof ServerLevel level) {
+            spawnAt(level, dropSpot(at), stack, winner, spawned);
+        }
+    }
+
+    /** {@link #spawn(Entity, ItemStack, ServerPlayer, java.util.function.Consumer)} at a spot (a corpse harvested after the kill). */
+    public static void spawnAt(ServerLevel level, net.minecraft.world.phys.Vec3 spot, ItemStack stack, ServerPlayer winner,
+            java.util.function.Consumer<ItemEntity> spawned) {
+        if (stack.isEmpty()) {
             return;
         }
         Inv.splitStacks(stack, s -> {
-            ItemEntity e = new ItemEntity(level, dead.getX(), dead.getY() + 0.05, dead.getZ(), s, 0, 0, 0);
+            ItemEntity e = new ItemEntity(level, spot.x, spot.y + 0.05, spot.z, s, 0, 0, 0);
             e.setDefaultPickUpDelay();
             boolean tradeable = !com.runecraft.osrs.data.Untradeables.untradeable(Inv.idOf(s));
             e.lifespan = MonsterAi.lootLifespanMc(tradeable);
@@ -72,12 +90,33 @@ public final class LootDrops {
                     }
                 }
             }
-            if (!level.addFreshEntity(e) && isPrivate) {
+            if (level.addFreshEntity(e)) {
+                if (spawned != null) {
+                    spawned.accept(e);
+                }
+            } else if (isPrivate) {
                 synchronized (LootDrops.class) {
                     PENDING.remove(e.getUUID());
                 }
             }
         });
+    }
+
+    /**
+     * Where a drop lands: the monster's tile, or the south-westernmost tile of one bigger than a tile (wiki, Drops: "Large monsters
+     * (that take up more than one square) will always drop their drops in the south-westernmost square"), unless a block fills
+     * that spot. A player (loot under the killer) gets it at their feet.
+     */
+    static net.minecraft.world.phys.Vec3 dropSpot(Entity at) {
+        if (at instanceof net.minecraft.world.entity.player.Player || !MonsterAi.dropsInSouthWestTile(at.getBbWidth())) {
+            return at.position();
+        }
+        double[] xz = MonsterAi.southWestTileCentre(at.getBoundingBox().minX, at.getBoundingBox().maxZ);
+        net.minecraft.core.BlockPos pos = net.minecraft.core.BlockPos.containing(xz[0], at.getY() + 0.05, xz[1]);
+        if (!at.level().getBlockState(pos).getCollisionShape(at.level(), pos).isEmpty()) {
+            return at.position();
+        }
+        return new net.minecraft.world.phys.Vec3(xz[0], at.getY(), xz[1]);
     }
 
     /** Releases private tradeable drops whose 60 seconds are up. */

@@ -101,7 +101,9 @@ final class TownSpawner {
         int y = NpcPlacement.standY(world, x, z);
         BlockPos pos = new BlockPos(x, y, z);
         mob.moveTo(x + 0.5, y, z + 0.5, world.getRandom().nextFloat() * 360f, 0);
-        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null);
+        // a world spawn (round 43): the resident gets its spawn point and the open-world rules (leash, 10-block hunt, combat-level
+        // aggression), not an encounter monster's
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(pos), MobSpawnType.SPAWNER, null);
         mob.setPersistenceRequired();
         world.addFreshEntity(mob);
         NEXT[index] = ticks + RESPAWN_TICKS;

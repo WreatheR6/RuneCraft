@@ -20,6 +20,8 @@ import net.minecraft.world.entity.player.Player;
  */
 public final class KillCredit {
     private static final Map<LivingEntity, MonsterAi.DamageLedger<UUID>> LEDGERS = new WeakHashMap<>();
+    /** The top damager of each monster whose death was handed out ({@link #winner}), for kill hooks that run after it (round 43). */
+    private static final Map<LivingEntity, UUID> TOP_AT_DEATH = new WeakHashMap<>();
     /** Damagers by UUID, for players not in the player list (the self-test's fake players). */
     private static final Map<UUID, WeakReference<ServerPlayer>> DAMAGERS = new HashMap<>();
 
@@ -49,11 +51,27 @@ public final class KillCredit {
         if (top == null) {
             return killer;
         }
+        TOP_AT_DEATH.put(dead, top);
         if (killer != null && killer.getUUID().equals(top)) {
             return killer;
         }
         ServerPlayer p = player(dead.getServer(), top);
         return p != null && p.isAlive() ? p : killer;
+    }
+
+    /**
+     * The player who dealt the most damage to a monster: from its ledger while it lives, or as recorded when its death was handed
+     * out ({@link #winner}); {@code fallback} when nobody is recorded or that player is gone. For kill hooks that credit something
+     * other than the drop (round 43: a Doom of Mokhaiotl delve level, which still only goes to the run that summoned it).
+     */
+    public static synchronized ServerPlayer topDamager(LivingEntity e, ServerPlayer fallback) {
+        MonsterAi.DamageLedger<UUID> ledger = LEDGERS.get(e);
+        UUID top = ledger != null ? ledger.top() : TOP_AT_DEATH.get(e);
+        if (top == null || fallback != null && fallback.getUUID().equals(top)) {
+            return fallback;
+        }
+        ServerPlayer p = player(e.getServer(), top);
+        return p != null && p.isAlive() ? p : fallback;
     }
 
     /** The damage each player has dealt to a living monster so far (self-tests). */

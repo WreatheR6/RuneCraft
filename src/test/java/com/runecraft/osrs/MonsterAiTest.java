@@ -56,10 +56,6 @@ class MonsterAiTest {
         assertFalse(MonsterAi.holdAtEdge(16, 18, 1.5, true, true), "a target inside its range is chased as usual");
         assertFalse(MonsterAi.holdAtEdge(16, 25, 1.5, false, true), "not under fire: it gives up instead");
         assertFalse(MonsterAi.holdAtEdge(16, 25, 10, true, true), "a ranged monster's range reaches the target");
-        // home again: it heals only once the hits have stopped for 6 s
-        assertFalse(MonsterAi.healsAtHome(0));
-        assertFalse(MonsterAi.healsAtHome(MonsterAi.UNDER_FIRE_MC - 1));
-        assertTrue(MonsterAi.healsAtHome(MonsterAi.UNDER_FIRE_MC));
         assertEquals(6 * 20, MonsterAi.UNDER_FIRE_MC);
     }
 
@@ -82,6 +78,82 @@ class MonsterAiTest {
     }
 
     @Test
+    void monstersRegenerateAHitpointAMinute() {
+        // wiki (Ice demon, Mod Ash): the default NPC regeneration is 1 every 100 game ticks; no full heal at home (round 43)
+        assertEquals(100, MonsterAi.REGEN_TICKS);
+        assertEquals(1200, MonsterAi.REGEN_MC);
+        assertFalse(MonsterAi.regenDue(0), "not on the tick it appears");
+        assertFalse(MonsterAi.regenDue(MonsterAi.REGEN_MC - 1));
+        assertTrue(MonsterAi.regenDue(MonsterAi.REGEN_MC));
+        assertTrue(MonsterAi.regenDue(3L * MonsterAi.REGEN_MC));
+        int due = 0;
+        for (long t = 1; t <= 10L * MonsterAi.REGEN_MC; t++) {
+            if (MonsterAi.regenDue(t)) {
+                due++;
+            }
+        }
+        assertEquals(10, due, "10 hitpoints in 10 minutes");
+        assertEquals(6f, MonsterAi.regenerated(5f, 32f));
+        assertEquals(32f, MonsterAi.regenerated(32f, 32f), "never above the maximum");
+        assertEquals(32f, MonsterAi.regenerated(31.5f, 32f));
+    }
+
+    @Test
+    void lowHitpointRetreat() {
+        // wiki, Chicken: "Chickens will sometimes try to retreat when they have 1 hitpoint left" (of 3)
+        assertEquals(1, MonsterAi.retreatAtHp(3));
+        assertTrue(MonsterAi.lowEnoughToRetreat(1, 3));
+        assertFalse(MonsterAi.lowEnoughToRetreat(2, 3));
+        assertFalse(MonsterAi.lowEnoughToRetreat(0, 3), "dead, not retreating");
+        assertEquals(5, MonsterAi.retreatAtHp(50), "a ghoul runs at a tenth of its hitpoints (approx)");
+        assertEquals(1, MonsterAi.retreatAtHp(1));
+        assertTrue(MonsterAi.retreats("Monster.CHICKEN"));
+        assertTrue(MonsterAi.retreats("Monster.GHOUL"));
+        assertFalse(MonsterAi.retreats("Monster.COW"));
+        assertFalse(MonsterAi.retreats(null));
+    }
+
+    @Test
+    void retreatersMatchTheWikiCategory() throws java.io.IOException {
+        String fixture = "osrs/monster_retreat.tsv";
+        java.nio.file.Path p = java.nio.file.Path.of("src/test/resources", fixture);
+        java.util.List<String> lines;
+        if (java.nio.file.Files.exists(p)) {
+            lines = java.nio.file.Files.readAllLines(p, java.nio.charset.StandardCharsets.UTF_8);
+        } else {
+            try (java.io.InputStream in = MonsterAiTest.class.getClassLoader().getResourceAsStream(fixture)) {
+                org.junit.jupiter.api.Assertions.assertNotNull(in, "missing " + fixture);
+                lines = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).lines().toList();
+            }
+        }
+        java.util.Set<String> keys = new java.util.TreeSet<>();
+        int pages = 0;
+        for (String l : lines) {
+            if (l.isBlank() || l.startsWith("#") || l.startsWith("wiki_page\t")) {
+                continue;
+            }
+            pages++;
+            String[] r = l.split("\t", -1);
+            if (r.length > 1 && !r[1].isEmpty()) {
+                keys.addAll(java.util.List.of(r[1].split(",")));
+            }
+        }
+        assertTrue(pages >= 30, "category pages: " + pages);
+        assertEquals(keys, new java.util.TreeSet<>(MonsterAi.RETREATS));
+        for (String k : keys) {
+            org.junit.jupiter.api.Assertions.assertNotNull(com.runecraft.osrs.data.MonsterTraits.get(k), k + " has no traits row");
+        }
+    }
+
+    @Test
+    void encounterMonstersStayInTheirArena() {
+        assertFalse(MonsterAi.outsideArena(MonsterAi.ENCOUNTER_LEASH_BLOCKS));
+        assertTrue(MonsterAi.outsideArena(MonsterAi.ENCOUNTER_LEASH_BLOCKS + 0.1));
+        assertTrue(MonsterAi.ENCOUNTER_LEASH_BLOCKS < 48, "round 42 chased 48 blocks");
+        assertTrue(MonsterAi.ENCOUNTER_LEASH_BLOCKS >= MonsterAi.ENCOUNTER_HUNT_BLOCKS, "it can fight whatever it hunts");
+    }
+
+    @Test
     void retaliationIsSticky() {
         assertTrue(MonsterAi.switchTarget(false, false, false, true), "no target: retaliate");
         assertFalse(MonsterAi.switchTarget(true, true, true, true), "a valid target is kept");
@@ -97,6 +169,12 @@ class MonsterAiTest {
         assertFalse(MonsterAi.stillEngaged(true, 3, 1.5, false), "out of sight");
         assertFalse(MonsterAi.stillEngaged(false, 3, 1.5, true), "after someone else / gone home");
         assertTrue(MonsterAi.stillEngaged(true, 9, 10, true), "a ranged monster within its own range");
+        // round 43: a monster with no way to the player (a fence, water) lets go even in sight
+        assertTrue(MonsterAi.stillEngaged(true, 3, 1.5, true, true));
+        assertFalse(MonsterAi.stillEngaged(true, 3, 1.5, true, false), "in sight but walled off");
+        assertFalse(MonsterAi.pathBlocked(-1, 1000), "never blocked");
+        assertFalse(MonsterAi.pathBlocked(990, 1000), "blocked only 10 MC: a moment's detour");
+        assertTrue(MonsterAi.pathBlocked(1000 - MonsterAi.PATH_BLOCKED_MC, 1000));
 
         SingleCombat sc = new SingleCombat();
         int player = 1;
@@ -143,5 +221,12 @@ class MonsterAiTest {
         assertEquals(2 * 60 * 20, MonsterAi.lootLifespanMc(true));
         assertEquals(3 * 60 * 20, MonsterAi.lootLifespanMc(false));
         assertTrue(MonsterAi.lootLifespanMc(true) > MonsterAi.PRIVATE_LOOT_MC, "public for a minute before it goes");
+        // wiki, Drops: a large monster's drops land on its south-westernmost square (Minecraft: west -x, south +z)
+        assertFalse(MonsterAi.dropsInSouthWestTile(0.6), "a goblin drops on its own tile");
+        assertFalse(MonsterAi.dropsInSouthWestTile(2.0), "one tile");
+        assertTrue(MonsterAi.dropsInSouthWestTile(6.0), "a 3x3 boss");
+        double[] sw = MonsterAi.southWestTileCentre(10.0, 26.0);
+        assertEquals(11.0, sw[0]);
+        assertEquals(25.0, sw[1]);
     }
 }

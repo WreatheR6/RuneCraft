@@ -50,6 +50,12 @@ import net.minecraft.world.phys.Vec3;
  * blocker is named, the top damager wins the kill with a private, unflung drop, and encounter spawns (God Wars bodyguards, a boss's
  * vanilla summons) keep their own rules.
  *
+ * <p>Round 43 adds the second pass: bosses the wiki calls not aggressive leave a player alone until disturbed or attacked; the
+ * passive vanilla stand-ins (cow, chicken, sheep, pig) fight back with their OSRS stats and hitpoints instead of panicking, the
+ * chicken retreats at its last hitpoint and the zombie doesn't burn in daylight; a stray villager becomes a Man or Woman; a monster
+ * keeps its damage at home and regenerates a hitpoint a minute; encounter monsters stay in their arena and attack any level; a
+ * monster walled off from the player (in sight) lets the single-way lock go, and a held attack doesn't re-send the refusal line.
+ *
  * <p>Time is driven as {@link NpcDeliveryChecks} does: {@link ActionManager#advanceForSelfTest}, the monsters' own ticks and
  * {@link Mechanics#tickForSelfTest} every Minecraft tick. Hits are counted through the damage hook and the pending-hit recorder,
  * never through health: the self-test player can't be hurt.
@@ -84,6 +90,13 @@ final class MonsterAiChecks {
         checks.add(new SelfTest.Check("boss:playability_monster_retaliation", () -> m.run(m::retaliation)));
         checks.add(new SelfTest.Check("boss:playability_monster_single_way", () -> m.run(m::singleWay)));
         checks.add(new SelfTest.Check("boss:playability_monster_top_damager", () -> m.run(m::topDamager)));
+        checks.add(new SelfTest.Check("boss:playability_monster_passive_bosses", () -> m.run(m::passiveBosses)));
+        checks.add(new SelfTest.Check("boss:playability_monster_passive_animals", () -> m.run(m::passiveAnimals)));
+        checks.add(new SelfTest.Check("boss:playability_monster_no_sunburn", () -> m.run(m::noSunburn)));
+        checks.add(new SelfTest.Check("boss:playability_monster_villager", () -> m.run(m::villager)));
+        checks.add(new SelfTest.Check("boss:playability_monster_regen", () -> m.run(m::regen)));
+        checks.add(new SelfTest.Check("boss:playability_monster_encounter_arena", () -> m.run(m::encounterArena)));
+        checks.add(new SelfTest.Check("boss:playability_monster_walled_off", () -> m.run(m::walledOff)));
         return checks;
     }
 
@@ -422,8 +435,9 @@ final class MonsterAiChecks {
     }
 
     /**
-     * A giant spider that chased a player past its aggression range gives up, walks back to its spawn point and is at full health
-     * again when it gets there; it doesn't come after the player while they stay out of its range.
+     * A giant spider that chased a player past its aggression range gives up and walks back to its spawn point, keeping its damage
+     * (round 43: OSRS has no reset; it regenerates a hitpoint a minute, see boss:playability_monster_regen); it doesn't come after
+     * the player while they stay out of its range.
      */
     private String leash() {
         ServerPlayer p = c.player;
@@ -448,17 +462,19 @@ final class MonsterAiChecks {
         }
         expect(!goal.returning(), "the giant spider never got home");
         expect(fromHome(spider) <= MonsterAi.HOME_BLOCKS + 0.5, "the giant spider stopped " + fmt(fromHome(spider)) + " blocks from home");
-        expect(spider.getHealth() >= spider.getMaxHealth(), "the giant spider came home with " + spider.getHealth() + "/" + spider.getMaxHealth());
+        expect(spider.getHealth() <= spider.getMaxHealth() / 2 + 1, "the giant spider healed to " + spider.getHealth() + "/"
+                + spider.getMaxHealth() + " at home (OSRS: no reset, 1 hitpoint a minute)");
         step(40);
         expect(spider.getTarget() == null, "the giant spider came back for a player outside its range");
-        return "gave up at " + fmt(startedAt) + " blocks from home, walked back in " + t + " MC and healed to full";
+        return "gave up at " + fmt(startedAt) + " blocks from home, walked back in " + t + " MC keeping its damage ("
+                + fmt(spider.getHealth()) + "/" + fmt(spider.getMaxHealth()) + ")";
     }
 
     /**
      * A giant spider shot from beyond its aggression range (the player 26 blocks off its spawn point; spells reach 20) doesn't give
-     * up and heal: it walks out to the edge of its 7-tile max range and stands there, keeping its damage, while the shots come at
-     * the dark bow's 9 ticks (the slowest weapon); only once they have stopped for {@link MonsterAi#UNDER_FIRE_MC} (6 s) does it
-     * walk home, and it heals there.
+     * up: it walks out to the edge of its 7-tile max range and stands there, keeping its damage, while the shots come at the dark
+     * bow's 9 ticks (the slowest weapon); only once they have stopped for {@link MonsterAi#UNDER_FIRE_MC} (6 s) does it walk home,
+     * still damaged (round 43: no heal at home).
      */
     private String leashUnderFire() {
         ServerPlayer p = c.player;
@@ -495,7 +511,7 @@ final class MonsterAiChecks {
         expect(held > 0, "the giant spider never stood at the edge of its range (got " + fmt(furthest) + " blocks out)");
         expect(furthest <= MonsterAi.MAX_RANGE_BLOCKS + 2, "the giant spider walked " + fmt(furthest)
                 + " blocks from its spawn point (max range " + fmt(MonsterAi.MAX_RANGE_BLOCKS) + ")");
-        // the shots stop: UNDER_FIRE_MC later it gives up, walks home and heals there
+        // the shots stop: UNDER_FIRE_MC later it gives up and walks home, still damaged
         int quiet = since;
         while (!goal.returning() && quiet < MonsterAi.UNDER_FIRE_MC + 40) {
             step(1);
@@ -509,9 +525,10 @@ final class MonsterAiChecks {
             t++;
         }
         expect(!goal.returning(), "the giant spider never got home");
-        expect(spider.getHealth() >= spider.getMaxHealth(), "the giant spider came home with " + spider.getHealth() + "/" + spider.getMaxHealth());
+        expect(spider.getHealth() <= half + 1, "the giant spider healed to " + spider.getHealth() + "/" + spider.getMaxHealth()
+                + " at home (OSRS: no reset, 1 hitpoint a minute)");
         return shots + " shots from " + fmt(playerFromHome) + " blocks: held " + held + " MC at " + fmt(furthest)
-                + " blocks out, unhealed; gave up " + quiet + " MC after the last shot, home and healed in " + t + " MC";
+                + " blocks out, unhealed; gave up " + quiet + " MC after the last shot, home in " + t + " MC still damaged";
     }
 
     /**
@@ -719,5 +736,315 @@ final class MonsterAiChecks {
         LootDrops.advanceForSelfTest(c.server, MonsterAi.PRIVATE_LOOT_MC);
         expect(bones.getTarget() == null, "the bones were still private after 60 s");
         return "kill and drop to the partner (" + (hp - 2) + " damage) over the killing blow (2); bones still, private, public after 60 s";
+    }
+
+    // ------------------------------------------------------------------ round 43
+
+    /** Runs {@code body} with the player vulnerable (monsters never hunt an invulnerable player, as vanilla's targeting). */
+    private String vulnerable(Body body) throws Exception {
+        ServerPlayer p = c.player;
+        boolean invulnerable = p.isInvulnerable();
+        p.setInvulnerable(false);
+        try {
+            return body.run();
+        } finally {
+            p.setInvulnerable(invulnerable);
+        }
+    }
+
+    /**
+     * Bosses the wiki infobox calls not aggressive (the Kraken, Vorkath, the Abyssal Sire, the Nightmare, Dusk, Delrith) never pick a
+     * player on their own, where an aggressive one (Obor) would; the Giant Mole, spawned with nobody to fight next to a level 3
+     * player, leaves them alone for 2 seconds and fights back the moment she is hit.
+     */
+    private String passiveBosses() throws Exception {
+        return vulnerable(this::passiveBossesBody);
+    }
+
+    private String passiveBossesBody() {
+        ServerPlayer p = c.player;
+        lowLevel();
+        StringBuilder out = new StringBuilder("passive:");
+        for (String id : List.of("kraken", "vorkath", "abyssal_sire", "the_nightmare", "dusk")) {
+            EntityType<com.runecraft.boss.DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(id);
+            expect(type != null, "no boss " + id);
+            com.runecraft.boss.DataBossEntity b = type.create(c.world);
+            expect(b != null, "can't create " + id);
+            try {
+                expect(!b.wantsToAttack(p), id + " (wiki: not aggressive) would attack a player unprovoked");
+            } finally {
+                b.discard();
+            }
+            out.append(' ').append(id);
+        }
+        com.runecraft.entity.BossEntity obor = ModEntities.BOSS_TYPES.get(com.runecraft.osrs.data.Boss.OBOR).create(c.world);
+        com.runecraft.entity.BossEntity delrith = ModEntities.BOSS_TYPES.get(com.runecraft.osrs.data.Boss.DELRITH).create(c.world);
+        expect(obor != null && delrith != null, "can't create Obor or Delrith");
+        try {
+            expect(obor.wantsToAttack(p), "Obor (wiki: aggressive) would leave a player alone");
+            expect(!delrith.wantsToAttack(p), "Delrith (wiki: not aggressive) would attack a player unprovoked");
+        } finally {
+            obor.discard();
+            delrith.discard();
+        }
+        out.append(", Delrith; Obor aggressive");
+        com.runecraft.osrs.content.BossDef def = com.runecraft.osrs.content.ContentRegistry.boss("giant_mole");
+        expect(def != null, "no Giant Mole");
+        com.runecraft.boss.DataBossEntity mole = com.runecraft.boss.DataBossService.spawn(c.world, c.near(-4, 0), def, null);
+        expect(mole != null, "the Giant Mole didn't spawn");
+        ticking.add(mole);
+        step(40);
+        expect(mole.getTarget() == null, "the Giant Mole (wiki: not aggressive) went for a level " + combatLevel() + " player 4 blocks away");
+        CombatHandler.applyDamage(p, mole, 0); // disturbed: a swing at her, even a miss
+        step(2);
+        expect(mole.getTarget() == p, "the Giant Mole didn't fight back when attacked");
+        return out + "; the Giant Mole ignored a level " + combatLevel() + " player for 40 MC and fought back when hit";
+    }
+
+    /**
+     * The passive vanilla stand-ins are on OSRS AI: no panic, breeding or tempting goals, their OSRS hitpoints (cow 8, sheep 5, wolf
+     * 34 against vanilla's 10, 8 and 8); a cow never starts a fight with a level 3 player but hits back when attacked, with its OSRS
+     * crush and max hit; a chicken at its last hitpoint runs from the player instead of fighting (wiki, Chicken).
+     */
+    private String passiveAnimals() throws Exception {
+        return vulnerable(this::passiveAnimalsBody);
+    }
+
+    private String passiveAnimalsBody() {
+        ServerPlayer p = c.player;
+        lowLevel();
+        StringBuilder out = new StringBuilder();
+        Mob cow = vanilla(EntityType.COW, 2.5, 0, true);
+        Mob sheep = vanilla(EntityType.SHEEP, -6, 6, true);
+        Mob wolf = vanilla(EntityType.WOLF, 6, 6, true);
+        List<Goal> goals = VanillaOsrsAi.goals(cow, false);
+        expect(has(goals, OsrsAttackGoal.class) && has(goals, com.runecraft.entity.OsrsRetreatGoal.class), "the cow's goals: " + goals);
+        expect(!has(goals, net.minecraft.world.entity.ai.goal.PanicGoal.class) && !has(goals, net.minecraft.world.entity.ai.goal.BreedGoal.class)
+                && !has(goals, net.minecraft.world.entity.ai.goal.TemptGoal.class), "the cow kept vanilla panic/breed/tempt goals: " + goals);
+        expect(has(VanillaOsrsAi.goals(sheep, false), net.minecraft.world.entity.ai.goal.EatBlockGoal.class), "the sheep stopped grazing");
+        for (Object[] row : new Object[][]{{cow, Monster.COW}, {sheep, Monster.SHEEP}, {wolf, Monster.WOLF}}) {
+            Mob m = (Mob) row[0];
+            Monster def = (Monster) row[1];
+            expect(Math.round(m.getMaxHealth()) == def.hitpoints() && Math.round(m.getHealth()) == def.hitpoints(),
+                    def.displayName() + " has " + m.getHealth() + "/" + m.getMaxHealth() + " hitpoints (OSRS " + def.hitpoints() + ")");
+        }
+        out.append("cow ").append(fmt(cow.getMaxHealth())).append(", sheep ").append(fmt(sheep.getMaxHealth())).append(", wolf ")
+                .append(fmt(wolf.getMaxHealth())).append(" hitpoints");
+        sheep.discard();
+        wolf.discard();
+        step(40);
+        expect(cow.getTarget() == null, "a cow (passive) went for a level " + combatLevel() + " player");
+        CombatHandler.applyDamage(p, cow, 0); // the player swings at it
+        step(160);
+        List<Hit> butts = from(cow);
+        expect(cow.getTarget() == p, "the cow didn't fight back");
+        expect(!butts.isEmpty(), "the cow fought back but never hit in 8 s");
+        for (Hit h : butts) {
+            expect(h.style() == AttackType.CRUSH && h.damage() <= Monster.COW.maxHit(), "the cow hit " + h.damage() + " " + h.style());
+        }
+        out.append("; the cow ignored level ").append(combatLevel()).append(" and hit back ").append(butts.size()).append(" times");
+        cow.discard();
+        settle(p);
+        CombatZones.forget(p);
+        CombatZones.forget(cow);
+        // the chicken retreats at its last hitpoint (of 3)
+        Mob chicken = vanilla(EntityType.CHICKEN, 1.5, 0, true);
+        expect(Math.round(chicken.getMaxHealth()) == Monster.CHICKEN.hitpoints(), "a chicken has " + chicken.getMaxHealth() + " hitpoints");
+        chicken.setTarget(p);
+        chicken.setHealth(1);
+        double before = chicken.distanceTo(p);
+        step(60);
+        expect(chicken.getTarget() == p, "the retreating chicken forgot the player");
+        expect(chicken.distanceTo(p) > before + 1.5, "the chicken at 1 hitpoint stayed " + fmt(chicken.distanceTo(p))
+                + " blocks from the player (was " + fmt(before) + ")");
+        expect(from(chicken).isEmpty(), "the retreating chicken attacked");
+        return out + "; a chicken at 1 hitpoint ran from " + fmt(before) + " to " + fmt(chicken.distanceTo(p)) + " blocks";
+    }
+
+    /** A vanilla zombie and skeleton on OSRS AI put out the fire the sun sets on them before it hurts (OSRS monsters don't burn). */
+    private String noSunburn() {
+        Mob zombie = vanilla(EntityType.ZOMBIE, 4, 4, true);
+        Mob skeleton = vanilla(EntityType.SKELETON, -4, 4, true);
+        float zh = zombie.getHealth();
+        float sh = skeleton.getHealth();
+        step(4); // their goals start
+        for (int i = 0; i < 5; i++) {
+            // the sun's 8 s fire (Zombie.aiStep and AbstractSkeleton.aiStep set it mid-tick, before their goals run; set between
+            // ticks here, a tick off the fire's every-20-ticks hurt)
+            zombie.setRemainingFireTicks(159);
+            skeleton.setRemainingFireTicks(159);
+            step(20);
+        }
+        expect(!zombie.isOnFire() && zombie.getRemainingFireTicks() <= 0, "the zombie is still burning");
+        expect(!skeleton.isOnFire() && skeleton.getRemainingFireTicks() <= 0, "the skeleton is still burning");
+        expect(zombie.getHealth() >= zh && skeleton.getHealth() >= sh, "burnt: zombie " + zombie.getHealth() + "/" + zh + ", skeleton "
+                + skeleton.getHealth() + "/" + sh);
+        return "set alight 5 times in 5 s, put out every time: zombie " + fmt(zombie.getHealth()) + ", skeleton "
+                + fmt(skeleton.getHealth()) + " hitpoints (OSRS " + Monster.ZOMBIE.hitpoints() + " and " + Monster.SKELETON.hitpoints() + ")";
+    }
+
+    /** A stray vanilla villager in Gielinor becomes the Man or Woman it stands for: OSRS AI, a spawn point, fights back when hit. */
+    private String villager() {
+        ServerPlayer p = c.player;
+        net.minecraft.world.entity.npc.Villager v = EntityType.VILLAGER.create(c.world);
+        expect(v != null, "can't create a villager");
+        BlockPos base = TestContext.PLATFORM;
+        v.moveTo(base.getX() + 3.5, base.getY(), base.getZ() + 0.5, 0f, 0f);
+        c.world.addFreshEntity(v);
+        Mob man = VanillaOsrsAi.convertVillager(v);
+        expect(man instanceof OsrsMonsterEntity, "the villager became " + man);
+        still.add(man);
+        expect(!v.isAlive() || v.isRemoved(), "the villager is still there beside its Man");
+        MonsterStats s = MonsterStats.of(man);
+        expect(s.combatLevel() == 2 && Math.round(man.getMaxHealth()) == 7, "the villager became a level " + s.combatLevel() + " "
+                + s.name() + " with " + man.getMaxHealth() + " hitpoints");
+        expect(MonsterHome.get(man) != null, "the converted villager has no spawn point");
+        CombatHandler.applyDamage(p, man, 0);
+        expect(man.getTarget() == p, "the converted " + s.name() + " didn't fight back");
+        return "a villager became a level " + s.combatLevel() + " " + s.name() + " (" + fmt(man.getMaxHealth())
+                + " hitpoints, spawn point kept) that fights back";
+    }
+
+    /**
+     * Monsters regenerate a hitpoint every 100 game ticks (wiki: Mod Ash's default NPC rate) on their own clock, never above full, and
+     * forget who damaged them once they are whole again (the next kill's credit starts afresh).
+     */
+    private String regen() {
+        ServerPlayer p = c.player;
+        OsrsMonsterEntity goblin = module(Monster.GOBLIN.entity(), 3, 0, false);
+        float max = goblin.getMaxHealth();
+        expect(max >= 3, "the goblin has " + max + " hitpoints");
+        CombatHandler.applyDamage(p, goblin, 2);
+        expect(KillCredit.damage(goblin).getOrDefault(p.getUUID(), 0L) == 2, "the player's damage wasn't recorded");
+        goblin.tickCount = MonsterAi.REGEN_MC - 1;
+        OsrsTargetGoal.regenerate(goblin); // a tick short of a minute: nothing yet
+        expect(goblin.getHealth() == max - 2, "the goblin regenerated early: " + goblin.getHealth() + "/" + max);
+        goblin.tickCount++;
+        OsrsTargetGoal.regenerate(goblin);
+        expect(goblin.getHealth() == max - 1, "a minute on, the goblin has " + goblin.getHealth() + "/" + max + " (OSRS: +1)");
+        expect(!KillCredit.damage(goblin).isEmpty(), "the goblin forgot its damage before it was whole");
+        goblin.tickCount = 2 * MonsterAi.REGEN_MC;
+        OsrsTargetGoal.regenerate(goblin);
+        expect(goblin.getHealth() == max, "two minutes on, the goblin has " + goblin.getHealth() + "/" + max);
+        expect(KillCredit.damage(goblin).isEmpty(), "the goblin whole again still credits " + KillCredit.damage(goblin));
+        goblin.tickCount = 3 * MonsterAi.REGEN_MC;
+        OsrsTargetGoal.regenerate(goblin);
+        expect(goblin.getHealth() == max, "the goblin regenerated past its maximum: " + goblin.getHealth() + "/" + max);
+        // a vanilla stand-in regenerates through its upkeep goal on its own ticks
+        Mob spider = vanilla(EntityType.SPIDER, -4, 0, true);
+        step(4); // its goals start
+        spider.setHealth(spider.getMaxHealth() - 3);
+        spider.tickCount = MonsterAi.REGEN_MC - 1; // the next step's tick is the minute
+        step(1);
+        expect(spider.getHealth() == spider.getMaxHealth() - 2, "the giant spider has " + spider.getHealth() + "/" + spider.getMaxHealth()
+                + " a minute on (OSRS: +1)");
+        return "goblin " + fmt(max - 2) + " -> " + fmt(max - 1) + " -> " + fmt(max) + " (damage forgotten when whole), giant spider +1 a minute";
+    }
+
+    /**
+     * Encounter monsters stay in their arena: a boss's summon whose arena centre lies 40 blocks off drops the player it was given
+     * and won't pick them there, while one in its arena keeps fighting; an aggressive encounter creature (Scorpia's offspring, level
+     * 15) attacks a maxed player, whom the combat-level rule would spare.
+     */
+    private String encounterArena() throws Exception {
+        return vulnerable(this::encounterArenaBody);
+    }
+
+    private String encounterArenaBody() {
+        ServerPlayer p = c.player;
+        BlockPos base = TestContext.PLATFORM;
+        Mob far = summon(EntityType.SILVERFISH, 3, base.offset(40, 0, 0));
+        Mob near = summon(EntityType.SILVERFISH, -3, null);
+        step(2);
+        expect(far.getTarget() == null, "a summon kept a player " + fmt(MonsterHome.fromHome(base.offset(40, 0, 0), p.getX(), p.getZ()))
+                + " blocks from its arena centre (arena " + fmt(MonsterAi.ENCOUNTER_LEASH_BLOCKS) + ")");
+        expect(near.getTarget() == p, "a summon in its arena dropped the player");
+        far.discard();
+        near.discard();
+        settle(p);
+        CombatZones.forget(p);
+        Mob farAgain = summon(EntityType.SILVERFISH, 3, base.offset(40, 0, 0));
+        farAgain.setTarget(null);
+        step(40);
+        expect(farAgain.getTarget() == null, "a summon picked a player outside its arena");
+        farAgain.discard();
+        OsrsMonsterEntity offspring = module("scorpias_offspring", -5, 5, false);
+        expect(!offspring.isOpenWorld(), "Scorpia's offspring got a spawn point");
+        expect(combatLevel() > 2 * MonsterStats.of(offspring).combatLevel(), "the self-test player is level " + combatLevel());
+        expect(offspring.wantsToAttack(p), "Scorpia's offspring (an encounter monster) spared a level " + combatLevel() + " player");
+        return "out of its arena: target dropped, none picked; in it: kept; Scorpia's offspring (level "
+                + MonsterStats.of(offspring).combatLevel() + ") attacks level " + combatLevel();
+    }
+
+    /** A boss's vanilla summon (as DataBossEntity.summonMinions makes it) given the player, its arena centre at {@code anchor}. */
+    private Mob summon(EntityType<? extends Mob> type, double dx, BlockPos anchor) {
+        Mob mob = type.create(c.world);
+        expect(mob != null, "can't create a summon");
+        BlockPos base = TestContext.PLATFORM;
+        mob.moveTo(base.getX() + 0.5 + dx, base.getY(), base.getZ() + 0.5, 0f, 0f);
+        mob.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(base), MobSpawnType.MOB_SUMMONED, null);
+        if (anchor != null) {
+            mob.getPersistentData().putLong(OsrsTargetGoal.ANCHOR_KEY, anchor.asLong());
+        }
+        mob.setTarget(c.player);
+        c.world.addFreshEntity(mob);
+        ticking.add(mob);
+        expect(VanillaOsrsAi.isInstalled(mob) && MonsterHome.get(mob) == null, "the summon is not an encounter monster on OSRS AI");
+        return mob;
+    }
+
+    /**
+     * Single-way: a zombie fenced in 4 blocks from the player (in sight over the fence, but with no way out) that hit them holds the
+     * lock only until it has found no path for a second, well before OSRS's 8 game ticks; while it holds, a held attack on a goblin
+     * sends the refusal line once, not on every click.
+     */
+    private String walledOff() {
+        ServerPlayer p = c.player;
+        if (CombatZones.isMulti(p)) {
+            throw new SelfTest.Skip("the self-test platform is in a multicombat area");
+        }
+        moveTo(p, 0, 0);
+        Mob zombie = vanilla(EntityType.ZOMBIE, -4, 0, true);
+        BlockPos at = zombie.blockPosition();
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                if (dx != 0 || dz != 0) {
+                    c.place(at.offset(dx, 0, dz), net.minecraft.world.level.block.Blocks.OAK_FENCE.defaultBlockState());
+                }
+            }
+        }
+        zombie.setTarget(p);
+        CombatHandler.applyDamage(zombie, p, 0); // it swung at the player: single-way combat holds them
+        int swung = from(zombie).size();
+        OsrsMonsterEntity goblin = module(Monster.GOBLIN.entity(), 3, 0, false);
+        expect(p.hasLineOfSight(zombie), "the player can't see the fenced zombie");
+        expect(CombatZones.check(p, goblin) == SingleCombat.Verdict.ATTACKER_BUSY, "the zombie didn't hold the player ("
+                + CombatZones.check(p, goblin) + ")");
+        List<String> lines = new ArrayList<>();
+        CombatZones.RefusalListener before = CombatZones.refusalListener;
+        CombatZones.refusalListener = (player, r, line) -> lines.add(line);
+        try {
+            for (int i = 0; i < 4; i++) {
+                expect(!CombatZones.allows(p, goblin), "the held attack on the goblin went through");
+                step(5);
+            }
+        } finally {
+            CombatZones.refusalListener = before;
+        }
+        long shown = lines.stream().filter(java.util.Objects::nonNull).count();
+        expect(lines.size() == 4 && shown == 1, "4 held attacks sent " + shown + " refusal lines: " + lines);
+        int released = -1;
+        for (int i = 0; i < 120; i++) {
+            step(1);
+            if (CombatZones.check(p, goblin) == SingleCombat.Verdict.OK) {
+                released = i + 1;
+                break;
+            }
+        }
+        int bound = MonsterAi.PATH_BLOCKED_MC + 2 * MonsterAi.REACH_CHECK_MC;
+        expect(released > 0 && released <= bound, "the walled-off zombie held the lock " + (released < 0 ? ">120" : released)
+                + " MC more (it lets go after " + MonsterAi.PATH_BLOCKED_MC + " MC without a path)");
+        expect(from(zombie).size() == swung, "the fenced zombie hit the player");
+        return "4 held attacks, 1 refusal line; the fenced zombie (in sight) let the lock go " + released + " MC later";
     }
 }

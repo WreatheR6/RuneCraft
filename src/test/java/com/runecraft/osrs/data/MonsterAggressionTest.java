@@ -88,6 +88,42 @@ class MonsterAggressionTest {
     }
 
     @Test
+    void vanillaStandInsFollowTheWiki() {
+        // round 43: the vanilla stand-ins read the wiki rows, the hand-read ones where the generator has none
+        for (Monster m : Monster.values()) {
+            if (m.isCustom()) {
+                continue;
+            }
+            Boolean wiki = MonsterAggression.wiki(MonsterTraits.key(m));
+            Boolean hand = MonsterAggression.standIns().get(MonsterTraits.key(m));
+            assertFalse(wiki != null && hand != null, m + " has both a wiki row and a hand-read row");
+            assertTrue(wiki != null || hand != null, m + " (a vanilla stand-in) has no wiki aggressiveness");
+            assertEquals(wiki != null ? wiki : hand, MonsterAggression.aggressive(m), m.name());
+            assertEquals(m.aggressive(), MonsterAggression.aggressive(m), m + "'s own flag disagrees with the wiki");
+        }
+        assertFalse(MonsterAggression.aggressive(Monster.COW));
+        assertFalse(MonsterAggression.aggressive(Monster.CHICKEN));
+        assertFalse(MonsterAggression.aggressive(Monster.VILLAGER), "the villager is a Man");
+        assertTrue(MonsterAggression.aggressive(Monster.WITCH), "the witch is a level 20 dark wizard");
+        assertTrue(MonsterAggression.aggressive(Monster.SKELETON));
+        assertTrue(MonsterAggression.aggressive(Monster.GIANT_SPIDER));
+        assertFalse(MonsterAggression.aggressive(Monster.SPIDER));
+    }
+
+    @Test
+    void bossesTheWikiCallsPassive() {
+        // round 43: these bosses only fight once disturbed (summoned at their stone) or attacked
+        for (String id : List.of("kraken", "giant_mole", "abyssal_sire", "vorkath", "the_nightmare", "thermonuclear_smoke_devil",
+                "dusk", "dawn", "vardorvis", "sotetseg", "delrith")) {
+            assertEquals(Boolean.FALSE, MonsterAggression.wiki(id), id);
+        }
+        for (String id : List.of("zulrah", "cerberus", "alchemical_hydra", "general_graardor", "corporeal_beast", "callisto",
+                "king_black_dragon", "sarachnis", "scurrius", "phosanis_nightmare")) {
+            assertEquals(Boolean.TRUE, MonsterAggression.wiki(id), id);
+        }
+    }
+
+    @Test
     void slayerCreaturesThatTheWikiCallsPassiveArePassive() {
         // the module defaults made these aggressive; the wiki infobox says No
         for (String id : List.of("abyssal_demon", "nechryael", "dust_devil", "smoke_devil", "bloodveld", "basilisk", "turoth")) {

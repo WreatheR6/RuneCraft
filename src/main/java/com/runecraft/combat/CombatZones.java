@@ -85,7 +85,9 @@ public final class CombatZones {
     /**
      * Whether the recorded fighter {@code id} still holds {@code fighter} in single-way combat: alive, loaded and not a boss, and,
      * for a monster, still after {@code fighter} and near enough to fight it in sight (round 42, {@link MonsterAi#stillEngaged}:
-     * // playability, OSRS keeps the lock 8 game ticks wherever the monster went). Players keep the OSRS lock.
+     * // playability, OSRS keeps the lock 8 game ticks wherever the monster went) and with a way to get at it (round 43: a melee
+     * monster walled off by a fence or water, still in sight, lets go once its target goal has found no path for a second,
+     * {@code OsrsTargetGoal.pathBlocked}). Players keep the OSRS lock.
      */
     private static boolean engaged(ServerLevel world, int id, LivingEntity fighter) {
         Entity e = find(world, id);
@@ -98,7 +100,10 @@ public final class CombatZones {
         if (mob.level() != fighter.level()) {
             return false;
         }
-        return MonsterAi.stillEngaged(mob.getTarget() == fighter, mob.distanceTo(fighter), reach(mob), fighter.hasLineOfSight(mob));
+        com.runecraft.entity.OsrsTargetGoal goal = com.runecraft.entity.OsrsTargetGoal.of(mob);
+        boolean canReach = goal == null || !goal.pathBlocked(fighter);
+        return MonsterAi.stillEngaged(mob.getTarget() == fighter, mob.distanceTo(fighter), reach(mob), fighter.hasLineOfSight(mob),
+                canReach);
     }
 
     /** How far a monster's attacks reach (blocks), for the single-way lock. */
@@ -114,7 +119,8 @@ public final class CombatZones {
      * {@link #check} for a player starting an attack; when refused, tells them why in the OSRS words ("I'm already under attack." /
      * "Someone else is fighting that.") and names the fighter in the way on the action bar, marked above its head for that player
      * alone (round 42 // playability: OSRS doesn't name it). The chat line is said at most once every 3 seconds per player, so a
-     * held attack key doesn't flood the chat.
+     * held attack key doesn't flood the chat; the action-bar line and the marker over the blocker are sent again only when the
+     * refusal changes or after 3 seconds (round 43: hold-to-attack re-sent them twice a second).
      */
     public static boolean allows(ServerPlayer player, LivingEntity target) {
         SingleCombat.Refusal r = refusal(player, target);
@@ -130,7 +136,9 @@ public final class CombatZones {
         ServerLevel world = player.level() instanceof ServerLevel w ? w : null;
         Entity blocker = find(world, r.blocker());
         String line = blockerLine(r.verdict(), blocker);
-        if (line != null) {
+        // the same line still on the action bar (a held attack key): not sent again, nor the marker
+        boolean show = line != null && SHOWN.fresh(player.getUUID(), line, now);
+        if (show) {
             com.runecraft.util.Msg.action(player, line);
             if (world != null && blocker.level() == world) {
                 world.sendParticles(player, net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER, true, blocker.getX(),
@@ -139,15 +147,17 @@ public final class CombatZones {
         }
         RefusalListener l = refusalListener;
         if (l != null) {
-            l.refused(player, r, line);
+            l.refused(player, r, show ? line : null);
         }
         return false;
     }
 
     /** When each player was last told the OSRS refusal line (MC tick). */
     private static final java.util.Map<java.util.UUID, Long> TOLD = new java.util.concurrent.ConcurrentHashMap<>();
+    /** The action-bar refusal line each player was last shown, and when. */
+    private static final com.runecraft.osrs.RepeatFilter<java.util.UUID> SHOWN = new com.runecraft.osrs.RepeatFilter<>(60);
 
-    /** Self-test hook: every refused player attack with its action-bar line. */
+    /** Self-test hook: every refused player attack with the action-bar line it sent (null: none, or the same line not re-sent). */
     public static RefusalListener refusalListener;
 
     /** Hears {@link #allows} refuse an attack. */
@@ -217,6 +227,7 @@ public final class CombatZones {
     public static void forget(Entity e) {
         TRACKER.forget(e.getId());
         TOLD.remove(e.getUUID());
+        SHOWN.forget(e.getUUID());
     }
 
     /** Once per game tick (after the players). */

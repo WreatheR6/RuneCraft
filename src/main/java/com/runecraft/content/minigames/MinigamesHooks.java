@@ -197,7 +197,7 @@ public final class MinigamesHooks implements ModuleHooks {
                     : stats.profile() instanceof com.runecraft.osrs.content.BossDef bd ? bd.drops : null;
             if (scroll != null && !com.runecraft.osrs.content.minigames.ChampionsChallenge.tableHas(table, scroll)
                     && entity.getRandom().nextInt(com.runecraft.osrs.content.minigames.ChampionsChallenge.SCROLL_RATE) == 0) {
-                entity.spawnAtLocation(com.runecraft.util.Inv.stack(scroll, 1));
+                com.runecraft.combat.LootDrops.spawn(entity, com.runecraft.util.Inv.stack(scroll, 1), player);
                 com.runecraft.collection.CollectionLog.obtain(player, scroll);
             }
         });

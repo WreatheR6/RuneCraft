@@ -80,7 +80,8 @@ final class RevenantLoot {
         }
         unnoted = !r.notable();
         try {
-            Inv.spawnAtLocation(entity, CombatHooks.dropStack(player, entity, r.item(), r.count()));
+            // laid still on its tile, the top damager's for 60 s (round 43, as every monster drop)
+            com.runecraft.combat.LootDrops.spawn(entity, CombatHooks.dropStack(player, entity, r.item(), r.count()), player);
         } finally {
             unnoted = false;
         }
