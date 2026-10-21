@@ -17,7 +17,6 @@ import com.runecraft.util.Msg;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -33,7 +32,6 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3f;
 
 /** Shared helpers for boss scripts: messages, particles, minions, form swaps and kill credit. */
 final class BossFx {
@@ -86,27 +84,15 @@ final class BossFx {
         }
     }
 
-    /** Typeless/AoE orange (the round 41 style colours) and the brighter red-orange of a strike about to land. */
-    static final DustParticleOptions STRIKE_OUTLINE = new DustParticleOptions(new Vector3f(1.0f, 0.63f, 0.13f), 1.0f);
-    static final DustParticleOptions STRIKE_OUTLINE_LANDING = new DustParticleOptions(new Vector3f(1.0f, 0.22f, 0.1f), 1.6f);
-
     /**
-     * A ground strike's marker: a high-contrast dust outline at its true radius (the area that is hit), orange, brighter and
-     * redder in its last moments, with the content's particle as a sparse fill. // playability: OSRS marks the tiles once
-     * and the hit is tile-exact; here the outline is redrawn while the strike is pending and the hit test matches it. Not
-     * {@link #ring}: that one also marks safe spots and stations (Doom's earthen shield, Zalcano's furnace), which must not
-     * turn danger-orange.
+     * A ground strike's marker ({@link com.runecraft.boss.StrikeMarkers#ring}, shared with the raids and the God Wars bosses):
+     * a high-contrast dust outline at its true radius (the area that is hit), orange, brighter and redder in its last moments,
+     * with the content's particle as a sparse fill. // playability: OSRS marks the tiles once and the hit is tile-exact; here
+     * the outline is redrawn while the strike is pending and the hit test matches it. Not {@link #ring}: that one also marks
+     * safe spots and stations (Doom's earthen shield, Zalcano's furnace), which must not turn danger-orange.
      */
     static void strikeRing(ServerLevel world, Vec3 centre, double radius, ParticleOptions fill, boolean landing, int points) {
-        DustParticleOptions dust = landing ? STRIKE_OUTLINE_LANDING : STRIKE_OUTLINE;
-        for (int i = 0; i < points; i++) {
-            double a = Math.PI * 2 * i / points;
-            world.sendParticles(dust, centre.x + Math.cos(a) * radius, centre.y + 0.1, centre.z + Math.sin(a) * radius, 1, 0, 0, 0, 0);
-        }
-        if (fill != null) {
-            int n = (int) Math.max(2, Math.min(8, radius * 3));
-            world.sendParticles(fill, centre.x, centre.y + 0.15, centre.z, n, radius * 0.45, 0.02, radius * 0.45, 0.0);
-        }
+        com.runecraft.boss.StrikeMarkers.ring(world, centre, radius, fill, landing, points);
     }
 
     static void sound(Entity e, net.minecraft.sounds.SoundEvent sound, float pitch) {

@@ -59,7 +59,6 @@ final class VetionScript extends GwdScript {
     /** The bolts that come with each lightning attack, on random tiles around him (the target's own comes from the attack). */
     private void boltsAround(DataBossEntity boss, ServerPlayer target) {
         ServerLevel world = (ServerLevel) boss.level();
-        long now = com.runecraft.action.ActionManager.gameTick();
         int extra = Math.min(7, EXTRA_BOLTS + players(boss, 24).size() - 1);
         for (int i = 0; i < extra; i++) {
             double a = boss.getRandom().nextDouble() * Math.PI * 2;
@@ -68,12 +67,13 @@ final class VetionScript extends GwdScript {
             double z = boss.getZ() + Math.sin(a) * r;
             int top = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int) Math.floor(x), (int) Math.floor(z));
             double y = Math.abs(top - boss.getY()) > 4 ? boss.getY() : top;
-            strike("lightning", boss, new Vec3(x, y, z), 3, lightning.maxHit() / 2, 1.5, ParticleTypes.ELECTRIC_SPARK, ParticleTypes.FLASH, null);
+            long lands = strike("lightning", boss, new Vec3(x, y, z), 3, lightning.maxHit() / 2, 1.5, ParticleTypes.ELECTRIC_SPARK,
+                    ParticleTypes.FLASH, null);
             LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(world);
             if (bolt != null) {
                 bolt.setVisualOnly(true);
                 bolt.moveTo(x, y, z);
-                pendingBolts.add(new Bolt(bolt, now + 3));
+                pendingBolts.add(new Bolt(bolt, lands)); // with its strike (which a real-time floor may hold back a tick)
             }
         }
     }

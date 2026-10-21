@@ -1,8 +1,10 @@
 package com.runecraft.selftest;
 
 import com.runecraft.action.ActionManager;
+import com.runecraft.boss.BossScript;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.content.bosses.ScriptedBoss;
+import com.runecraft.content.godwars.GwdScript;
 import com.runecraft.content.raids.RaidSelfTest;
 import com.runecraft.osrs.ArenaTiming;
 import com.runecraft.osrs.content.ContentRegistry;
@@ -11,6 +13,7 @@ import com.runecraft.util.Msg;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,8 +25,8 @@ import net.minecraft.world.phys.Vec3;
  * {@code boss:playability_arena_strike} for the real player): a boss's ground strike is drawn the tick it is made, redrawn
  * while pending and lands no sooner than {@link ArenaTiming#MIN_LEAD_MC} Minecraft ticks later, on a horizontal test that
  * matches its ring; raid strikes keep the same floor; boss warnings reach each player once, on the centre-screen line, and
- * warnings close together merge. A probe script makes the strikes on a host boss entity that is never added to the world, so
- * nothing else of a real boss runs.
+ * warnings close together merge; the God Wars and Wilderness bosses' own strike list ({@link GwdScript}) keeps the same floor.
+ * A probe script makes the strikes on a host boss entity that is never added to the world, so nothing else of a real boss runs.
  */
 final class ArenaCueChecks {
     private static final int MC = ActionManager.MC_TICKS_PER_GAME_TICK;
@@ -37,6 +40,17 @@ final class ArenaCueChecks {
             } else {
                 namedStrike(PROBE_ATTACK, host, at, delay, maxDamage, radius, ParticleTypes.FLAME, onLand);
             }
+        }
+
+        boolean pending() {
+            return strikesPending();
+        }
+    }
+
+    /** A God Wars/Wilderness boss script with nothing of its own: the checks make strikes on its own strike list. */
+    static final class GwdProbe extends GwdScript {
+        long fire(DataBossEntity host, Vec3 at, int delay, int maxHit, double radius) {
+            return strike(PROBE_ATTACK, host, at, delay, maxHit, radius, ParticleTypes.SNOWFLAKE, ParticleTypes.ITEM_SNOWBALL, null);
         }
 
         boolean pending() {
@@ -60,6 +74,7 @@ final class ArenaCueChecks {
         checks.add(new SelfTest.Check("arena:strike_floor", a::strikeFloor));
         checks.add(new SelfTest.Check("arena:strike_horizontal", a::strikeHorizontal));
         checks.add(new SelfTest.Check("arena:raid_strike_floor", a::raidStrikeFloor));
+        checks.add(new SelfTest.Check("arena:gwd_strike_floor", a::gwdStrikeFloor));
         checks.add(new SelfTest.Check("arena:warn_telegraph", a::warnTelegraph));
         checks.add(new SelfTest.Check("boss:playability_arena_strike", a::playabilityStrike));
         return checks;
@@ -89,7 +104,7 @@ final class ArenaCueChecks {
     }
 
     /** Moves the clock on to the next game-tick boundary and runs the probe's game tick there. */
-    private static void align(Probe probe, DataBossEntity host) {
+    private static void align(BossScript probe, DataBossEntity host) {
         do {
             ActionManager.advanceForSelfTest();
             probe.tick(host);
@@ -98,7 +113,7 @@ final class ArenaCueChecks {
     }
 
     /** One Minecraft tick of the probe: its tick, and its game tick on each boundary (as DataBossEntity runs a script). */
-    private static void mc(Probe probe, DataBossEntity host) {
+    private static void mc(BossScript probe, DataBossEntity host) {
         ActionManager.advanceForSelfTest();
         probe.tick(host);
         if (ActionManager.mcTick() % MC == 0) {
@@ -108,12 +123,16 @@ final class ArenaCueChecks {
 
     /** Runs Minecraft ticks until the probe's strikes have all landed (at most {@code max}); returns how many ran. */
     private static int runUntilLanded(Probe probe, DataBossEntity host, int max) {
+        return runUntilLanded(probe, probe::pending, host, max);
+    }
+
+    private static int runUntilLanded(BossScript probe, BooleanSupplier pending, DataBossEntity host, int max) {
         int n = 0;
-        while (probe.pending() && n < max) {
+        while (pending.getAsBoolean() && n < max) {
             mc(probe, host);
             n++;
         }
-        if (probe.pending()) {
+        if (pending.getAsBoolean()) {
             throw new AssertionError("the probe's strike never landed in " + max + " Minecraft ticks");
         }
         return n;
@@ -123,14 +142,24 @@ final class ArenaCueChecks {
     private static List<ArenaTiming.StrikeTrace> traced(Runnable body) {
         List<ArenaTiming.StrikeTrace> traces = new ArrayList<>();
         Consumer<ArenaTiming.StrikeTrace> before = ScriptedBoss.strikeListener;
-        ScriptedBoss.strikeListener = t -> {
-            before.accept(t);
-            traces.add(t);
-        };
+        ScriptedBoss.strikeListener = before.andThen(traces::add);
         try {
             body.run();
         } finally {
             ScriptedBoss.strikeListener = before;
+        }
+        return traces;
+    }
+
+    /** Records the God Wars/Wilderness probe's strike traces while {@code body} runs. */
+    private static List<ArenaTiming.StrikeTrace> tracedGwd(Runnable body) {
+        List<ArenaTiming.StrikeTrace> traces = new ArrayList<>();
+        Consumer<ArenaTiming.StrikeTrace> before = GwdScript.strikeListener;
+        GwdScript.strikeListener = before.andThen(traces::add);
+        try {
+            body.run();
+        } finally {
+            GwdScript.strikeListener = before;
         }
         return traces;
     }
@@ -204,6 +233,45 @@ final class ArenaCueChecks {
         expect(hit[0], "a player 1.9 blocks from a radius-2 strike's centre (0.5 above it) was not hit");
         expect(!hit[1], "a player 2.1 blocks from a radius-2 strike's centre was hit");
         return "1.9 blocks off (0.5 up) hit, 2.1 missed";
+    }
+
+    /**
+     * The God Wars and Wilderness bosses' own strike list (GwdScript): Nex's 'Contain this!' (2 ticks, up to 60, radius 5) is
+     * drawn the tick it is made and redrawn, and lands no sooner than 36 Minecraft ticks later; one made between game ticks
+     * (Vet'ion's bolts come with his attack choice) keeps its full lead, and the tick it lands on is the one returned (his
+     * cosmetic lightning lands then too).
+     */
+    private String gwdStrikeFloor() {
+        Vec3 far = Vec3.atBottomCenterOf(c.near(0, 0)).add(0, 40, 0); // above everyone: nobody is hit
+        DataBossEntity host = host(far);
+        GwdProbe probe = new GwdProbe();
+        long[] lands = new long[2];
+        long[] mcs = new long[2];
+        List<ArenaTiming.StrikeTrace> onTick = tracedGwd(() -> {
+            align(probe, host);
+            lands[0] = probe.fire(host, far, 2, 60, 5.0) - ActionManager.gameTick();
+            mcs[0] = runUntilLanded(probe, probe::pending, host, 200);
+        });
+        expect(onTick.size() == 1, onTick.size() + " strikes landed (expected 1)");
+        ArenaTiming.StrikeTrace t = onTick.get(0);
+        expect(t.unfair() == null, "'Contain this!': " + t.unfair());
+        expect(t.draws() >= 4, "the ring was drawn " + t.draws() + " times (on creation and at least 3 redraws expected)");
+        expect(lands[0] == ArenaTiming.STRIKE_FLOOR_TICKS && mcs[0] >= ArenaTiming.MIN_LEAD_MC, "a 2-tick strike made on a game tick"
+                + " is due " + lands[0] + " game ticks later and landed after " + mcs[0] + " Minecraft ticks");
+        List<ArenaTiming.StrikeTrace> between = tracedGwd(() -> {
+            align(probe, host);
+            for (int i = 0; i < 5; i++) {
+                mc(probe, host);
+            }
+            lands[1] = probe.fire(host, far, 3, 20, 1.5);
+            mcs[1] = runUntilLanded(probe, probe::pending, host, 200);
+        });
+        expect(between.size() == 1 && between.get(0).unfair() == null, "a strike made between game ticks: "
+                + (between.isEmpty() ? "never landed" : between.get(0).unfair()));
+        expect(mcs[1] >= ArenaTiming.MIN_LEAD_MC, "a strike made 5 MC into a game tick landed " + mcs[1] + " MC later");
+        expect(lands[1] * MC == between.get(0).landedMc(), "it landed on game tick " + between.get(0).landedMc() / MC
+                + ", not the " + lands[1] + " its maker was told");
+        return "'Contain this!' landed after " + mcs[0] + " MC (drawn " + t.draws() + " times); made mid-tick, after " + mcs[1] + " MC";
     }
 
     /** RaidEffects: a damaging 1-tick raid strike gets the same floor and is drawn as it is made. */

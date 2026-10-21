@@ -20,8 +20,6 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -355,9 +353,7 @@ public abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScale
             }
         }
         if (bell != null) {
-            long left = Math.max(0, bell.due * ArenaTiming.MC_PER_GAME_TICK - clock);
-            bell.world.playSound(null, bell.pos.x, bell.pos.y, bell.pos.z, SoundEvents.NOTE_BLOCK_BELL.value(), SoundSource.HOSTILE,
-                    0.5f, 1.4f + 0.06f * (ArenaTiming.FINAL_CUE_MC - left));
+            com.runecraft.boss.StrikeMarkers.bell(bell.world, bell.pos, bell.due * ArenaTiming.MC_PER_GAME_TICK - clock);
         }
     }
 

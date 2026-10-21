@@ -128,8 +128,23 @@ public final class RaidSelfTest {
         expect(floored.unfair() == null, "raid strike: " + floored.unfair());
         expect(exact.exact() && exact.leadMc() == ArenaTiming.MC_PER_GAME_TICK, "the exact raid strike landed " + exact.leadMc()
                 + " MC after it was made (expected its own 1 tick)");
+        // The server's own order on a boundary Minecraft tick: ActionManager raises the game tick first, then RaidManager
+        // redraws the markers and runs the raid game tick. The raid clock the redraw reads must be at the new game tick's
+        // start there (a strike due on it gets its bright final cue and the bell), not 11 Minecraft ticks into it.
+        int mcPer = ArenaTiming.MC_PER_GAME_TICK;
+        while (com.runecraft.action.ActionManager.mcTick() % mcPer != 0) {
+            com.runecraft.action.ActionManager.advanceForSelfTest();
+        }
+        RaidEffects.gameTick();
+        for (int i = 1; i <= mcPer; i++) {
+            com.runecraft.action.ActionManager.advanceForSelfTest();
+            long clock = RaidEffects.clockMc();
+            expect(clock == RaidEffects.now() * mcPer + i % mcPer, i + " MC after a raid game tick the raid clock read "
+                    + (clock - RaidEffects.now() * mcPer) + " MC into game tick " + RaidEffects.now());
+        }
+        RaidEffects.gameTick();
         return "1-tick raid strike landed after " + floored.leadMc() + " MC, drawn on creation; exact one after " + exact.leadMc()
-                + " MC";
+                + " MC; the raid clock restarts on each game-tick boundary";
     }
 
     // ------------------------------------------------------------------ driver API (used by the rooms' solvers)

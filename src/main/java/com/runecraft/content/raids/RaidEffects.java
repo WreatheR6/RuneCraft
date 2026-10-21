@@ -10,7 +10,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -19,7 +18,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3f;
 
 /**
  * Telegraphed ground strikes and delayed tasks used by raid mechanics (falling crystals, lightning,
@@ -84,10 +82,6 @@ public final class RaidEffects {
     /** The Minecraft tick the last raid game tick ran on (a strike made between game ticks still gets its full lead). */
     private static long boundaryMc;
 
-    /** Typeless/AoE orange outline (round 41 style colours), red-orange and larger in the last moments before it lands. */
-    private static final DustParticleOptions OUTLINE = new DustParticleOptions(new Vector3f(1.0f, 0.63f, 0.13f), 1.0f);
-    private static final DustParticleOptions OUTLINE_LANDING = new DustParticleOptions(new Vector3f(1.0f, 0.22f, 0.1f), 1.6f);
-
     /** Self-test hook: every strike as it lands, with its timing ({@link ArenaTiming.StrikeTrace}, raid-clock Minecraft ticks). */
     public static Consumer<ArenaTiming.StrikeTrace> strikeListener = t -> {
     };
@@ -123,9 +117,13 @@ public final class RaidEffects {
         TASKS.add(new Task(now() + Math.max(1, gameTicks), run));
     }
 
-    /** Minecraft ticks into the current raid game tick (0 on the game tick itself, and in the self-test's driven raids). */
+    /**
+     * Minecraft ticks into the current raid game tick (0 on the game tick itself, and in the self-test's driven raids). On a
+     * boundary Minecraft tick the server's game tick ({@link #now}) has already moved on before RaidManager runs this raid
+     * game tick, so the count restarts there rather than reading 11 Minecraft ticks into the new game tick.
+     */
     private static int mcIntoTick() {
-        return (int) Math.max(0, Math.min(ArenaTiming.MC_PER_GAME_TICK - 1, ActionManager.mcTick() - boundaryMc));
+        return ArenaTiming.mcIntoTick(ActionManager.mcTick(), boundaryMc);
     }
 
     /** The raid clock in Minecraft ticks: game ticks x 12, plus the Minecraft ticks into the current one. */
@@ -189,15 +187,8 @@ public final class RaidEffects {
             s.firstDrawnMc = clockMc();
         }
         s.draws++;
-        DustParticleOptions dust = landing ? OUTLINE_LANDING : OUTLINE;
-        int points = ArenaTiming.ringPoints(s.radius, STRIKES.size());
-        for (int i = 0; i < points; i++) {
-            double a = Math.PI * 2 * i / points;
-            s.world.sendParticles(dust, s.pos.x + Math.cos(a) * s.radius, s.pos.y + 0.12, s.pos.z + Math.sin(a) * s.radius,
-                    1, 0, 0, 0, 0);
-        }
-        int n = (int) Math.max(2, Math.min(8, s.radius * 3));
-        s.world.sendParticles(s.warn, s.pos.x, s.pos.y + 0.15, s.pos.z, n, s.radius * 0.45, 0.02, s.radius * 0.45, 0.0);
+        // the same outline as every other arena's strikes: typeless/AoE orange, red-orange in its last moments
+        com.runecraft.boss.StrikeMarkers.ring(s.world, s.pos, s.radius, s.warn, landing, ArenaTiming.ringPoints(s.radius, STRIKES.size()));
     }
 
     /**
@@ -230,9 +221,7 @@ public final class RaidEffects {
             }
         }
         if (bell != null) {
-            long left = Math.max(0, bell.due * ArenaTiming.MC_PER_GAME_TICK - mc);
-            bell.world.playSound(null, bell.pos.x, bell.pos.y, bell.pos.z, SoundEvents.NOTE_BLOCK_BELL.value(), SoundSource.HOSTILE,
-                    0.5f, 1.4f + 0.06f * (ArenaTiming.FINAL_CUE_MC - left));
+            com.runecraft.boss.StrikeMarkers.bell(bell.world, bell.pos, bell.due * ArenaTiming.MC_PER_GAME_TICK - mc);
         }
     }
 

@@ -59,6 +59,21 @@ public final class ArenaTiming {
         return now + Math.max(d, floor);
     }
 
+    /**
+     * Minecraft ticks into the current game tick of a clock whose game-tick count moves on by itself every
+     * {@link #MC_PER_GAME_TICK} Minecraft ticks (the server's), when the arena last ran its own game tick on
+     * {@code boundaryMc}. A gap of a whole game tick or more means a new game tick has begun that the arena hasn't run yet
+     * (the server raises its game tick before the arena's handler runs on the same Minecraft tick): the count restarts from
+     * that game tick's start, instead of sticking at the last Minecraft tick of the old one.
+     */
+    public static int mcIntoTick(long nowMc, long boundaryMc) {
+        long d = nowMc - boundaryMc;
+        if (d <= 0) {
+            return 0;
+        }
+        return (int) (d % MC_PER_GAME_TICK);
+    }
+
     /** The Minecraft tick a strike due on game tick {@code due} lands, when game tick {@code now} began on {@code nowMc}. */
     public static long dueMc(long nowMc, long now, long due) {
         return nowMc + (due - now) * MC_PER_GAME_TICK;

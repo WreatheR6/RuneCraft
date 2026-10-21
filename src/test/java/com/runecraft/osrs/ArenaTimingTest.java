@@ -52,6 +52,26 @@ class ArenaTimingTest {
         assertEquals(50 * 12 + 36, ArenaTiming.dueMc(50 * 12, 50, 53));
     }
 
+    /**
+     * The raid clock between game ticks. On the boundary Minecraft tick the server's game tick has already moved on when the
+     * arena's handler redraws its markers (its own game tick runs a moment later): the count must restart at 0 there, or a
+     * strike landing that very tick reads 11 MC overdue (no final cue, no bell) and one a whole game tick away reads 1 MC left.
+     */
+    @Test
+    void theArenaClockRestartsOnEachGameTick() {
+        assertEquals(0, ArenaTiming.mcIntoTick(120, 120), "the game tick itself");
+        assertEquals(5, ArenaTiming.mcIntoTick(125, 120));
+        assertEquals(11, ArenaTiming.mcIntoTick(131, 120));
+        assertEquals(0, ArenaTiming.mcIntoTick(132, 120), "the next boundary, before the arena's own game tick has run");
+        assertEquals(3, ArenaTiming.mcIntoTick(147, 120), "game ticks missed keep their phase");
+        assertEquals(0, ArenaTiming.mcIntoTick(118, 120), "a boundary stamped ahead (self-test drivers) never goes negative");
+        // what the redraw on that boundary sees: game tick 11 (132 MC) has begun, a strike due on it is in its last cue
+        long now = 11;
+        long clock = now * ArenaTiming.MC_PER_GAME_TICK + ArenaTiming.mcIntoTick(132, 120);
+        assertTrue(ArenaTiming.finalCue(11 * ArenaTiming.MC_PER_GAME_TICK, clock), "the strike landing this tick");
+        assertFalse(ArenaTiming.finalCue(12 * ArenaTiming.MC_PER_GAME_TICK, clock), "a strike a whole game tick away");
+    }
+
     @Test
     void whatIsDrawnIsWhatHits() {
         assertTrue(ArenaTiming.inStrike(1.9, 0.5, 0, 2.0), "1.9 blocks off, half a block up, radius 2");
