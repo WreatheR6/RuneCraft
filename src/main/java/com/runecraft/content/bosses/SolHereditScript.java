@@ -418,6 +418,11 @@ public final class SolHereditScript extends ScriptedBoss {
         return tripleStart >= 0;
     }
 
+    /** Self-test: the last triple-attack thrust (0-2) called out, -1 before the first. */
+    public int selfTestTripleCued() {
+        return tripleCued;
+    }
+
     private void startGrapple(DataBossEntity boss, ServerPlayer target) {
         startGrapple(boss, target, Grapple.values()[random.nextInt(Grapple.values().length)]);
     }

@@ -79,6 +79,9 @@ final class ArenaCueChecks {
             DataBossEntity e = type.create(c.world);
             if (e != null) {
                 e.moveTo(at.x, at.y, at.z, 0, 0);
+                // Not alive: its strikes land as typeless hits with no attacker, so the player is left under attack by
+                // nothing (single-way combat, auto-retaliate) for the checks that follow.
+                e.setHealth(0);
                 return e;
             }
         }
