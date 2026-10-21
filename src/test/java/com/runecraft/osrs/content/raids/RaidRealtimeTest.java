@@ -19,8 +19,11 @@ class RaidRealtimeTest {
         assertEquals(12, RaidRealtime.spacedTick(12, 10, true));
         assertEquals(15, RaidRealtime.spacedTick(15, 10, true));
         assertEquals(10, RaidRealtime.spacedTick(10, 10, false));
-        // never earlier than wanted
+        // never earlier than wanted, and one well before or after the other keeps its tick
         assertEquals(20, RaidRealtime.spacedTick(20, 30, false));
+        assertEquals(5, RaidRealtime.spacedTick(5, 30, true));
+        assertEquals(9, RaidRealtime.spacedTick(9, 11, true), "two ticks before it is far enough");
+        assertEquals(13, RaidRealtime.spacedTick(10, 11, true), "a tick before it waits until two after it");
         assertTrue(RaidRealtime.SEQUENCE_GAP_TICKS * 12 >= 20, "at least the round 41 style spacing (20 MC)");
         assertTrue(RaidRealtime.PROJECTILE_MIN_TICKS * 12 >= 16, "at least the round 41 boss projectile flight (16 MC)");
     }

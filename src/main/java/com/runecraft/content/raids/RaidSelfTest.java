@@ -136,6 +136,62 @@ public final class RaidSelfTest {
                 + " MC; the raid clock restarts on each game-tick boundary";
     }
 
+    /**
+     * Self-test ({@code raid:realtime_cues}, round 42): the raid cue helpers keep the real-time floors without a raid. A
+     * damaging lane made with a 1-tick delay is drawn as it is made and lands no sooner than the floor; a raid projectile flies
+     * at least two game ticks, and one of another style at the same player lands at least two game ticks after it. Both are
+     * made to fizzle (nobody is hurt); {@code at} is away from every player.
+     */
+    public static String realtimeCheck(net.minecraft.server.level.ServerLevel world, net.minecraft.world.phys.Vec3 at, ServerPlayer target) {
+        List<ArenaTiming.StrikeTrace> strikes = new ArrayList<>();
+        List<RaidEffects.ProjectileTrace> flights = new ArrayList<>();
+        Consumer<ArenaTiming.StrikeTrace> strikesBefore = RaidEffects.strikeListener;
+        Consumer<RaidEffects.ProjectileTrace> flightsBefore = RaidEffects.projectileListener;
+        double tag = 0.737;
+        RaidEffects.strikeListener = s -> {
+            strikesBefore.accept(s);
+            if (s.radius() == tag) {
+                strikes.add(s);
+            }
+        };
+        long first;
+        long second;
+        try {
+            // on a raid game tick, as room logic makes its strikes and projectiles
+            RaidEffects.advance(1);
+            RaidEffects.gameTick();
+            RaidEffects.projectileListener = t -> {
+                flightsBefore.accept(t);
+                flights.add(t);
+            };
+            RaidEffects.lane(world, at, at.add(6, 0, 0), tag).delay(1).damage(1, 1).live(() -> false).start();
+            first = RaidEffects.projectile(world, at, target, AttackType.MAGIC, 1, () -> false, () -> {
+            });
+            second = RaidEffects.projectile(world, at, target, AttackType.RANGED, 1, () -> false, () -> {
+            });
+            for (int i = 0; i < 10 && (strikes.isEmpty() || flights.size() < 2); i++) {
+                RaidEffects.advance(1);
+                RaidEffects.gameTick();
+            }
+        } finally {
+            RaidEffects.strikeListener = strikesBefore;
+            RaidEffects.projectileListener = flightsBefore;
+        }
+        expect(strikes.size() == 1 && flights.size() == 2, "the lane or the projectiles never landed (" + strikes.size() + " lane(s), "
+                + flights.size() + " projectile(s))");
+        ArenaTiming.StrikeTrace lane = strikes.get(0);
+        expect(lane.firstDrawnMc() == lane.createdMc() && lane.unfair() == null, "raid lane: " + lane.unfair());
+        expect(lane.leadMc() >= ArenaTiming.MIN_LEAD_MC, "a 1-tick raid lane landed " + lane.leadMc() + " MC after it was made");
+        long minFlight = (long) com.runecraft.osrs.content.raids.RaidRealtime.PROJECTILE_MIN_TICKS * ArenaTiming.MC_PER_GAME_TICK;
+        expect(flights.get(0).flightMc() >= minFlight, "a 1-tick raid projectile flew " + flights.get(0).flightMc() + " MC");
+        long gap = (second - first) * ArenaTiming.MC_PER_GAME_TICK;
+        expect(flights.get(1).landedMc() - flights.get(0).landedMc() >= 20 && gap >= 20,
+                "a ranged projectile landed " + (flights.get(1).landedMc() - flights.get(0).landedMc()) + " MC after a magic one at the same player");
+        expect(!flights.get(0).landed() && !flights.get(1).landed(), "a fizzled raid projectile landed");
+        return "1-tick lane landed after " + lane.leadMc() + " MC, drawn on creation; projectiles flew " + flights.get(0).flightMc()
+                + " MC, the second style " + gap + " MC after the first";
+    }
+
     // ------------------------------------------------------------------ driver API (used by the rooms' solvers)
 
     RaidInstance raid() {

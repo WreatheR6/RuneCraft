@@ -29,13 +29,13 @@ public final class RaidRealtime {
     public static final int PROJECTILE_MIN_TICKS = 2;
 
     /**
-     * The game tick a hit wanted on {@code wantTick} lands on, given the last one on the same player landed (or will land) on
-     * {@code lastTick}: a hit needing a different answer waits {@link #SEQUENCE_GAP_TICKS} after it; one needing the same
-     * answer (the same prayer, the same step away) keeps its tick. Never earlier than wanted.
-     * // playability: OSRS lands them a tick apart (a one-tick prayer flick)
+     * The game tick a hit wanted on {@code wantTick} lands on, given another on the same player landed (or will land) on
+     * {@code lastTick}: a hit needing a different answer that would land within {@link #SEQUENCE_GAP_TICKS} of it waits that
+     * long after it; one needing the same answer (the same prayer, the same step away), or well apart, keeps its tick. Never
+     * earlier than wanted. // playability: OSRS lands them a tick apart (a one-tick prayer flick)
      */
     public static long spacedTick(long wantTick, long lastTick, boolean differentAnswer) {
-        if (!differentAnswer) {
+        if (!differentAnswer || Math.abs(wantTick - lastTick) >= SEQUENCE_GAP_TICKS) {
             return wantTick;
         }
         return Math.max(wantTick, lastTick + SEQUENCE_GAP_TICKS);

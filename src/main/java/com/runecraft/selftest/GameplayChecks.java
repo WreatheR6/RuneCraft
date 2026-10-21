@@ -173,6 +173,8 @@ final class GameplayChecks {
         checks.add(new SelfTest.Check("raid:cox_supplies", g::coxSupplies));
         checks.add(new SelfTest.Check("raid:toa_full_run", g::toaFullRun));
         checks.add(new SelfTest.Check("raid:toa_deaths", g::toaDeaths));
+        checks.add(new SelfTest.Check("raid:realtime_cues", () -> com.runecraft.content.raids.RaidSelfTest.realtimeCheck(context.world,
+                net.minecraft.world.phys.Vec3.atBottomCenterOf(context.near(0, 0)).add(0, 40, 0), context.player)));
         for (Boss b : ModEntities.BOSS_TYPES.keySet()) {
             checks.add(new SelfTest.Check("boss:" + b.entityId(), () -> g.legacyBoss(b)));
         }

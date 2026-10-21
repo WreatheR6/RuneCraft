@@ -404,7 +404,9 @@ public final class RaidEffects {
         long[] last = LAST_PROJECTILE.get(to.getUUID());
         long due = last == null || last[0] < now ? want
                 : com.runecraft.osrs.content.raids.RaidRealtime.spacedTick(want, last[0], last[1] != styleKey(style));
-        LAST_PROJECTILE.put(to.getUUID(), new long[]{Math.max(due, last == null ? due : last[0]), styleKey(style)});
+        if (last == null || due >= last[0]) {
+            LAST_PROJECTILE.put(to.getUUID(), new long[]{due, styleKey(style)});
+        }
         long createdMc = now * ArenaTiming.MC_PER_GAME_TICK + into;
         int rgb = style == null ? com.runecraft.util.Msg.TYPELESS_RGB : style.isMelee() ? com.runecraft.util.Msg.MELEE_RGB
                 : style == AttackType.MAGIC ? com.runecraft.util.Msg.MAGIC_RGB : com.runecraft.util.Msg.RANGED_RGB;
