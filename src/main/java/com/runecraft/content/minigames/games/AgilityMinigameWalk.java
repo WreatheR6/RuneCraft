@@ -32,7 +32,8 @@ import net.minecraft.world.InteractionHand;
  * <ul>
  *   <li>Hallowed Sepulchre: the entry requirements, all five floors in a row by whatever entrance each picks: every trap
  *       corridor crossed tile by tile at OSRS run speed with the pure rules' planner (a hit fails the walk), one deliberate hit
- *       without and one with the hallowed ring, every coffin's challenge (bridge, brazier, portal with the hallowed focus,
+ *       without and one with the hallowed ring (the damage read from the trap's damage roll: the real player is invulnerable
+ *       for the self-test, so its health never moves), every coffin's challenge (bridge, brazier, portal with the hallowed focus,
  *       pillar) unlocked and crossed both ways, every coffin looted, the middle stairs and platforms, the Agility gate on the
  *       stairs down, a hallowed token, the Grand Hallowed Coffin and the obelisk out with the floor XP; a hallowed sack.</li>
  *   <li>Out of time: the clock runs out, coffins and challenges refuse, the stairs are sealed and the obelisk still pays.</li>
@@ -45,6 +46,15 @@ public final class AgilityMinigameWalk {
     private String step = "start";
     private MinigameSession session;
     private int ticks;
+
+    /** One damage roll against the walk's player, as the combat hooks saw it (attack name, damage after reductions). */
+    private record Roll(String attack, int damage) {
+    }
+
+    /** The walk whose player's damage rolls are being recorded into its {@link #rolls}, or null; the listener is added once. */
+    private static AgilityMinigameWalk recording;
+    private static boolean hooked;
+    private final List<Roll> rolls = new ArrayList<>();
 
     private AgilityMinigameWalk(ServerPlayer player) {
         this.player = player;
@@ -64,11 +74,47 @@ public final class AgilityMinigameWalk {
             throw new AssertionError("[" + w.step + "] " + e.getMessage() + " (after " + w.ticks + " ticks; done: "
                     + String.join("; ", w.notes) + ")");
         } finally {
+            if (recording == w) {
+                recording = null;
+            }
             ActionManager.cancel(p);
             if (w.session != null && !w.session.isEnded()) {
                 w.session.end(false);
             }
         }
+    }
+
+    /**
+     * Starts recording every damage roll against the player ({@code CombatHooks} damage listener, the damage that goes on to
+     * the player's health). The self-test player's health can't show damage: the real player is made invulnerable for the
+     * whole run ({@code selftest.TestContext}), so traps are measured by their damage rolls, as the boss walks do.
+     */
+    private void recordDamage() {
+        if (!hooked) {
+            hooked = true;
+            com.runecraft.combat.CombatHooks.addDamageListener((p, attacker, attack, style, damage) -> {
+                AgilityMinigameWalk w = recording;
+                if (w != null && p.getUUID().equals(w.player.getUUID())) {
+                    w.rolls.add(new Roll(attack == null ? "?" : attack, damage));
+                }
+            });
+        }
+        rolls.clear();
+        recording = this;
+    }
+
+    /** Stops recording; returns the rolls of the attack named {@code attack} since {@link #recordDamage}. */
+    private List<Roll> stopRecording(String attack) {
+        if (recording == this) {
+            recording = null;
+        }
+        List<Roll> out = new ArrayList<>();
+        for (Roll r : rolls) {
+            if (attack.equals(r.attack())) {
+                out.add(r);
+            }
+        }
+        return out;
     }
 
     public static String sepulchre(ServerPlayer p) {
@@ -469,6 +515,9 @@ public final class AgilityMinigameWalk {
             }
         }
         step = "floor " + floor + " end";
+        // Every floor 1 and 2 route has a flame, sword or bolt corridor, each hitting within its cycle (well under 40 ticks).
+        expect(floor > 2 || hitTested, "no trap on floor " + floor + " could be stepped into: the deliberate hit "
+                + (floor == 2 ? "with" : "without") + " the hallowed ring went untested");
         expect(s.selfTestPaused(), "the timer isn't paused past the floor's last trap");
         expect(!s.selfTestTimeUp(), "ran out of time on floor " + floor + " (" + s.selfTestTimeLeft() + ")");
         moveTo(s.selfTestSpot(s.selfTestEndU() + 2, 0));
@@ -525,46 +574,68 @@ public final class AgilityMinigameWalk {
     }
 
     /**
-     * Steps into a trap on purpose: the player is sent back to the corridor's start, hurt without the hallowed ring and
-     * unhurt with it. Returns false if no trap could be found to step into soon.
+     * Steps into a trap on purpose: the player is sent back to the corridor's start, hit once for the trap's damage without
+     * the hallowed ring and not at all with it (wiki: "a small amount of damage unless the hallowed ring is equipped"). The
+     * damage is read from the trap's damage roll ({@link SepulchreSession#TRAP_ATTACK}), not the player's health, which never
+     * moves in the self-test. The trap timings are a function of the tick, so where to step is known in advance. Returns false
+     * if no trap could be found to step into soon.
      */
     private boolean deliberateHit(SepulchreSession.SelfTestSection sec, boolean ring) {
         SepulchreSession s = sep();
         int t0 = sec.trapStart();
+        // Without the ring means no ring at all (a ring the player came in with goes back on after the hit); the ring stays on.
+        net.minecraft.world.item.ItemStack heldRing = ring ? null : SysState.of(player).worn.remove(Jewellery.Slot.RING);
         if (ring) {
             SysState.of(player).worn.put(Jewellery.Slot.RING, Inv.stack("hallowed_ring", 1));
         }
-        moveTo(s.selfTestSpot(t0 - 1, 0));
-        tick();
-        for (int wait = 0; wait < 40; wait++) {
-            long next = s.selfTestTicks() + 1;
-            for (int z = 0; z <= 2; z++) {
-                for (int lane = -1; lane <= 1; lane++) {
-                    if (HallowedSepulchre.hazard(sec.layout(), lane, -1, z, next) != HallowedSepulchre.Hazard.HIT) {
-                        continue;
-                    }
-                    int hits = s.selfTestHits();
-                    float hp = player.getHealth();
-                    moveTo(s.selfTestSpot(t0 + z, lane));
-                    tick(false);
-                    float after = player.getHealth();
-                    player.setHealth(player.getMaxHealth());
-                    expect(s.selfTestHits() == hits + 1, "stepping into the trap at lane " + lane + " tile " + z + " didn't hit");
-                    expect(s.selfTestWhere(player)[0] == t0 - 1, "the hit didn't send the player back to the corridor's start");
-                    if (ring) {
-                        expect(after >= hp, "the hallowed ring didn't stop the trap's damage (" + hp + " -> " + after + ")");
-                        notes.add("a trap with the hallowed ring: sent back, no damage");
-                    } else {
-                        expect(after < hp, "the trap did no damage (" + hp + " -> " + after + ")");
-                        notes.add("a trap without the ring: " + Math.round(hp - after) + " damage, sent back");
-                    }
-                    until(HallowedSepulchre.RECOVER_TICKS + 1, () -> false);
-                    return true;
-                }
-            }
+        try {
+            moveTo(s.selfTestSpot(t0 - 1, 0));
             tick();
+            for (int wait = 0; wait < 40; wait++) {
+                long next = s.selfTestTicks() + 1;
+                for (int z = 0; z <= 2; z++) {
+                    for (int lane = -1; lane <= 1; lane++) {
+                        if (HallowedSepulchre.hazard(sec.layout(), lane, -1, z, next) != HallowedSepulchre.Hazard.HIT) {
+                            continue;
+                        }
+                        trapHit(s, t0, lane, z, ring);
+                        return true;
+                    }
+                }
+                tick();
+            }
+            return false;
+        } finally {
+            if (heldRing != null && !heldRing.isEmpty()) {
+                SysState.of(player).worn.put(Jewellery.Slot.RING, heldRing);
+            }
         }
-        return false;
+    }
+
+    /** Steps onto a tile a trap hits next tick and checks the hit: sent back, and the damage roll (none with the ring). */
+    private void trapHit(SepulchreSession s, int t0, int lane, int z, boolean ring) {
+        int floor = s.selfTestFloor();
+        int hits = s.selfTestHits();
+        recordDamage();
+        moveTo(s.selfTestSpot(t0 + z, lane));
+        tick(false);
+        List<Roll> trap = stopRecording(SepulchreSession.TRAP_ATTACK);
+        player.setHealth(player.getMaxHealth());
+        expect(s.selfTestHits() == hits + 1, "stepping into the trap at lane " + lane + " tile " + z + " didn't hit");
+        expect(s.selfTestWhere(player)[0] == t0 - 1, "the hit didn't send the player back to the corridor's start");
+        if (ring) {
+            expect(trap.isEmpty(), "the hallowed ring didn't stop the trap's damage (rolled " + trap + ")");
+            notes.add("a trap with the hallowed ring: sent back, no damage");
+        } else {
+            int lo = HallowedSepulchre.trapDamage(floor, 0);
+            int hi = HallowedSepulchre.trapDamage(floor, Math.nextDown(1.0));
+            expect(trap.size() == 1, "the trap did no damage: " + trap.size() + " damage rolls against the player (want 1)");
+            int dealt = trap.get(0).damage();
+            expect(dealt >= lo && dealt <= hi, "the trap hit for " + dealt + " (floor " + floor + " traps hit " + lo + "-" + hi
+                    + ")");
+            notes.add("a trap without the ring: " + dealt + " damage (" + lo + "-" + hi + "), sent back");
+        }
+        until(HallowedSepulchre.RECOVER_TICKS + 1, () -> false);
     }
 
     private void coffin(int index, SepulchreSession.SelfTestSection sec, int floor) {
