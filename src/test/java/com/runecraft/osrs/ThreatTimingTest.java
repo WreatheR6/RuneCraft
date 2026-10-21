@@ -33,6 +33,10 @@ class ThreatTimingTest {
         assertEquals(24, ThreatTiming.flightMc(40, true));
         assertEquals(16, ThreatTiming.flightMc(2, true));
         assertEquals(10, ThreatTiming.flightMc(0, false));
+        // a fast attacker's projectile lands before its next attack: Zilyana (2 ticks) at most 22 MC, a 1-tick one at the 10 floor
+        assertEquals(22, ThreatTiming.latestLandingMc(24));
+        assertEquals(10, ThreatTiming.latestLandingMc(12));
+        assertEquals(46, ThreatTiming.latestLandingMc(48), "a 4-tick monster: no effect on a 24 MC flight + 20 MC spacing");
         for (double d = 0; d < 64; d += 0.25) {
             int f = ThreatTiming.flightMc(d, false);
             assertTrue(f >= 10 && f <= 24, "flight " + f + " at " + d);

@@ -13,7 +13,8 @@ import com.runecraft.osrs.content.AttackDef;
  *   first visible cue, its OSRS lead when that is longer;</li>
  *   <li>an untelegraphed ranged or magic attack is a travelling projectile judged on impact, flying
  *   clamp(distance / {@value #FLIGHT_BLOCKS_PER_MC}, 10, 24) MC (at least 16 from a boss), and attacks of different styles land at
- *   least {@value #STYLE_SPACING_MC} MC apart on one target (a volley is spread, never thinned);</li>
+ *   least {@value #STYLE_SPACING_MC} MC apart on one target (a volley is spread, never thinned); a projectile always lands before
+ *   its caster's next attack starts;</li>
  *   <li>a melee attack winds up for 6, 8 or 10 MC by the monster's width before it resolves, and only lands when the target is still
  *   within reach (the bounding-box gap, not the 3D centre distance);</li>
  *   <li>ground hazards arm after {@value #HAZARD_ARM_MC} MC and then hit a player standing in them at most once per
@@ -102,6 +103,15 @@ public final class ThreatTiming {
     public static int flightMc(double distance, boolean boss) {
         long mc = Math.round(Math.max(0, distance) / FLIGHT_BLOCKS_PER_MC);
         return (int) Math.max(boss ? FLIGHT_MIN_BOSS_MC : FLIGHT_MIN_MC, Math.min(FLIGHT_MAX_MC, mc));
+    }
+
+    /**
+     * The latest a projectile may land after its launch for a caster attacking every {@code periodMc} MC: 2 MC before its next
+     * attack starts (never under {@value #FLIGHT_MIN_MC}), so one monster's hits resolve in the order it threw them (the scripts'
+     * on-hit hooks read the attack they last made).
+     */
+    public static long latestLandingMc(int periodMc) {
+        return Math.max(FLIGHT_MIN_MC, periodMc - 2L);
     }
 
     /** The protection prayer group of a style: 0 melee, 1 ranged, 2 magic. */

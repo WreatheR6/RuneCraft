@@ -383,8 +383,11 @@ public final class Mechanics {
         long now = ActionManager.mcTick();
         Vec3 launch = launchPoint(from);
         double dist = launch.distanceTo(chest(target));
-        long natural = now + ThreatTiming.flightMc(dist, boss);
-        long due = spacedDue(target, natural, style);
+        // landing before the caster's next attack starts (a fast attacker's hits keep their order)
+        long latest = from instanceof OsrsMonsterEntity m && m.stats() != null
+                ? now + ThreatTiming.latestLandingMc(m.stats().attackSpeed() * ActionManager.MC_TICKS_PER_GAME_TICK) : Long.MAX_VALUE;
+        long natural = Math.min(now + ThreatTiming.flightMc(dist, boss), latest);
+        long due = Math.min(spacedDue(target, natural, style), Math.max(natural, latest));
         Pending p = new Pending(Kind.PROJECTILE, from, mob, target, attack, style, multiplier, target.position(), now, due, range,
                 resolve, null, extra, false, false);
         p.launch = launch;
