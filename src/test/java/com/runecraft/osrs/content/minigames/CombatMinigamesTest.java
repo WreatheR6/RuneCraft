@@ -303,7 +303,7 @@ class CombatMinigamesTest {
         }
         assertTrue(MinigameWorld.NPC_SHOPS.containsValue("nightmare_zone"));
         assertTrue(MinigameWorld.NPC_SHOPS.containsValue("soul_wars"));
-        assertEquals(MinigameItems.NAVAL_COLOURS.size() * 3 + 1, MinigameWorld.collectionLog().stream()
+        assertEquals(MinigameItems.NAVAL_COLOURS.size() * 3 + 9, MinigameWorld.collectionLog().stream()
                 .filter(p -> p.name().equals("Trouble Brewing")).findFirst().orElseThrow().items().size());
     }
 }
