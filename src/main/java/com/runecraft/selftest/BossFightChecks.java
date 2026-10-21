@@ -328,6 +328,23 @@ final class BossFightChecks {
             }
         };
         recording = rec;
+        // Round 41 playability: every damaging, non-exact ground strike of the fight must be drawn as it is made and land at
+        // least ArenaTiming.MIN_LEAD_MC (1.8 s) later: the scripted bosses' and the God Wars/Wilderness bosses' own list.
+        java.util.function.Consumer<com.runecraft.osrs.ArenaTiming.StrikeTrace> strikesBefore =
+                com.runecraft.content.bosses.ScriptedBoss.strikeListener;
+        java.util.function.Consumer<com.runecraft.osrs.ArenaTiming.StrikeTrace> gwdStrikesBefore =
+                com.runecraft.content.godwars.GwdScript.strikeListener;
+        List<String> unfairStrikes = new ArrayList<>();
+        int[] strikesLanded = {0};
+        java.util.function.Consumer<com.runecraft.osrs.ArenaTiming.StrikeTrace> judge = s -> {
+            strikesLanded[0]++;
+            String why = s.unfair();
+            if (why != null && unfairStrikes.size() < 5) {
+                unfairStrikes.add(why);
+            }
+        };
+        com.runecraft.content.bosses.ScriptedBoss.strikeListener = strikesBefore.andThen(judge);
+        com.runecraft.content.godwars.GwdScript.strikeListener = gwdStrikesBefore.andThen(judge);
         LivingEntity boss = first;
         List<String> forms = new ArrayList<>();
         Map<AttackType, int[]> landed = new LinkedHashMap<>(); // style -> {attacks, hits (hp taken off), rolled > 0 but no hp lost}
@@ -451,6 +468,10 @@ final class BossFightChecks {
                     heavyLanded = true;
                 }
             }
+            if (!unfairStrikes.isEmpty()) {
+                throw new AssertionError(unfairStrikes.size() + " of its " + strikesLanded[0] + " ground strikes came too fast for a "
+                        + "human: " + unfairStrikes);
+            }
             if (rec.firstAttackTick < 0 && !passive && c.realPlayer()) {
                 throw new AssertionError("never attacked the player in " + tick + " game ticks"
                         + (rec.otherRolls > 0 ? " (" + rec.otherRolls + " hits from other sources)" : ""));
@@ -470,6 +491,8 @@ final class BossFightChecks {
         } finally {
             recording = null;
             Mechanics.attackListener = before;
+            com.runecraft.content.bosses.ScriptedBoss.strikeListener = strikesBefore;
+            com.runecraft.content.godwars.GwdScript.strikeListener = gwdStrikesBefore;
             if (health != null) {
                 health.removeModifier(HP_BUFFER);
             }

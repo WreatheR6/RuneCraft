@@ -57,8 +57,9 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  *
  * <p>The arena is built one block per OSRS tile. Monster mechanics: the warband attacks only from melee range (and always
  * takes a max hit from its weak style); Javelin Colossi replace every fifth attack with a javelin landing on the player's
- * tile 6 ticks later; manticores fire their own three-orb pattern a tick apart (a second manticore copies it and the two
- * stagger their volleys 5 ticks apart); minotaurs out of melee reach heal wounded monsters in sight to full.
+ * tile 6 ticks later; manticores fire their own three-orb pattern (a second manticore copies it and the two stagger their
+ * volleys 5 ticks apart), shown as it charges and landing 3, 5 and 7 ticks after the launch (round 41 playability; OSRS a
+ * tick apart); minotaurs out of melee reach heal wounded monsters in sight to full.
  *
  * <p>Modifiers modelled: Bees!, Blasphemy, Doom (any damage taken, hazards included), Dynamic Duo, Frailty, Mantimayhem
  * (I: each orb hits twice, II: unprotected orbs venom, III: any order of the three orbs), Myopia (ranged and autocast
@@ -890,10 +891,69 @@ public class ColosseumSession extends MinigameSession {
         manticoreVolleys.put(id, at);
         int hits = FortisColosseum.manticoreHitsPerOrb(tier);
         for (int i = 0; i < pattern.size(); i++) {
-            orbs.add(new Orb(mob, target, pattern.get(i), at + i, hits));
+            // the first orb no longer lands at once: 3, 5 and 7 ticks after the launch // playability: OSRS a tick apart
+            orbs.add(new Orb(mob, target, pattern.get(i), FortisColosseum.manticoreOrbTick(at, i), hits));
         }
         world.sendParticles(ParticleTypes.ENCHANT, mob.getX(), mob.getY() + mob.getBbHeight(), mob.getZ(), 20, 0.5, 0.4, 0.5, 0.2);
+        announceVolley(target, pattern);
+        ORB_SESSIONS.add(this);
+        drawOrbStacks();
         return true;
+    }
+
+    /** Sessions with manticore orbs on their way, whose stacks are redrawn every few Minecraft ticks. */
+    private static final Set<ColosseumSession> ORB_SESSIONS = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+    private static final net.minecraft.core.particles.DustParticleOptions ORB_MAGIC = orbDust(Msg.MAGIC_RGB);
+    private static final net.minecraft.core.particles.DustParticleOptions ORB_RANGED = orbDust(Msg.RANGED_RGB);
+    private static final net.minecraft.core.particles.DustParticleOptions ORB_MELEE = orbDust(Msg.MELEE_RGB);
+
+    private static net.minecraft.core.particles.DustParticleOptions orbDust(int rgb) {
+        return new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(((rgb >> 16) & 0xFF) / 255f,
+                ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f), 2.0f);
+    }
+
+    /**
+     * A manticore's volley in one centre-screen line as it charges, in landing order and style colours ("Manticore: MAG RNG
+     * MEL"). // playability: OSRS shows the orbs only as they fly
+     */
+    private void announceVolley(ServerPlayer target, List<AttackType> pattern) {
+        MutableComponent line = Component.literal("Manticore:").withStyle(s -> s.withColor(0xFFC030));
+        for (AttackType t : pattern) {
+            int rgb = t == AttackType.MAGIC ? Msg.MAGIC_RGB : t == AttackType.RANGED ? Msg.RANGED_RGB : Msg.MELEE_RGB;
+            line.append(Component.literal(t == AttackType.MAGIC ? " MAG" : t == AttackType.RANGED ? " RNG" : " MEL")
+                    .withStyle(s -> s.withColor(rgb)));
+        }
+        Msg.telegraph(target, line);
+    }
+
+    /**
+     * The orbs still to land, stacked above each manticore in style colours (the bottom one lands next), drawn when a volley
+     * is launched and every few Minecraft ticks until the last lands. // playability: OSRS has the orbs in flight only
+     */
+    private void drawOrbStacks() {
+        Map<LivingEntity, Integer> stacked = new HashMap<>();
+        List<Orb> sorted = new ArrayList<>(orbs);
+        sorted.sort(java.util.Comparator.comparingLong(Orb::due));
+        for (Orb o : sorted) {
+            LivingEntity m = o.mob();
+            if (!m.isAlive()) {
+                continue;
+            }
+            int level = stacked.merge(m, 1, Integer::sum) - 1;
+            var dust = o.type() == AttackType.MAGIC ? ORB_MAGIC : o.type() == AttackType.RANGED ? ORB_RANGED : ORB_MELEE;
+            world.sendParticles(dust, m.getX(), m.getY() + m.getBbHeight() + 0.4 + level * 0.6, m.getZ(), 4, 0.12, 0.12, 0.12, 0.0);
+        }
+    }
+
+    /** Redraws the manticore orb stacks of every Colosseum run (every {@link com.runecraft.osrs.ArenaTiming#REDRAW_MC} MC). */
+    private static void redrawOrbStacks() {
+        for (ColosseumSession s : new ArrayList<>(ORB_SESSIONS)) {
+            if (s.isEnded() || s.orbs.isEmpty()) {
+                ORB_SESSIONS.remove(s);
+            } else {
+                s.drawOrbStacks();
+            }
+        }
     }
 
     /** The tick a manticore's last volley was (or will be) launched (self-test). */
@@ -1306,6 +1366,11 @@ public class ColosseumSession extends MinigameSession {
 
     /** Registers the Colosseum's combat hooks and blocks (called once from the module's init). */
     public static void register() {
+        com.runecraft.platform.ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (com.runecraft.action.ActionManager.mcTick() % com.runecraft.osrs.ArenaTiming.REDRAW_MC == 0) {
+                redrawOrbStacks();
+            }
+        });
         // Sol Heredit drops nothing: the Rewards Chest holds the loot (his pet roll and kill count still come with the kill).
         com.runecraft.boss.DataBossService.loot(FortisColosseum.SOL_HEREDIT, (killer, boss, table) -> List.of());
         CombatHooks.addDamageListener((player, attacker, attack, style, damage) -> {

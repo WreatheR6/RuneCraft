@@ -202,6 +202,7 @@ final class GameplayChecks {
         checks.add(new SelfTest.Check("minigame:mage_arena_i", () -> g.walk(com.runecraft.content.quests.MageArenaWalk::ma1)));
         checks.add(new SelfTest.Check("minigame:mage_arena_ii", () -> g.walk(com.runecraft.content.quests.MageArenaWalk::ma2)));
         checks.addAll(BossWalkChecks.all(context));
+        checks.addAll(ArenaCueChecks.all(context));
         // Treasure Trails as the real player: a trail of each tier through every step type, its casket, the Mimic and Watson
         // (named minigame:* so the client walkthrough's real-player run includes them).
         for (com.runecraft.osrs.content.systems.ClueScrolls.Tier t : com.runecraft.osrs.content.systems.ClueScrolls.Tier.values()) {

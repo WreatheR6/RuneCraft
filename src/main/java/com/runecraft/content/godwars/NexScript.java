@@ -314,6 +314,7 @@ final class NexScript extends GwdScript {
                 } else {
                     shout(boss, "Contain this!");
                     // icicles in the 5x5 around her (she is 3x3): up to 60, and they switch off protection prayers
+                    // playability: OSRS lands them 2 ticks after the shout; GwdScript.strike floors that to 3 (1.8 s), marker shown
                     strike(boss, boss.position(), 2, 60, 5.0, ParticleTypes.SNOWFLAKE, ParticleTypes.ITEM_SNOWBALL, (hit, dmg) -> {
                         dropProtection(hit);
                         if (dmg > 0) {

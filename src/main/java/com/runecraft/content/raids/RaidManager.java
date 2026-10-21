@@ -91,6 +91,10 @@ public final class RaidManager {
 
     public static void register() {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
+            // Strike markers and cues are redrawn between the game ticks that land them. // playability
+            if (ActionManager.mcTick() % com.runecraft.osrs.ArenaTiming.REDRAW_MC == 0) {
+                RaidEffects.redraw();
+            }
             if (ActionManager.mcTick() % ActionManager.MC_TICKS_PER_GAME_TICK != 0) {
                 return;
             }

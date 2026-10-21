@@ -364,9 +364,20 @@ public final class ColosseumWalk {
             expect(pattern != null && pattern.size() == 3 && (anyOrder || pattern.get(2) == AttackType.CRUSH)
                     && new java.util.HashSet<>(pattern).size() == 3, "manticore pattern " + pattern);
             expect(session.orbsPending() == 3, session.orbsPending() + " orbs queued (expected 3)");
-            tick(3);
+            // Round 41 playability: shown as it charges, the orbs land 3, 5 and 7 ticks after the launch (OSRS a tick apart,
+            // the first at once).
+            tick(FortisColosseum.MANTICORE_ORB_LEAD_TICKS - 1);
+            expect(session.orbsPending() == 3, (3 - session.orbsPending()) + " manticore orb(s) landed before the "
+                    + FortisColosseum.MANTICORE_ORB_LEAD_TICKS + "-tick lead");
+            tick(1);
+            expect(session.orbsPending() == 2, "the first orb did not land " + FortisColosseum.MANTICORE_ORB_LEAD_TICKS
+                    + " ticks after the launch (" + session.orbsPending() + " pending)");
+            tick(FortisColosseum.MANTICORE_ORB_GAP_TICKS - 1);
+            expect(session.orbsPending() == 2, "the second orb landed less than " + FortisColosseum.MANTICORE_ORB_GAP_TICKS
+                    + " ticks after the first");
+            tick(1 + FortisColosseum.MANTICORE_ORB_GAP_TICKS);
             expect(session.orbsPending() == 0, "the orbs never landed");
-            done.add("manticore " + pattern);
+            done.add("manticore " + pattern + " (orbs 3/5/7 ticks after the launch)");
             // Totemic: a totem rises beside a monster at half health and heals it (followed through the session's list).
             LivingEntity shaman = first(FortisColosseum.SHAMAN);
             expect(shaman != null, "no serpent shaman on wave 4");
@@ -417,7 +428,9 @@ public final class ColosseumWalk {
             expect(a != null && a.equals(b), "the second manticore did not copy the first's pattern (" + a + " / " + b + ")");
             long gap = session.manticoreVolleyAt(manticores.get(1)) - session.manticoreVolleyAt(manticores.get(0));
             expect(gap >= FortisColosseum.MANTICORE_STAGGER_TICKS, "volleys only " + gap + " ticks apart");
-            tick(FortisColosseum.MANTICORE_STAGGER_TICKS + 3);
+            // both volleys land (the later one's last orb 7 ticks after its staggered launch)
+            until(() -> session.orbsPending() == 0, (int) gap + (int) FortisColosseum.manticoreOrbTick(0, 2) + 2,
+                    "the two manticores' orbs never all landed");
             done.add("manticores share " + a + ", volleys " + gap + " ticks apart");
         }
         if (wave == 10) {
@@ -505,6 +518,8 @@ public final class ColosseumWalk {
         player.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
         restoreInventory(kept);
         notes.add("grapple: perfect parry, armour torn off, kept on with a full inventory");
+        moveTo(sol.blockPosition().east(2));
+        notes.add(walkTriple(script));
         // The phases down to the enrage. Totemic (forced on wave 4, kept for the run) raises a healing totem near his south-west
         // tile once he is at half health, healing him 75 every 7 ticks (wiki "Healing totem", strategy guide): it is broken as
         // soon as it rises (1 hitpoint; a totem destroyed before its projectile lands heals nothing), or a heal could lift him
@@ -678,6 +693,73 @@ public final class ColosseumWalk {
             player.getInventory().items.set(i, i < size - free ? junk.copy() : ItemStack.EMPTY);
         }
         return kept;
+    }
+
+    /** Damage of each triple-attack thrust that reached the walking player (through the damage hooks), in order. */
+    private static final List<Integer> TRIPLE_DAMAGE = new java.util.ArrayList<>();
+    private static ServerPlayer tripleWatched;
+    private static boolean tripleHooked;
+
+    /**
+     * Sol Heredit's triple parry (round 41 playability): each spear thrust is called out ("Spear 1/3") two game ticks ahead;
+     * Protect from Melee switched on through the real prayer toggle a game tick (12 Minecraft ticks) after the call blocks the
+     * thrust, and with the prayer off it lands for its full 15/25/35. Returns a note.
+     */
+    private String walkTriple(SolHereditScript script) {
+        com.runecraft.osrs.Prayer melee = com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE;
+        var data = Players.data(player);
+        if (data.isActive(melee)) {
+            com.runecraft.combat.PrayerService.toggle(player, melee);
+        }
+        if (!tripleHooked) {
+            tripleHooked = true;
+            com.runecraft.combat.CombatHooks.addDamageListener((p, attacker, attack, style, damage) -> {
+                if (p == tripleWatched && "triple_attack".equals(attack)) {
+                    TRIPLE_DAMAGE.add(damage);
+                }
+            });
+        }
+        List<String> calls = new java.util.ArrayList<>();
+        com.runecraft.util.Msg.TelegraphListener before = com.runecraft.util.Msg.telegraphListener;
+        com.runecraft.util.Msg.telegraphListener = (p, line, merged) -> {
+            before.shown(p, line, merged);
+            if (p == player && line.contains("Spear ")) {
+                calls.add(line);
+            }
+        };
+        TRIPLE_DAMAGE.clear();
+        tripleWatched = player;
+        boolean[] pray = {true, false, true};
+        List<Integer> landed = new java.util.ArrayList<>();
+        try {
+            script.selfTestTriple();
+            for (int hit = 0; hit < 3; hit++) {
+                int h = hit;
+                until(() -> script.selfTestTripleCued() >= h, 5, "Sol Heredit never called out thrust " + (h + 1));
+                expect(TRIPLE_DAMAGE.size() == h, "thrust " + (h + 1) + " landed before it was called out");
+                tick(1); // the player reacts a game tick after the call
+                if (data.isActive(melee) != pray[h]) {
+                    com.runecraft.combat.PrayerService.toggle(player, melee);
+                }
+                expect(data.isActive(melee) == pray[h], "the prayer toggle left Protect from Melee " + (pray[h] ? "off" : "on"));
+                until(() -> TRIPLE_DAMAGE.size() > h, 3, "thrust " + (h + 1) + " never landed");
+                int dmg = TRIPLE_DAMAGE.get(h);
+                int full = SolHeredit.tripleDamage(h, script.phase());
+                expect(pray[h] ? dmg == 0 : dmg == full, "thrust " + (h + 1) + " dealt " + dmg + " with Protect from Melee "
+                        + (pray[h] ? "on (expected 0)" : "off (expected " + full + ")"));
+                landed.add(dmg);
+            }
+        } finally {
+            com.runecraft.util.Msg.telegraphListener = before;
+            tripleWatched = null;
+            if (data.isActive(melee)) {
+                com.runecraft.combat.PrayerService.toggle(player, melee);
+            }
+        }
+        expect(calls.size() >= 3 && calls.get(0).contains("1/3") && calls.get(2).contains("3/3"),
+                "the thrusts were not called out on the player's screen: " + calls);
+        return "triple parry: each thrust called 2 ticks ahead, prayer toggled a tick after the call blocked it, off it landed "
+                + landed;
     }
 
     private void restoreInventory(List<ItemStack> kept) {

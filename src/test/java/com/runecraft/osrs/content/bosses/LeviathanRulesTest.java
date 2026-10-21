@@ -17,18 +17,40 @@ class LeviathanRulesTest {
         int[] spacing = new int[LeviathanRules.STAGES];
         boolean[] melee = new boolean[LeviathanRules.STAGES];
         for (int s = 0; s < LeviathanRules.STAGES; s++) {
-            spacing[s] = LeviathanRules.spacing(s, false, false);
+            spacing[s] = LeviathanRules.osrsSpacing(s, false, false);
             melee[s] = LeviathanRules.melee(s, false);
         }
         assertEquals("[3, 2, 2, 1, 1, 1, 1]", java.util.Arrays.toString(spacing));
         assertEquals("[false, false, true, false, true, true, true]", java.util.Arrays.toString(melee));
-        assertEquals(2, LeviathanRules.react(5, false));
-        assertEquals(1, LeviathanRules.react(6, false));
+        assertEquals(2, LeviathanRules.osrsReact(5, false));
+        assertEquals(1, LeviathanRules.osrsReact(6, false));
         assertEquals(6, LeviathanRules.next(6), "the last speed stays");
         // enraged: every 2 ticks (awakened 1), magic and ranged only
-        assertEquals(2, LeviathanRules.spacing(0, true, false));
-        assertEquals(1, LeviathanRules.spacing(0, true, true));
+        assertEquals(2, LeviathanRules.osrsSpacing(0, true, false));
+        assertEquals(1, LeviathanRules.osrsSpacing(0, true, true));
         assertFalse(LeviathanRules.melee(4, true));
+    }
+
+    /**
+     * Playability (round 41): as played, orbs are at least 2 ticks apart and fly at least 3 (a prayer switch per orb a human
+     * can make); where OSRS is already slower its numbers stay.
+     */
+    @Test
+    void playedVolleysHaveRealTimeFloors() {
+        int[] spacing = new int[LeviathanRules.STAGES];
+        int[] react = new int[LeviathanRules.STAGES];
+        for (int s = 0; s < LeviathanRules.STAGES; s++) {
+            spacing[s] = LeviathanRules.spacing(s, false, false);
+            react[s] = LeviathanRules.react(s, false);
+            assertEquals(Math.max(2, LeviathanRules.osrsSpacing(s, false, false)), spacing[s]);
+            assertEquals(Math.max(3, LeviathanRules.osrsReact(s, false)), react[s]);
+        }
+        assertEquals("[3, 2, 2, 2, 2, 2, 2]", java.util.Arrays.toString(spacing));
+        assertEquals("[3, 3, 3, 3, 3, 3, 3]", java.util.Arrays.toString(react));
+        for (boolean awakened : new boolean[]{false, true}) {
+            assertTrue(LeviathanRules.spacing(0, true, awakened) >= LeviathanRules.MIN_SPACING);
+            assertTrue(LeviathanRules.react(0, true) >= LeviathanRules.MIN_REACT);
+        }
     }
 
     @Test

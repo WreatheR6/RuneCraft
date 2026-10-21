@@ -4,6 +4,7 @@ import com.runecraft.boss.DataBossEntity;
 import com.runecraft.boss.DataBossService;
 import com.runecraft.collection.CollectionLog;
 import com.runecraft.network.ServerNetworking;
+import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Prayer;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.BossDef;
@@ -54,10 +55,14 @@ final class BossFx {
         }
     }
 
-    /** Action-bar warning to everyone near the boss (used for telegraphs). */
+    /**
+     * Telegraph to everyone near the boss: the centre-screen warning line ({@link Msg#telegraph}), which eating messages and
+     * status lines (the Whisperer's sanity) on the action bar no longer overwrite. // playability: OSRS shows these as
+     * overhead text or a game message read while acting on ticks
+     */
     static void warn(Entity boss, String message) {
         for (ServerPlayer p : world(boss).getPlayers(p -> p.distanceToSqr(boss) < 48 * 48)) {
-            Msg.action(p, message);
+            Msg.telegraph(p, message, null);
         }
     }
 
@@ -77,6 +82,17 @@ final class BossFx {
             double a = Math.PI * 2 * i / points;
             world.sendParticles(effect, centre.x + Math.cos(a) * radius, centre.y + 0.1, centre.z + Math.sin(a) * radius, 1, 0, 0, 0, 0);
         }
+    }
+
+    /**
+     * A ground strike's marker ({@link com.runecraft.boss.StrikeMarkers#ring}, shared with the raids and the God Wars bosses):
+     * a high-contrast dust outline at its true radius (the area that is hit), orange, brighter and redder in its last moments,
+     * with the content's particle as a sparse fill. // playability: OSRS marks the tiles once and the hit is tile-exact; here
+     * the outline is redrawn while the strike is pending and the hit test matches it. Not {@link #ring}: that one also marks
+     * safe spots and stations (Doom's earthen shield, Zalcano's furnace), which must not turn danger-orange.
+     */
+    static void strikeRing(ServerLevel world, Vec3 centre, double radius, ParticleOptions fill, boolean landing, int points) {
+        com.runecraft.boss.StrikeMarkers.ring(world, centre, radius, fill, landing, points);
     }
 
     static void sound(Entity e, net.minecraft.sounds.SoundEvent sound, float pitch) {
@@ -199,8 +215,19 @@ final class BossFx {
         }
     }
 
+    /**
+     * Whether a prayer is up. The three protection prayers are read through the one protection chokepoint,
+     * {@link com.runecraft.combat.CombatHandler#isProtected} (which the prayer scope gives its switch grace), so every boss
+     * check sees the same answer as a monster's hit; other prayers are read directly.
+     */
     static boolean protects(ServerPlayer p, Prayer prayer) {
-        return Players.data(p).isActive(prayer);
+        AttackType style = prayer == Prayer.PROTECT_FROM_MAGIC ? AttackType.MAGIC
+                : prayer == Prayer.PROTECT_FROM_MISSILES ? AttackType.RANGED
+                : prayer == Prayer.PROTECT_FROM_MELEE ? AttackType.CRUSH : null;
+        if (style == null) {
+            return Players.data(p).isActive(prayer);
+        }
+        return com.runecraft.combat.CombatHandler.isProtected(Players.data(p), style);
     }
 
     static void drainPrayer(ServerPlayer p, int points) {

@@ -1542,7 +1542,8 @@ final class ToaBossRooms {
 
         /**
          * Rolling Stones (OSRS): Ba-Ba leaps to her throne and screams, knocking everyone to the far (west) end; with Mind
-         * the Gap! anyone not at the north or south edge falls into the pit. Then ten sets of five boulders roll west.
+         * the Gap! anyone not at the north or south edge falls into the pit. Then ten sets of five boulders roll west. The
+         * scream comes {@link #SCREAM_WIND_UP_TICKS} ticks after the leap, the safe edges drawn meanwhile (round 41).
          */
         private void rollingStones() {
             rolling = true;
@@ -1552,7 +1553,55 @@ final class ToaBossRooms {
             unanchor(baba);
             move(baba, vec(17, 0));
             anchor(baba);
-            warn("Ba-Ba leaps to her throne and screams!");
+            boolean gap = Invocation.babaMindTheGap(raid.invocations());
+            warn(gap ? "Ba-Ba leaps to her throne - get to the north or south edge before she screams!"
+                    : "Ba-Ba leaps to her throne and draws breath to scream!");
+            nextSet = now() + SCREAM_WIND_UP_TICKS + 3;
+            if (gap) {
+                RaidEffects.cue(SCREAM_WIND_UP_TICKS, () -> {
+                    if (!alive(baba) || !rolling) {
+                        return false;
+                    }
+                    drawGapSafeEdges();
+                    return true;
+                });
+            }
+            later(SCREAM_WIND_UP_TICKS, this::scream);
+        }
+
+        /**
+         * Game ticks from her leap to the throne to the scream that knocks everyone down the slope (into the pit, with Mind
+         * the Gap!, for anyone not at the north or south edge or the top row). // playability: OSRS screams as she lands;
+         * here the safe edges are drawn while she draws breath
+         */
+        static final int SCREAM_WIND_UP_TICKS = com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS;
+
+        private static final net.minecraft.core.particles.DustParticleOptions SAFE_EDGE =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.45f, 1.0f, 0.45f), 1.5f);
+
+        /** Mind the Gap!: the north and south edges and the top row by her throne, where the scream can't reach the pit. */
+        private void drawGapSafeEdges() {
+            double y = center().getY() + 1.1;
+            double cx = center().getX() + 0.5;
+            double cz = center().getZ() + 0.5;
+            for (int s : new int[]{-1, 1}) {
+                for (int x = -RaidBuilder.HALF + 1; x < RaidBuilder.HALF; x++) {
+                    world().sendParticles(SAFE_EDGE, cx + x, y, cz + s * PIT_HALF_WIDTH, 1, 0.1, 0.0, 0.1, 0.0);
+                }
+            }
+            for (int z = -PIT_HALF_WIDTH; z <= PIT_HALF_WIDTH; z++) {
+                world().sendParticles(SAFE_EDGE, cx + TOP_ROW_X, y, cz + z, 1, 0.1, 0.0, 0.1, 0.0);
+            }
+        }
+
+        /** Her scream: everyone is knocked to the bottom of the slope; with Mind the Gap! anyone off the safe edges falls. */
+        private void scream() {
+            if (!alive(baba) || !rolling) {
+                return;
+            }
+            world().playSound(null, baba.blockPosition(), net.minecraft.sounds.SoundEvents.RAVAGER_ROAR,
+                    net.minecraft.sounds.SoundSource.HOSTILE, 1.0f, 1.2f);
+            say("Ba-Ba screams!");
             boolean gap = Invocation.babaMindTheGap(raid.invocations());
             for (ServerPlayer p : players()) {
                 double dz = p.getZ() - (center().getZ() + 0.5);
@@ -2098,10 +2147,51 @@ final class ToaBossRooms {
             boolean fromSouth = specials % 4 == 1;
             warn("Zebak slams his tail - a tidal wave rises in the " + (fromSouth ? "south" : "north") + "!");
             int gap = ToaBossRules.zebakWaveGap(raid.pathLevel());
+            int previous = 0;
             for (int w = 0; w < 3; w++) {
                 int gapX = -14 + rnd().nextInt(28 - gap);
                 int delay = 3 + w * 4;
+                // Each wave's gap is marked from the warning (the first) or the wave before it crashing, until it crashes.
+                // // playability: OSRS shows the wave rising; the gap is read off the water a tick or two before it hits
+                int lead = delay - previous;
+                Runnable mark = () -> RaidEffects.cue(lead, () -> {
+                    if (!alive(zebak)) {
+                        return false;
+                    }
+                    drawWaveGap(fromSouth, gapX, gap);
+                    return true;
+                });
+                if (previous == 0) {
+                    mark.run();
+                } else {
+                    later(previous, mark);
+                }
                 later(delay, () -> wave(fromSouth, gapX, gap));
+                previous = delay;
+            }
+        }
+
+        private static final net.minecraft.core.particles.DustParticleOptions WAVE_GAP =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.45f, 1.0f, 0.45f), 1.6f);
+        private static final net.minecraft.core.particles.DustParticleOptions WAVE_EDGE =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.25f, 0.55f, 1.0f), 1.2f);
+
+        /** The columns a tidal wave leaves dry (its gap) in dense green dust, and the side it comes from in blue. */
+        private void drawWaveGap(boolean fromSouth, int gapX, int gap) {
+            double y = center().getY() + 1.1;
+            double cx = center().getX() + 0.5;
+            double cz = center().getZ() + 0.5;
+            for (int z = -14; z <= 14; z++) {
+                world().sendParticles(WAVE_GAP, cx + gapX - 0.5, y, cz + z, 1, 0.05, 0.0, 0.2, 0.0);
+                world().sendParticles(WAVE_GAP, cx + gapX + gap - 0.5, y, cz + z, 1, 0.05, 0.0, 0.2, 0.0);
+                if (z % 3 == 0) {
+                    world().sendParticles(WAVE_GAP, cx + gapX + gap / 2.0 - 0.5, y, cz + z, 2, gap * 0.25, 0.0, 0.3, 0.0);
+                }
+            }
+            for (int x = -18; x <= 18; x += 2) {
+                if (x < gapX || x >= gapX + gap) {
+                    world().sendParticles(WAVE_EDGE, cx + x, y + 0.4, cz + (fromSouth ? 12 : -12), 1, 0.4, 0.2, 0.2, 0.0);
+                }
             }
         }
 

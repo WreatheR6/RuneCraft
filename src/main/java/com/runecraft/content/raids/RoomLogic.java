@@ -476,9 +476,14 @@ public class RoomLogic {
         }
     }
 
+    /**
+     * A warning: the red chat line, plus the centre-screen telegraph ({@link Msg#telegraph}) that eating messages can't
+     * overwrite. // playability: OSRS only shows the overhead/chat text
+     */
     public void warn(String message) {
         for (ServerPlayer p : raid.players()) {
             Msg.red(p, message);
+            Msg.telegraph(p, message, null);
         }
     }
 

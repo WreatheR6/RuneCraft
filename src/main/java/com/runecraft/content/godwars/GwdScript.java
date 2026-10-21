@@ -4,8 +4,10 @@ import com.runecraft.action.ActionManager;
 import com.runecraft.boss.BossScript;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.boss.Mechanics;
+import com.runecraft.boss.StrikeMarkers;
 import com.runecraft.collection.CollectionLog;
 import com.runecraft.combat.CombatHandler;
+import com.runecraft.osrs.ArenaTiming;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.BossDef;
@@ -18,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.network.chat.Component;
@@ -34,20 +37,60 @@ import net.minecraft.world.phys.Vec3;
  *   <li>an attack "rotation": {@link #pick} decides the next attack once, and it is kept until it lands
  *       (the engine asks for a style every tick);</li>
  *   <li>multi-target attacks ({@link #isMultiTarget}) are repeated on every other player in the room;</li>
- *   <li>delayed ground strikes (shadow traps, explosive books...) that can be dodged by moving;</li>
+ *   <li>delayed ground strikes (shadow traps, explosive books...) that can be dodged by moving, with the real-time floor and
+ *       markers of every arena ({@link ArenaTiming});</li>
  *   <li>pet top-up so the combined pet chance matches the real OSRS rate.</li>
  * </ul>
  */
-abstract class GwdScript implements BossScript {
-    /** A marked spot that explodes after a delay, hitting players within {@code radius} blocks. */
-    protected record Strike(ServerLevel world, Vec3 pos, long dueGameTick, int maxHit, double radius, ParticleOptions warning,
-                            ParticleOptions blast, BiConsumer<ServerPlayer, Integer> onHit, String name) {
+public abstract class GwdScript implements BossScript {
+    /**
+     * A marked spot that explodes after a delay, hitting players horizontally within {@code radius} blocks of it. It can hurt
+     * when it has a max hit or a landing callback ({@code damaging}); the draw bookkeeping feeds its redraws and the recorder.
+     */
+    private static final class Strike {
+        final ServerLevel world;
+        final Vec3 pos;
+        final long due;
+        final int maxHit;
+        final double radius;
+        final ParticleOptions warning;
+        final ParticleOptions blast;
+        final BiConsumer<ServerPlayer, Integer> onHit;
+        final String name;
+        final boolean damaging;
+        /** When it was made, on this script's clock (game ticks x 12 plus the Minecraft ticks into the game tick). */
+        final long createdMc;
+        /** The real Minecraft tick it was last drawn on (redraws every {@link ArenaTiming#REDRAW_MC}). */
+        long lastDrawMc;
+        int draws;
+
+        Strike(ServerLevel world, Vec3 pos, long due, int maxHit, double radius, ParticleOptions warning, ParticleOptions blast,
+               BiConsumer<ServerPlayer, Integer> onHit, String name, long createdMc) {
+            this.world = world;
+            this.pos = pos;
+            this.due = due;
+            this.maxHit = maxHit;
+            this.radius = radius;
+            this.warning = warning;
+            this.blast = blast;
+            this.onHit = onHit;
+            this.name = name;
+            this.damaging = maxHit > 0 || onHit != null;
+            this.createdMc = createdMc;
+        }
     }
+
+    /** Self-test hook: every strike of these bosses as it lands, with its timing ({@link ArenaTiming.StrikeTrace}). */
+    public static Consumer<ArenaTiming.StrikeTrace> strikeListener = t -> {
+    };
 
     protected AttackDef current;
     protected long chosenAt = -1000;
     private boolean spreading;
     private final List<Strike> strikes = new ArrayList<>();
+    /** The game tick this script last ran ({@link #gameTick}) and the real Minecraft tick it ran on: the strikes' clock. */
+    private long strikeTick;
+    private long strikeTickMc = Long.MIN_VALUE / 4;
 
     /** Chooses the next attack (called only when the previous one has landed). Null = engine default. */
     protected AttackDef pick(DataBossEntity boss, ServerPlayer target, double distance) {
@@ -146,54 +189,129 @@ abstract class GwdScript implements BossScript {
         }
     }
 
+    /**
+     * Lands the strikes that are due (their own game tick of the boss) and redraws the rest. Subclasses call it first from
+     * their own game tick.
+     */
     @Override
     public void gameTick(DataBossEntity boss, long gameTick) {
+        strikeTick = gameTick;
+        strikeTickMc = ActionManager.mcTick();
         Iterator<Strike> it = strikes.iterator();
         List<Strike> due = new ArrayList<>();
         while (it.hasNext()) {
             Strike s = it.next();
-            if (gameTick >= s.dueGameTick()) {
+            if (gameTick >= s.due) {
                 due.add(s);
                 it.remove();
-            } else if (s.warning() != null) {
-                s.world().sendParticles(s.warning(), s.pos().x, s.pos().y + 0.1, s.pos().z, 8, s.radius() / 2, 0.05,
-                        s.radius() / 2, 0.01);
             }
         }
+        redrawStrikes(); // for drivers that only run game ticks
         for (Strike s : due) {
-            if (s.blast() != null) {
-                s.world().sendParticles(s.blast(), s.pos().x, s.pos().y + 0.5, s.pos().z, 12, s.radius() / 2, 0.4,
-                        s.radius() / 2, 0.02);
+            if (s.blast != null) {
+                s.world.sendParticles(s.blast, s.pos.x, s.pos.y + 0.5, s.pos.z, 12, s.radius / 2, 0.4, s.radius / 2, 0.02);
             }
+            strikeListener.accept(new ArenaTiming.StrikeTrace(s.createdMc, s.createdMc, gameTick * ArenaTiming.MC_PER_GAME_TICK,
+                    s.draws, s.radius, s.maxHit, s.damaging, false));
             if (!boss.isAlive()) {
                 continue;
             }
             GwdDungeon.Area in = room(boss);
-            for (ServerPlayer p : s.world().getPlayers(pl -> pl.isAlive() && !pl.isSpectator()
-                    && pl.position().distanceToSqr(s.pos()) <= s.radius() * s.radius() && inRoom(pl, in))) {
-                int dmg = boss.getRandom().nextInt(s.maxHit() + 1);
-                if (s.name() != null) {
-                    com.runecraft.combat.CombatHooks.nameAttack(s.name(), null); // "no damage from ..." Combat Achievements
+            // What is drawn is what hits: horizontally inside the outline, within its height tolerance. // playability: OSRS
+            // tests the strike's tiles; this was a 3D distance, which missed a player on a step inside the marked area
+            for (ServerPlayer p : s.world.getPlayers(pl -> pl.isAlive() && !pl.isSpectator()
+                    && ArenaTiming.inStrike(pl.getX() - s.pos.x, pl.getY() - s.pos.y, pl.getZ() - s.pos.z, s.radius)
+                    && inRoom(pl, in))) {
+                int dmg = boss.getRandom().nextInt(s.maxHit + 1);
+                if (s.name != null) {
+                    com.runecraft.combat.CombatHooks.nameAttack(s.name, null); // "no damage from ..." Combat Achievements
                 }
                 int dealt = CombatHandler.applyDamage(boss, p, dmg);
-                if (s.onHit() != null) {
-                    s.onHit().accept(p, dealt);
+                if (s.onHit != null) {
+                    s.onHit.accept(p, dealt);
                 }
             }
         }
     }
 
-    /** Marks a spot that explodes after {@code delay} game ticks. */
-    protected void strike(DataBossEntity boss, Vec3 pos, int delay, int maxHit, double radius, ParticleOptions warning,
-                          ParticleOptions blast, BiConsumer<ServerPlayer, Integer> onHit) {
-        strike(null, boss, pos, delay, maxHit, radius, warning, blast, onHit);
+    /** Redraws the pending strike markers between game ticks (DataBossEntity runs this every Minecraft tick). */
+    @Override
+    public void tick(DataBossEntity boss) {
+        redrawStrikes();
     }
 
-    /** {@link #strike} whose damage carries an attack name (e.g. "green explosion", for the "no damage from" tasks). */
-    protected void strike(String name, DataBossEntity boss, Vec3 pos, int delay, int maxHit, double radius, ParticleOptions warning,
+    /**
+     * Marks a spot that explodes after {@code delay} game ticks; returns the game tick it lands on (cosmetics that go with it,
+     * such as Vet'ion's lightning bolts, land then too).
+     */
+    protected long strike(DataBossEntity boss, Vec3 pos, int delay, int maxHit, double radius, ParticleOptions warning,
                           ParticleOptions blast, BiConsumer<ServerPlayer, Integer> onHit) {
-        strikes.add(new Strike((ServerLevel) boss.level(), pos, ActionManager.gameTick() + delay, maxHit, radius, warning, blast,
-                onHit, name));
+        return strike(null, boss, pos, delay, maxHit, radius, warning, blast, onHit);
+    }
+
+    /**
+     * {@link #strike} whose damage carries an attack name (e.g. "green explosion", for the "no damage from" tasks). A strike
+     * that can hurt lands no sooner than {@link ArenaTiming#STRIKE_FLOOR_TICKS} game ticks (1.8 s) after it is made, measured
+     * from the Minecraft tick it was made on, and its marker is drawn at once at its true radius, then redrawn every
+     * {@link ArenaTiming#REDRAW_MC} Minecraft ticks, brightening with a rising bell in its last moments.
+     * // playability: OSRS lands these from 2 ticks after marking them (Nex's 'Contain this!': 2), and the marker here was a
+     * sparse spray first drawn a game tick late
+     */
+    protected long strike(String name, DataBossEntity boss, Vec3 pos, int delay, int maxHit, double radius, ParticleOptions warning,
+                          ParticleOptions blast, BiConsumer<ServerPlayer, Integer> onHit) {
+        int into = mcIntoTick();
+        // a script whose game ticks paused (a boss walking home) counts from the server's game tick, not a stale one
+        long base = ActionManager.mcTick() - strikeTickMc > ArenaTiming.MC_PER_GAME_TICK
+                ? Math.max(strikeTick, ActionManager.gameTick()) : strikeTick;
+        long due = ArenaTiming.strikeDue(base, delay, maxHit > 0 || onHit != null, into);
+        Strike s = new Strike((ServerLevel) boss.level(), pos, due, maxHit, radius, warning, blast, onHit, name,
+                base * ArenaTiming.MC_PER_GAME_TICK + into);
+        strikes.add(s);
+        drawStrike(s, false); // drawn right here, as it is made
+        return due;
+    }
+
+    /** Whether any strike is still pending. */
+    protected boolean strikesPending() {
+        return !strikes.isEmpty();
+    }
+
+    /** Minecraft ticks since this script's game tick began (0 for strikes made in it). */
+    private int mcIntoTick() {
+        return (int) Math.max(0, Math.min(ArenaTiming.MC_PER_GAME_TICK - 1, ActionManager.mcTick() - strikeTickMc));
+    }
+
+    private void drawStrike(Strike s, boolean landing) {
+        s.lastDrawMc = ActionManager.mcTick();
+        s.draws++;
+        StrikeMarkers.ring(s.world, s.pos, s.radius, s.warning, landing, ArenaTiming.ringPoints(s.radius, strikes.size()));
+    }
+
+    /**
+     * Redraws pending markers every {@link ArenaTiming#REDRAW_MC} Minecraft ticks; in a strike's last
+     * {@link ArenaTiming#FINAL_CUE_MC} its outline brightens and a bell ticks, rising as it nears (one bell per boss).
+     * // playability: OSRS draws the marker once
+     */
+    private void redrawStrikes() {
+        if (strikes.isEmpty()) {
+            return;
+        }
+        long mc = ActionManager.mcTick();
+        long clock = strikeTick * ArenaTiming.MC_PER_GAME_TICK + mcIntoTick();
+        Strike bell = null;
+        for (Strike s : strikes) {
+            if (!ArenaTiming.redrawDue(s.lastDrawMc, mc)) {
+                continue;
+            }
+            boolean landing = ArenaTiming.finalCue(s.due * ArenaTiming.MC_PER_GAME_TICK, clock);
+            drawStrike(s, landing);
+            if (landing && s.damaging && (bell == null || s.due < bell.due)) {
+                bell = s;
+            }
+        }
+        if (bell != null) {
+            StrikeMarkers.bell(bell.world, bell.pos, bell.due * ArenaTiming.MC_PER_GAME_TICK - clock);
+        }
     }
 
     protected static List<ServerPlayer> players(DataBossEntity boss, double radius) {

@@ -11,7 +11,8 @@ import java.util.Random;
  * after a special attack, uses the first. He opens with Spear 1, always uses a spear first after a phase transition, and must
  * be next to the player to start one; he can't move for 4 ticks afterwards. Spears are 7-tick attacks and shields 6-tick,
  * both one tick faster below 75%. Specials: the triple parry (below 90%: three spear hits 3 ticks apart, the third 4 ticks
- * after the second from 50%, each blocked only by Protect from Melee switched on just before it lands) and the grapple
+ * after the second from 50%, each blocked only by Protect from Melee switched on just before it lands; here: on as it lands,
+ * see {@link #parried}) and the grapple
  * (below 75%: he calls out one of five gear slots, which must be defended within 4 ticks; defending on the last tick is a
  * perfect parry that makes the player's next attack within 5 ticks a max hit). Phase transitions at 90/75/50/25/10% drop
  * six beams of light around the player that leave molten sand, and add a light-beam crystal (up to four) that circles the
@@ -53,8 +54,21 @@ public final class SolHeredit {
     public static final int LASER_MAX_HIT = 75;
     /** Ticks he stays rooted from the tick he starts a regular attack. */
     public static final int AOE_ROOT_TICKS = 4;
-    /** Ticks from a regular attack's wind-up to the dust landing. // approx: the wiki gives the cues, not the delay */
-    public static final int AOE_LAND_TICKS = 2;
+    /**
+     * Ticks from a regular attack's wind-up to the dust landing. // approx: the wiki gives the cues, not the delay (2 here
+     * before). // playability: 3 (1.8 s) to read the safe tiles drawn at the wind-up and step onto one
+     */
+    public static final int AOE_LAND_TICKS = 3;
+    /**
+     * Blocks of leniency at the edges of the AoE patterns: a player whose position is within this of a safe tile counts as
+     * standing on it. // playability: OSRS is tile-exact; a Minecraft player stands anywhere on a block and moves smoothly
+     */
+    public static final double AOE_EDGE_LENIENCY = 0.3;
+    /**
+     * The triple parry's spear glint and "1/3" call come this many game ticks (24 Minecraft ticks) before each hit.
+     * // playability: OSRS gives the spear animation only
+     */
+    public static final int TRIPLE_CUE_TICKS = 2;
     /** Chebyshev blocks from his centre within which he may start a regular attack (next to his 5x5 body). */
     public static final int MELEE_REACH = 3;
 
@@ -202,12 +216,32 @@ public final class SolHeredit {
     }
 
     /**
-     * Whether Protect from Melee blocks a triple-attack hit landing on {@code landTick}: it must be on, and have been switched
-     * on no earlier than the tick before (a prayer left on early is switched off and the hit lands). One extra tick of
-     * leniency for Minecraft's input latency. // approx
+     * Whether Protect from Melee blocks a triple-attack hit landing on {@code landTick}: it is on as the hit lands.
+     * // playability: in OSRS it must be switched on no earlier than the tick before each hit (a prayer left on early is
+     * knocked off and the hit lands), three hits three ticks apart: a one-tick flick no real-time player can make. Kept: the
+     * 15/25/35 (15/30/45) hits and their spacing; each hit is now called out 24 Minecraft ticks ahead
+     * ({@link #TRIPLE_CUE_TICKS}). {@code activeSince} is no longer read.
      */
     public static boolean parried(boolean protectMelee, long activeSince, long landTick) {
-        return protectMelee && activeSince >= landTick - 2 && activeSince <= landTick;
+        return protectMelee;
+    }
+
+    /**
+     * Whether a regular attack hits a player standing at ({@code px}, {@code pz}) blocks from his centre block's north-west
+     * corner (so the tile is the floor of each), aimed in the cardinal direction ({@code fx}, {@code fz}): only when every
+     * tile within {@link #AOE_EDGE_LENIENCY} of the player is a hit tile ({@link #hits}). // playability: OSRS tests the one
+     * tile the player stands on
+     */
+    public static boolean hitsLenient(Attack a, double px, double pz, int fx, int fz) {
+        double e = AOE_EDGE_LENIENCY;
+        for (double ox : new double[]{-e, e}) {
+            for (double oz : new double[]{-e, e}) {
+                if (!hits(a, (int) Math.floor(px + ox), (int) Math.floor(pz + oz), fx, fz)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**

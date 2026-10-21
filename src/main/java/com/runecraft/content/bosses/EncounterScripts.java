@@ -111,6 +111,11 @@ final class EncounterScripts {
                 BossFx.warn(boss, "The Hunllef switches to " + (cycle.magic() ? "magic" : "ranged") + " attacks!");
                 BossFx.burst(boss, cycle.magic() ? ParticleTypes.WITCH : ParticleTypes.CRIT, 20, 1.0);
             }
+            if (!underneath && cycle.styleAttacks() >= MinigameBosses.HUNLLEF_ATTACKS_PER_STYLE) {
+                // The last attack of this style: the switch is announced one attack early. // playability: OSRS players
+                // count the 4 attacks and switch prayer as the fifth leaves; the cycle length stays
+                BossFx.warn(boss, "The Hunllef will switch to " + (cycle.magic() ? "ranged" : "magic") + " after this attack!");
+            }
             return switch (attack) {
                 case STOMP -> MinigameBosses.HUNLLEF_STOMP;
                 case TORNADO -> MinigameBosses.HUNLLEF_TORNADO;
