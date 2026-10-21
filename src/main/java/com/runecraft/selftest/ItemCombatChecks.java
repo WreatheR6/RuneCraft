@@ -9,6 +9,7 @@ import com.runecraft.combat.Equipment;
 import com.runecraft.combat.MagicService;
 import com.runecraft.combat.PrayerService;
 import com.runecraft.content.npcs.ShopService;
+import com.runecraft.content.quests.QuestsState;
 import com.runecraft.content.slayer.SlayerService;
 import com.runecraft.content.slayer.SlayerState;
 import com.runecraft.content.systems.GeService;
@@ -37,6 +38,7 @@ import com.runecraft.osrs.content.MonsterDef;
 import com.runecraft.osrs.content.npcs.ShopDef;
 import com.runecraft.osrs.content.npcs.ShopStock;
 import com.runecraft.osrs.content.npcs.Shops;
+import com.runecraft.osrs.content.quests.MageArena;
 import com.runecraft.osrs.content.skilling.CookingData;
 import com.runecraft.osrs.content.skilling.HerbloreData;
 import com.runecraft.osrs.content.slayer.SlayerCategories;
@@ -811,6 +813,7 @@ final class ItemCombatChecks {
                 }
                 String target = s.effect() == Spellbooks.Effect.UNDEAD ? "minecraft:zombie"
                         : s.effect() == Spellbooks.Effect.DEMON ? "lesser_demon" : DUMMY;
+                String mastered = masterGodSpell(s);
                 LivingEntity dummy = spawn(target, 3, 0);
                 sp.autocast = s.id();
                 data().lastAttackTick = ActionManager.mcTick() - 10_000;
@@ -820,9 +823,10 @@ final class ItemCombatChecks {
                 int xp = magicXp() - xp0;
                 if (xp < Experience.tenths(s.xp())) {
                     throw failure("casting at a " + target + " gave " + xp / 10.0 + " Magic XP, less than the base " + s.xp()
-                            + (anyFewer(before) ? "" : " (no runes used: not cast)"));
+                            + (anyFewer(before) ? "" : " (no runes used: not cast)") + mastered);
                 }
-                return "cast at " + target + ", +" + xp / 10.0 + " xp, target at " + fmt(dummy.getHealth()) + "/" + fmt(dummy.getMaxHealth());
+                return "cast at " + target + ", +" + xp / 10.0 + " xp, target at " + fmt(dummy.getHealth()) + "/" + fmt(dummy.getMaxHealth())
+                        + mastered;
             }
             case TELEPORT -> {
                 SpellService.cast(p(), s.id());
@@ -855,6 +859,34 @@ final class ItemCombatChecks {
                 return (cast ? "cast" : "not cast here (needs a target or items)") + ", +" + (magicXp() - xp0) / 10.0 + " xp";
             }
         }
+    }
+
+    /**
+     * The god spells (Saradomin Strike, Claws of Guthix, Flames of Zamorak) need Mage Arena I and, outside the Mage Arena,
+     * 100 casts on its battle mages first (wiki, Mage Arena I: "cast each 100 times in the arena to use it outside"). The
+     * platform lies outside the arena and {@link #bookSpell} has completed every quest, so the spell must be refused here
+     * until the player has those casts; then the player gets them (the cast counter and the mastered flag the arena's casts
+     * leave, MageArenaService) and the spell is cast like any other. Returns a note for the result ("" for other spells).
+     */
+    private String masterGodSpell(Spellbooks.Spell s) {
+        String god = MageArena.spellGod(s.id());
+        if (god == null) {
+            return "";
+        }
+        if (SpellService.castRule.apply(p(), s.id()) == null) {
+            throw failure("could be cast outside the Mage Arena before its " + MageArena.CASTS_TO_CHARGE + " casts on the battle mages");
+        }
+        QuestsState quests = QuestsState.get(p());
+        java.util.UUID id = p().getUUID();
+        while (quests.kills(id, MageArena.castCounter(god)) < MageArena.CASTS_TO_CHARGE) {
+            quests.addKill(id, MageArena.castCounter(god));
+        }
+        quests.setFlag(id, MageArena.chargedFlag(god));
+        String still = SpellService.castRule.apply(p(), s.id());
+        if (still != null) {
+            throw failure("still refused after Mage Arena I and " + MageArena.CASTS_TO_CHARGE + " casts in the arena: " + still);
+        }
+        return " (after Mage Arena I and " + MageArena.CASTS_TO_CHARGE + " casts on the battle mages; refused before)";
     }
 
     // ------------------------------------------------------------------ item-making utility spells
