@@ -215,6 +215,24 @@ public final class BossSelfTests {
     }
 
     /**
+     * A player's Doom of Mokhaiotl delve run (level, demonic charge, loot held in the burrow hole and the lobby chest), saved
+     * and restored around the self-test (null: none). A delve level only goes to the run it continues, so the delve-1 run one
+     * check's kill starts must not reach the next check's delve 1.
+     */
+    public static Object doomRunSave(net.minecraft.server.MinecraftServer server, java.util.UUID player) {
+        return DoomDelveState.get(server).get(player);
+    }
+
+    public static void doomRunRestore(net.minecraft.server.MinecraftServer server, java.util.UUID player, Object saved) {
+        DoomDelveState st = DoomDelveState.get(server);
+        st.remove(player);
+        if (saved instanceof DoomDelveState.Run run) {
+            st.all().put(player, run);
+            st.setDirty();
+        }
+    }
+
+    /**
      * What a Hunllef's script is doing (the Gauntlet walk in {@code content/minigames/GauntletSelfTest}): whether it is in its
      * magic cycle, the style it protects from, attacks into the current cycle, off-prayer hits taken since its last prayer
      * switch, tornadoes out, floor tiles out (and whether they are orange) and attacks made.
