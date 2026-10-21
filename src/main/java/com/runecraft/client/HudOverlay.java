@@ -41,7 +41,10 @@ public final class HudOverlay {
         // Boosted hitpoints (Saradomin brews) are held as absorption.
         int hp = (int) Math.ceil(mc.player.getHealth() + mc.player.getAbsorptionAmount());
         int maxHp = gielinor ? ClientState.SKILLS.level(Skill.HITPOINTS) : (int) mc.player.getMaxHealth();
-        orb(ctx, tr, x, y, "HP", hp + "/" + maxHp, hp > maxHp ? 0xFFD0A020 : 0xFFB01818, hp / (float) Math.max(1, maxHp));
+        // OSRS tints the hitpoints orb green while poisoned and dark green while envenomed (round 42; boosted HP stays gold).
+        int hpColor = hp > maxHp ? 0xFFD0A020 : ClientState.poison == 2 ? 0xFF1E5A3C : ClientState.poison == 1 ? 0xFF2E9A2E : 0xFFB01818;
+        orb(ctx, tr, x, y, ClientState.poison == 2 ? "Ven" : ClientState.poison == 1 ? "Psn" : "HP", hp + "/" + maxHp, hpColor,
+                hp / (float) Math.max(1, maxHp));
         int prayerMax = Math.max(1, ClientState.SKILLS.currentLevel(Skill.PRAYER));
         orb(ctx, tr, x, y + 14, "Pr", ClientState.prayerPoints + "/" + prayerMax, 0xFF20A0C0, ClientState.prayerPoints / (float) prayerMax);
         ctx.fill(x, y + 28, x + 88, y + 40, 0xA0201810);
@@ -60,6 +63,14 @@ public final class HudOverlay {
             below += 12;
         } else {
             CombatFeedbackHud.prayerRowX = -1;
+        }
+        // The Nightmare's curse: which protection each key switches now (round 42).
+        if (com.runecraft.osrs.CastBar.cursed(ClientState.CURSE)) {
+            CombatFeedbackHud.curseRowX = x;
+            CombatFeedbackHud.curseRowY = below - 4;
+            below += 12;
+        } else {
+            CombatFeedbackHud.curseRowX = -1;
         }
         // Multicombat area: OSRS shows crossed swords.
         if (gielinor && ClientState.inMulti) {

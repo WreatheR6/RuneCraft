@@ -1,21 +1,15 @@
 package com.runecraft.boss;
 
-import com.runecraft.action.ActionManager;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.ThreatTiming;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.util.Msg;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
-import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
-import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
-import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -48,11 +42,6 @@ public final class ThreatCues {
 
     public static WarningListener warningListener = (player, text, subtitle) -> {
     };
-
-    private record Line(long mc, String text) {
-    }
-
-    private static final Map<UUID, Line> LAST_LINE = new HashMap<>();
 
     private ThreatCues() {
     }
@@ -91,33 +80,52 @@ public final class ThreatCues {
         }
     }
 
-    /** One warning line in the middle of a player's screen (the vanilla subtitle: no client code needed). */
+    /**
+     * {@link #announce(LivingEntity, ServerPlayer, String, AttackType)} for a telegraph that lands on {@code target} in
+     * {@code landInMc} MC: the warning line plus its entry on the target's cast bar ({@link #castBar}).
+     */
+    public static void announce(LivingEntity source, ServerPlayer target, String text, AttackType style, int landInMc) {
+        announce(source, target, text, style);
+        castBar(source, target, null, style, landInMc);
+    }
+
+    /**
+     * A telegraph on the cast bar (round 42, {@code // playability}; {@link com.runecraft.osrs.CastBar}): the attacker, the
+     * style colour, a seconds countdown to {@code landInMc} and the key of the protection prayer that blocks it. Shown to the
+     * target, and for an area burst ({@link AttackDef.Special#AOE}) to every player within its radius (plus 3 blocks) of the
+     * attacker too. OSRS shows the telegraph only as the monster's animation.
+     */
+    public static void castBar(LivingEntity source, ServerPlayer target, AttackDef attack, AttackType style, int landInMc) {
+        AttackDef.Special special = attack == null ? AttackDef.Special.NONE : attack.special();
+        int barStyle = com.runecraft.network.HudNet.styleOf(style, special);
+        int flags = com.runecraft.network.HudNet.flagsOf(style, special);
+        if (target != null) {
+            com.runecraft.network.HudNet.cast(target, source, barStyle, flags, landInMc, null);
+        }
+        if (special == AttackDef.Special.AOE && source.level() instanceof ServerLevel world) {
+            double r = Math.max(1, attack.param()) + 3;
+            for (ServerPlayer p : world.getPlayers(pl -> pl != target && pl.isAlive()
+                    && pl.distanceToSqr(source.getX(), pl.getY(), source.getZ()) <= r * r)) {
+                com.runecraft.network.HudNet.cast(p, source, barStyle, flags, landInMc, null);
+            }
+        }
+    }
+
+    /**
+     * One warning line in the middle of a player's screen, through the single warning channel {@link Msg#telegraph} (round
+     * 42): the same subtitle, timings (fade 2, stay 30, fade 6 MC) and merging of lines within {@value #SUBTITLE_MERGE_MC} MC
+     * as the boss and raid warnings, so a monster's cue and a boss script's warning share one line instead of replacing each
+     * other. A player without a client connection (a fake player) gets it on the action bar.
+     */
     public static void subtitle(ServerPlayer player, String text, int rgb) {
-        long now = ActionManager.mcTick();
-        if (LAST_LINE.size() > 256) {
-            LAST_LINE.values().removeIf(l -> now - l.mc() > SUBTITLE_MERGE_MC);
-        }
-        Line last = LAST_LINE.get(player.getUUID());
-        String shown = text;
-        if (last != null && now - last.mc() < SUBTITLE_MERGE_MC && !last.text().equals(text) && !last.text().endsWith(" · " + text)) {
-            shown = last.text() + " · " + text;
-        }
-        LAST_LINE.put(player.getUUID(), new Line(now, shown));
-        if (player instanceof net.neoforged.neoforge.common.util.FakePlayer || player.connection == null) {
-            Msg.action(player, shown);
-            warningListener.onWarning(player, text, false);
-            return;
-        }
-        player.connection.send(new ClientboundSetTitlesAnimationPacket(2, 30, 6));
-        player.connection.send(new ClientboundSetSubtitleTextPacket(
-                Component.literal(shown).withStyle(s -> s.withColor(TextColor.fromRgb(rgb)))));
-        player.connection.send(new ClientboundSetTitleTextPacket(Component.empty()));
-        warningListener.onWarning(player, text, true);
+        Msg.telegraph(player, Component.literal(text).withStyle(s -> s.withColor(TextColor.fromRgb(rgb))));
+        warningListener.onWarning(player, text, !(player instanceof net.neoforged.neoforge.common.util.FakePlayer)
+                && player.connection != null);
     }
 
     /** Forgets a player's merge state (logout). */
     public static void forget(UUID player) {
-        LAST_LINE.remove(player);
+        Msg.forget(player);
     }
 
     /** The launch sound of an attack style: a swing, a bow or crossbow, a spell being prepared, an area charge. */

@@ -48,9 +48,20 @@ public final class ClientState {
     public record XpDrop(Skill skill, int tenths, long time) {
     }
 
-    /** One hitsplat; {@code attacker} is the entity id of who caused it, -1 when unknown. */
-    public record Hitsplat(int damage, byte type, float hpRatio, long time, int attacker) {
+    /**
+     * One hitsplat; {@code attacker} is the entity id of who caused it, -1 when unknown; {@code hp} / {@code maxHp} the
+     * target's OSRS hitpoints after it (0 / 0 when the server didn't say).
+     */
+    public record Hitsplat(int damage, byte type, float hpRatio, long time, int attacker, int hp, int maxHp) {
     }
+
+    // Round 42 combat HUD state (network/HudNet).
+    /** The HP orb's tint: 0 none, 1 poisoned (green), 2 envenomed (dark green). */
+    public static int poison;
+    /** The entity auto-retaliate is fighting, -1 for none ("Auto-retaliating: <target>"). */
+    public static int retaliateTarget = -1;
+    /** What each protection key (0 magic, 1 missiles, 2 melee) switches now: the Nightmare's curse shuffles them. */
+    public static final int[] CURSE = {0, 1, 2};
 
     public record MenuEntry(String recipeId, String name, String icon, int level, int skill, boolean available) {
     }

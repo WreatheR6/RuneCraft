@@ -29,6 +29,7 @@ public final class SystemsHud {
                 ? 0xFF3A8A9A : 0xFF4A5A5A;
         bar(ctx, tr, x, y + 14, (SysClientState.specArmed ? "SPEC " : "Spec ") + SysClientState.spec + "%", specColor,
                 SysClientState.spec / 100f);
+        SpecialCue.render(ctx, tr, x, y + 14, W); // round 42: "Special ready" after a weapon switch
         StringBuilder status = new StringBuilder();
         if (!"Standard".equals(SysClientState.book)) {
             status.append(SysClientState.book.startsWith("Ancient") ? "Anc" : SysClientState.book.substring(0, Math.min(3, SysClientState.book.length())));

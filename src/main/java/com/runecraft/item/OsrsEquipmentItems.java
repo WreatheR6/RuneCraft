@@ -1,6 +1,7 @@
 package com.runecraft.item;
 
 import com.runecraft.combat.AttackTimer;
+import com.runecraft.osrs.AmmoRecovery;
 import com.runecraft.osrs.AttackClock;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.data.AmmoRules;
@@ -47,6 +48,97 @@ public final class OsrsEquipmentItems {
     private static final float VANILLA_PICKAXE_SPEED = -2.8f;
 
     private OsrsEquipmentItems() {
+    }
+
+    // ------------------------------------------------------------------ ammo landing (round 42)
+
+    /** One fired piece of ammo landing: who fired it, the item, what happened and where (self-test recorder). */
+    public record AmmoLanding(ServerPlayer shooter, String ammo, AmmoRecovery.Outcome outcome, net.minecraft.world.phys.Vec3 at) {
+    }
+
+    /** Self-test hook: sees every piece of fired ammo land. */
+    public static java.util.function.Consumer<AmmoLanding> ammoListener = l -> {
+    };
+
+    /** The ammo-saving device the shooter wears (the systems module's cape slot) and whether a metal torso stops it. */
+    public static AmmoRecovery.Device ammoDevice(ServerPlayer shooter) {
+        String cape = com.runecraft.content.systems.SysState.of(shooter).wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE);
+        String body = com.runecraft.util.Inv.idOf(shooter.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST));
+        return AmmoRecovery.device(cape.isEmpty() ? null : cape, body);
+    }
+
+    /**
+     * Where one fired arrow, bolt or thrown weapon goes (OSRS Wiki, Ava's device; {@link AmmoRecovery}): 20% breaks; without
+     * an Ava's device the other 80% drops to the floor at {@code at} (under the target); a worn device sends its share back
+     * to the pack and drops the rest. The dropped ammo lies still where the target stood, so it piles up there as in OSRS.
+     */
+    public static AmmoRecovery.Outcome landAmmo(ServerPlayer shooter, net.minecraft.world.phys.Vec3 at, String ammoId) {
+        if (shooter == null || at == null || !AmmoRecovery.recoverable(ammoId)) {
+            return AmmoRecovery.Outcome.BROKE;
+        }
+        AmmoRecovery.Outcome outcome = AmmoRecovery.outcome(ammoDevice(shooter), shooter.getRandom().nextInt(100));
+        if (outcome != AmmoRecovery.Outcome.BROKE) {
+            ItemStack ammo = com.runecraft.util.Inv.stack(ammoId, 1);
+            if (ammo.isEmpty()) {
+                outcome = AmmoRecovery.Outcome.BROKE;
+            } else if (outcome == AmmoRecovery.Outcome.DROPPED || !shooter.getInventory().add(ammo)) {
+                net.minecraft.world.entity.item.ItemEntity drop = new net.minecraft.world.entity.item.ItemEntity(shooter.level(),
+                        at.x, at.y + 0.1, at.z, ammo, 0, 0, 0);
+                drop.setDefaultPickUpDelay();
+                shooter.level().addFreshEntity(drop);
+                outcome = AmmoRecovery.Outcome.DROPPED;
+            }
+        }
+        ammoListener.accept(new AmmoLanding(shooter, ammoId, outcome, at));
+        return outcome;
+    }
+
+    /** The RuneCraft ammo item a fired arrow carries ({@code runecraft_arrow_<id>} tag), or null. */
+    public static String ammoOf(net.minecraft.world.entity.Entity arrow) {
+        for (String tag : arrow.getTags()) {
+            if (tag.startsWith(AMMO_TAG)) {
+                return tag.substring(AMMO_TAG.length());
+            }
+        }
+        return null;
+    }
+
+    /** Command tag prefix naming the RuneCraft ammo item a fired arrow is. */
+    public static final String AMMO_TAG = "runecraft_arrow_";
+
+    /**
+     * A RuneCraft arrow or bolt in flight that remembers the target it was shot at (round 42). Hitting a creature, its ammo
+     * lands through the combat handler (CombatHandler.playerRanged); hitting a block in Gielinor it lands here instead of
+     * sticking in the ground for nobody (OSRS has no physical miss: fired ammo always lands under the target), under the
+     * target it was shot at while that is near, else where it struck.
+     */
+    public static class LandingArrow extends net.minecraft.world.entity.projectile.Arrow {
+        /** Blocks within which a missed shot's ammo still lands under the target it was aimed at. */
+        private static final double TARGET_RANGE = 24.0;
+        LivingEntity intended;
+
+        public LandingArrow(Level world, LivingEntity shooter, ItemStack ammo, ItemStack weapon) {
+            super(world, shooter, ammo, weapon);
+        }
+
+        /** The creature this shot was aimed at (left click, auto-retaliate), or null for a free shot. */
+        public LivingEntity intended() {
+            return intended;
+        }
+
+        @Override
+        protected void onHitBlock(net.minecraft.world.phys.BlockHitResult hit) {
+            String ammo = ammoOf(this);
+            if (!level().isClientSide() && ammo != null && getOwner() instanceof ServerPlayer shooter && Gielinor.is(this)) {
+                LivingEntity t = intended;
+                net.minecraft.world.phys.Vec3 at = t != null && t.isAlive() && t.level() == level()
+                        && t.distanceToSqr(this) < TARGET_RANGE * TARGET_RANGE ? t.position() : hit.getLocation();
+                landAmmo(shooter, at, ammo);
+                discard();
+                return;
+            }
+            super.onHitBlock(hit);
+        }
     }
 
     /**
@@ -259,6 +351,9 @@ public final class OsrsEquipmentItems {
             double drop = 0.05 * flightTicks * (flightTicks + 1) / 2; // arrow gravity 0.05 per tick // approx: ignores drag
             // The click already chose the target: no extra spread (OSRS accuracy is the only miss roll).
             projectile.shoot(dx, dy + drop, dz, velocity, 0.0f);
+            if (projectile instanceof LandingArrow landing) {
+                landing.intended = target; // a miss lands its ammo under this target (round 42)
+            }
         }
     }
 
@@ -277,11 +372,11 @@ public final class OsrsEquipmentItems {
 
         @Override
         public AbstractArrow createArrow(Level world, ItemStack stack, LivingEntity shooter, ItemStack weapon) {
-            net.minecraft.world.entity.projectile.Arrow arrow =
-                    new net.minecraft.world.entity.projectile.Arrow(world, shooter, stack.copyWithCount(1), weapon);
+            net.minecraft.world.entity.projectile.Arrow arrow = new LandingArrow(world, shooter, stack.copyWithCount(1), weapon);
             arrow.addTag(RANGED_STRENGTH_TAG + def.rangedStrength());
-            arrow.addTag("runecraft_arrow_" + def.id());
-            // OSRS arrows break or drop on hit (handled by the combat handler); never pick up vanilla arrows.
+            arrow.addTag(AMMO_TAG + def.id());
+            // OSRS arrows break, drop or come back to an Ava's device (landAmmo: on a creature through the combat handler, on a
+            // block in LandingArrow); never pick up vanilla arrows.
             arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
             return arrow;
         }

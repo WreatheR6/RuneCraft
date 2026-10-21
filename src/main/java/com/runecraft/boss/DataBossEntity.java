@@ -354,6 +354,45 @@ public class DataBossEntity extends OsrsMonsterEntity {
      */
     public void refreshBossBar() {
         bossBar.setProgress(Math.max(0f, Math.min(1f, script.bossBarProgress(this))));
+        // Round 42: the script's status line and style colour (sent only when they change; awakened bosses stay purple).
+        com.runecraft.osrs.BossBarStatus.Status status = script.bossBarStatus(this);
+        if (status != null) {
+            BossDef def = def();
+            String name = variant != null ? variant.name() : def == null ? "Boss" : def.name;
+            bossBar.setName(Component.literal(com.runecraft.osrs.BossBarStatus.title(name, status)));
+            if (status.colour() != null && (variant == null || !variant.awakened())) {
+                bossBar.setColor(BossEvent.BossBarColor.valueOf(status.colour().name()));
+            }
+        }
+    }
+
+    /**
+     * The default boss bar status ({@link BossScript#bossBarStatus}): the phase ("Phase 2/3" for a boss with phase
+     * thresholds), the curse on its target's protection prayers (the Nightmare's), and the colour of the style its current
+     * attacks use (Zulrah's serpentine form green, magma red, tanzanite blue).
+     */
+    public com.runecraft.osrs.BossBarStatus.Status defaultBossBarStatus() {
+        BossDef def = def();
+        java.util.List<com.runecraft.osrs.BossBarStatus.Attack> attacks = new java.util.ArrayList<>();
+        List<AttackDef> list = attackList();
+        if (list != null) {
+            for (AttackDef a : list) {
+                if (!a.isIdle()) {
+                    attacks.add(new com.runecraft.osrs.BossBarStatus.Attack(a.style(), a.weight()));
+                }
+            }
+        }
+        int[] curse = getTarget() instanceof ServerPlayer target ? com.runecraft.network.HudNet.curseMap(target) : null;
+        return com.runecraft.osrs.BossBarStatus.of(phase, def == null ? 0 : def.phases.size(), attacks, curse);
+    }
+
+    /** The boss bar's title and colour as players see them (self-tests). */
+    public String bossBarTitle() {
+        return bossBar.getName().getString();
+    }
+
+    public BossEvent.BossBarColor bossBarColor() {
+        return bossBar.getColor();
     }
 
     @Override

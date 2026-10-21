@@ -339,11 +339,11 @@ public class BossEntity extends OsrsMonsterEntity {
                 if (type == AttackType.MAGIC) {
                     world.sendParticles(ParticleTypes.FLAME, getX(), getY() + getBbHeight(), getZ(), 40, 0.6, 0.6, 0.6, 0.05);
                     world.playSound(null, blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.HOSTILE, 2f, 0.5f);
-                    com.runecraft.boss.ThreatCues.announce(this, target, "TzTok-Jad rears up!", AttackType.MAGIC);
+                    com.runecraft.boss.ThreatCues.announce(this, target, "TzTok-Jad rears up!", AttackType.MAGIC, (int) (pendingAt - ActionManager.mcTick()));
                 } else {
                     world.sendParticles(ParticleTypes.LAVA, getX(), getY() + 0.2, getZ(), 30, 1.0, 0.1, 1.0, 0.1);
                     world.playSound(null, blockPosition(), SoundEvents.RAVAGER_STUNNED, SoundSource.HOSTILE, 2f, 0.5f);
-                    com.runecraft.boss.ThreatCues.announce(this, target, "TzTok-Jad stomps the ground!", AttackType.RANGED);
+                    com.runecraft.boss.ThreatCues.announce(this, target, "TzTok-Jad stomps the ground!", AttackType.RANGED, (int) (pendingAt - ActionManager.mcTick()));
                 }
                 return;
             }

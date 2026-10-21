@@ -313,6 +313,7 @@ public final class ClientSmokeTest {
             shot(client, "freeze_hud");
         });
         step("unfreeze", 10, () -> cmd(client, uuid, "effect clear @s minecraft:slowness"));
+        combatHudStops(client, uuid);
         step("side panel cursor screen", 15, () -> client.setScreen(new SidePanelScreen()));
         step("side panel cursor screenshot", 5, () -> shot(client, "03_panel_cursor"));
         // Full RuneScape interface (J) on every tab.
@@ -365,7 +366,7 @@ public final class ClientSmokeTest {
         step("arena back screenshot", 60, () -> shot(client, "08_boss_arena_back"));
 
         // The in-game self-test with this real (online) player, so minigame sessions, raid rooms and boss targeting see it.
-        String filter = System.getProperty(PROPERTY + ".selftest", "minigame:,raid:,boss:,slayer:,quest:steps:,quest:walk:,skill:,enchant_,telekinetic,bake_pie,superglass,string_jewellery,plank_make");
+        String filter = System.getProperty(PROPERTY + ".selftest", "minigame:,raid:,boss:,slayer:,quest:steps:,quest:walk:,skill:,enchant_,telekinetic,bake_pie,superglass,string_jewellery,plank_make,hud:");
         if (!filter.equalsIgnoreCase("none")) {
             long minutes = Long.getLong(PROPERTY + ".selftestMinutes", 14L);
             int[] before = new int[1];
@@ -378,6 +379,82 @@ public final class ClientSmokeTest {
             });
             step("after self-test screenshot", 20, () -> shot(client, "09_after_selftest"));
         }
+    }
+
+    /**
+     * Round 42 combat HUD stops: the OSRS attack timer bar under the crosshair, the telegraph cast bar (two stacked casts, the
+     * Protect from Magic key), the opponent info box with the goblin's exact hitpoints, and the quick-eat key eating a lobster.
+     */
+    private static void combatHudStops(Minecraft client, UUID uuid) {
+        int[] goblin = {-1};
+        float[] health = new float[1];
+        step("summon a goblin to fight", 40, () -> {
+            cmd(client, uuid, "execute at @s run summon runecraft:goblin ~ ~ ~3 {NoAI:1b,PersistenceRequired:1b,Rotation:[180f,0f]}");
+            onServer(client, uuid, p -> {
+                for (net.minecraft.world.entity.LivingEntity e : p.serverLevel().getEntitiesOfClass(
+                        net.minecraft.world.entity.LivingEntity.class, p.getBoundingBox().inflate(6), e -> e != p)) {
+                    if (BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).getPath().equals("goblin")) {
+                        goblin[0] = e.getId();
+                    }
+                }
+            });
+        });
+        step("attack timer", 6, () -> onServer(client, uuid, p -> com.runecraft.combat.AttackTimer.accept(p,
+                com.runecraft.osrs.AttackClock.Kind.MELEE, 48)));
+        step("attack timer check", 2, () -> {
+            if (AttackClient.remaining() <= 0) {
+                ERRORS.add("the attack timer bar got no clock after an accepted attack");
+            }
+            shot(client, "attack_timer");
+        });
+        step("cast bar", 6, () -> onServer(client, uuid, p -> {
+            net.minecraft.world.entity.Entity g = p.level().getEntity(goblin[0]);
+            com.runecraft.network.HudNet.cast(p, g, com.runecraft.osrs.CastBar.MAGIC, 0, 80, null);
+            com.runecraft.network.HudNet.cast(p, g, com.runecraft.osrs.CastBar.RANGED, 0, 120, "Goblin archer");
+        }));
+        step("cast bar check", 2, () -> {
+            com.runecraft.network.HudProbe.Snapshot snap = com.runecraft.network.HudProbe.latest;
+            if (snap == null || snap.casts().size() < 2) {
+                ERRORS.add("the cast bar didn't show two stacked casts (" + (snap == null ? "no HUD probe" : snap.casts()) + ")");
+            } else if (snap.casts().get(0).style() != com.runecraft.osrs.CastBar.MAGIC
+                    || !snap.casts().get(0).key().equals(CombatKeys.keyName(0))) {
+                ERRORS.add("the first cast bar row is " + snap.casts().get(0) + ", expected magic with key " + CombatKeys.keyName(0));
+            }
+            shot(client, "cast_bar");
+        });
+        step("info box", 6, () -> onServer(client, uuid, p -> {
+            if (p.level().getEntity(goblin[0]) instanceof net.minecraft.world.entity.LivingEntity g) {
+                com.runecraft.combat.CombatHandler.applyDamage(p, g, 1);
+            } else {
+                ERRORS.add("no goblin to hit for the info box");
+            }
+        }));
+        step("info box check", 2, () -> {
+            com.runecraft.network.HudProbe.Snapshot snap = com.runecraft.network.HudProbe.latest;
+            if (snap == null || snap.opponent() != goblin[0] || snap.opponentMaxHp() <= 0 || snap.opponentHp() != snap.opponentMaxHp() - 1) {
+                ERRORS.add("the info box doesn't show the goblin hit for 1 (" + (snap == null ? "no HUD probe"
+                        : snap.opponent() + " " + snap.opponentName() + " " + snap.opponentHp() + "/" + snap.opponentMaxHp()) + ")");
+            }
+            shot(client, "info_box");
+        });
+        step("quick-eat setup", 10, () -> onServer(client, uuid, p -> {
+            p.getInventory().setItem(8, com.runecraft.util.Inv.stack("lobster", 2));
+            p.setHealth(Math.max(1f, p.getMaxHealth() - 15f));
+        }));
+        step("quick-eat key", 15, () -> {
+            health[0] = client.player.getHealth();
+            KeyMapping.click(CombatKeys.quickEat.getKey());
+        });
+        step("quick-eat check", 2, () -> {
+            if (client.player.getHealth() <= health[0]) {
+                ERRORS.add("the quick-eat key didn't eat (health " + health[0] + " -> " + client.player.getHealth() + ")");
+            }
+            shot(client, "quick_eat");
+        });
+        step("combat HUD clean-up", 10, () -> {
+            cmd(client, uuid, "kill @e[type=runecraft:goblin,distance=..8]");
+            onServer(client, uuid, p -> p.setHealth(p.getMaxHealth()));
+        });
     }
 
     private static void step(String name, int waitAfter, Runnable action) {

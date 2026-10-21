@@ -34,6 +34,9 @@ public final class CombatFeedbackHud {
     /** Where HudOverlay leaves room for the prayer row (GUI coordinates), set every frame; -1 when there is none. */
     static int prayerRowX = -1;
     static int prayerRowY = -1;
+    /** Where HudOverlay leaves room for the curse row (round 42), -1 when the protection keys aren't cursed. */
+    static int curseRowX = -1;
+    static int curseRowY = -1;
 
     private static int lastMask;
     private static long maskChangedAt;
@@ -68,7 +71,30 @@ public final class CombatFeedbackHud {
         if (prayerRowX >= 0 && prayerRowShown()) {
             prayerRow(ctx, tr, prayerRowX, prayerRowY, now);
         }
+        if (curseRowX >= 0) {
+            curseRow(ctx, tr, curseRowX, curseRowY);
+        }
         selfSplats(ctx, tr, mc, now);
+    }
+
+    /**
+     * Under the Nightmare's curse: each protection key and the overhead it switches now ("R>RNG"), so the right key can be
+     * found without trial and error. // playability: OSRS shows the shuffled prayer book itself.
+     */
+    private static void curseRow(GuiGraphics ctx, Font tr, int x, int y) {
+        ctx.fill(x, y, x + 88, y + 12, 0xC0401060);
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < PrayerGrace.PROTECTIONS.length; i++) {
+            if (text.length() > 0) {
+                text.append(' ');
+            }
+            text.append(CombatKeys.keyName(i)).append('>').append(PrayerGrace.overheadTag(PrayerGrace.PROTECTIONS[ClientState.CURSE[i]]));
+        }
+        String shown = text.toString();
+        if (tr.width(shown) > 84) {
+            shown = tr.plainSubstrByWidth(shown, 80) + "..";
+        }
+        ctx.drawString(tr, shown, x + 2, y + 2, 0xFFF0C0FF);
     }
 
     /** The overhead tag (coloured box) and the initials of the other active prayers, 88 x 12 like the orbs. */

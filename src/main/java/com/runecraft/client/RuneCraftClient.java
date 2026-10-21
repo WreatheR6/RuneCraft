@@ -78,6 +78,8 @@ public class RuneCraftClient {
         CombatKeys.init();
         HudRenderCallback.EVENT.register(CombatFeedbackHud::render);
         FreezeClient.init();
+        // Round 42: the telegraph cast bar, opponent info box, curse map, poison tint, quick-eat / quick-drink.
+        CombatHudClient.init();
         SidePanel.loadTab();
         ItemTooltipCallback.EVENT.register(Tooltips::append);
 
@@ -209,12 +211,16 @@ public class RuneCraftClient {
             byte type = buf.readByte();
             float ratio = buf.readFloat();
             int attacker = buf.isReadable() ? buf.readVarInt() : -1;
+            int hp = buf.isReadable() ? buf.readVarInt() : 0;
+            int maxHp = buf.isReadable() ? buf.readVarInt() : 0;
             client.execute(() -> {
-                ClientState.Hitsplat splat = new ClientState.Hitsplat(damage, type, ratio, System.currentTimeMillis(), attacker);
+                ClientState.Hitsplat splat = new ClientState.Hitsplat(damage, type, ratio, System.currentTimeMillis(), attacker,
+                        hp, maxHp);
                 ClientState.HITSPLATS.computeIfAbsent(entity, k -> new ArrayList<>()).add(splat);
                 if (client.player != null && entity == client.player.getId()) {
                     CombatFeedbackHud.selfSplat(splat);
                 }
+                OpponentHud.onSplat(entity, splat); // round 42: the opponent info box
             });
         });
         ClientPlayNetworking.registerGlobalReceiver(Net.OPEN_MENU, (client, handler, buf, sender) -> {

@@ -311,6 +311,7 @@ public final class Mechanics {
                     null, null, extra, attack.melee(), false);
             add(p);
             drawTelegraph(p, now);
+            ThreatCues.castBar(mob, target, attack, attack.style(), (int) (due - now)); // round 42: the HUD cast bar
             return;
         }
         if (sp == AttackDef.Special.SUMMON || sp == AttackDef.Special.HEAL_SELF) {
