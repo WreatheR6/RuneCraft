@@ -130,6 +130,14 @@ public final class DoomWalk {
                 throw fail("claiming at the stone left " + DoomDelveService.heldLoot(p) + " stacks");
             }
             int tears = Inv.count(p, "demon_tear") - tearsBefore;
+            // nine levels of loot outgrow a 36-slot pack: what doesn't fit lands at the player's feet (picked up from there)
+            for (net.minecraft.world.entity.item.ItemEntity e : world.getEntitiesOfClass(
+                    net.minecraft.world.entity.item.ItemEntity.class, p.getBoundingBox().inflate(4))) {
+                if ("demon_tear".equals(Inv.idOf(e.getItem()))) {
+                    tears += e.getItem().getCount();
+                }
+                e.discard();
+            }
             if (tears < 550) {
                 throw fail("claimed only " + tears + " demon tears (delves 3-9 guarantee 550)");
             }
