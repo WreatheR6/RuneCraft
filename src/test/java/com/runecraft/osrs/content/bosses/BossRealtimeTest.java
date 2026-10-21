@@ -26,7 +26,13 @@ class BossRealtimeTest {
     /** Every volley pattern the Whisperer uses (BossMechanics.whispererVolley), normal and awakened. */
     @Test
     void whispererVolleysCanBePrayedAndKeepTheirCycle() {
-        int speed = 5; // her attack speed (Dt2Bosses: speed(5))
+        // her attack speed: 10 in game (MonsterStatsTable's wiki row), 5 in the BossDef literal; the cycle holds for both
+        for (int speed : new int[]{5, 10}) {
+            volleysAt(speed);
+        }
+    }
+
+    private static void volleysAt(int speed) {
         for (boolean awakened : new boolean[]{false, true}) {
             for (int specials = 0; specials <= 8; specials++) {
                 for (boolean first : new boolean[]{false, true}) {
@@ -47,11 +53,11 @@ class BossRealtimeTest {
                 }
             }
         }
-        // the awakened alternating volley (after her seventh special): 0, 2, 4, 6, 8, then 1 tick of rest = 9 = 4 + 5
+        // the awakened alternating volley (after her seventh special): 0, 2, 4, 6, 8, then the rest less 4 ticks (5: 1 tick)
         boolean[] alt = BossMechanics.whispererVolley(7, true, true);
         assertArrayEquals(new boolean[]{true, false, true, false, true}, alt);
         assertArrayEquals(new int[]{0, 2, 4, 6, 8}, BossRealtime.volleyLaunchTicks(alt));
-        assertEquals(1, BossRealtime.volleyRestTicks(speed, BossRealtime.volleyExtraTicks(alt)));
+        assertEquals(speed - 4, BossRealtime.volleyRestTicks(speed, BossRealtime.volleyExtraTicks(alt)));
         // a single-style volley is the OSRS one exactly
         boolean[] same = BossMechanics.whispererVolley(0, false, false);
         assertArrayEquals(new int[]{0, 1, 2}, BossRealtime.volleyLaunchTicks(same));

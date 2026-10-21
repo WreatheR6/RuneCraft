@@ -74,6 +74,7 @@ final class BossRealtimeChecks {
         checks.add(new SelfTest.Check("boss:realtime_nightmare_windup", b::nightmareWindUp));
         checks.add(new SelfTest.Check("boss:realtime_zulrah_jad", b::zulrahJad));
         checks.add(new SelfTest.Check("boss:realtime_floor_markers", b::floorMarkers));
+        checks.add(new SelfTest.Check("boss:realtime_landed_attack", b::landedAttack));
         return checks;
     }
 
@@ -557,6 +558,88 @@ final class BossRealtimeChecks {
         } finally {
             finish(boss);
         }
+    }
+
+    // ------------------------------------------------------------------ the attack that landed
+
+    /**
+     * Hits land in real time, after a boss may have started its next attack: the Corporeal Beast's draining orb heals it when it
+     * lands although its melee has started meanwhile (and a plain orb landing while it makes a draining one doesn't); Elvarg's
+     * breath drains prayer by the breath that landed; the Fragment of Seren's special comes every fourth attack she makes, however
+     * often her attack goal asks for her next one.
+     */
+    private String landedAttack() {
+        StringBuilder out = new StringBuilder();
+        DataBossEntity corp = spawn("corporeal_beast", 0, -6);
+        try {
+            com.runecraft.boss.BossScript s = corp.script();
+            corp.setHealth(corp.getMaxHealth() / 2);
+            float hp = corp.getHealth();
+            s.beforeAttack(corp, p(), com.runecraft.osrs.content.bosses.ClassicBosses.CORP_MELEE); // its melee starts
+            s.onHitPlayer(corp, p(), 20, AttackType.MAGIC, com.runecraft.osrs.content.bosses.ClassicBosses.CORP_DRAIN);
+            expect(corp.getHealth() > hp, "its draining orb landing after its melee started didn't heal it (" + hp + " -> "
+                    + corp.getHealth() + ")");
+            float healed = corp.getHealth();
+            s.beforeAttack(corp, p(), com.runecraft.osrs.content.bosses.ClassicBosses.CORP_DRAIN); // a draining orb starts
+            s.onHitPlayer(corp, p(), 20, AttackType.MAGIC, com.runecraft.osrs.content.bosses.ClassicBosses.CORP_ORB);
+            expect(corp.getHealth() == healed, "a plain orb landing while a draining one started healed it");
+            out.append("Corp's drain read from the orb that landed");
+        } finally {
+            corp.discard();
+        }
+        DataBossEntity elvarg = spawn("elvarg", 0, -6);
+        try {
+            AttackDef breath = null;
+            AttackDef other = null;
+            for (AttackDef a : elvarg.def().attacks) {
+                if (a.special() == AttackDef.Special.DRAGONFIRE) {
+                    breath = a;
+                } else {
+                    other = a;
+                }
+            }
+            if (breath != null && other != null) {
+                com.runecraft.boss.BossScript s = elvarg.script();
+                PlayerData data = Players.data(p());
+                data.setPrayerPoints(99); // capped at the tester's Prayer level
+                int full = data.prayerPoints();
+                int want = full - full * com.runecraft.osrs.content.quests.QuestBossRules.ELVARG_PRAYER_DRAIN_PERCENT / 100;
+                expect(want < full, "the tester has too little Prayer (" + full + ") for a tenth to show");
+                s.beforeAttack(elvarg, p(), other);
+                s.onHitPlayer(elvarg, p(), 5, breath.style(), breath);
+                expect(data.prayerPoints() == want, "her breath landing after another attack started left " + data.prayerPoints()
+                        + " of " + full + " prayer (a tenth off: " + want + ")");
+                s.beforeAttack(elvarg, p(), breath);
+                s.onHitPlayer(elvarg, p(), 5, other.style(), other);
+                expect(data.prayerPoints() == want, "another attack landing while her breath started drained prayer");
+                out.append("; Elvarg's prayer drain read from the breath that landed");
+            }
+        } finally {
+            elvarg.discard();
+        }
+        DataBossEntity fragment = spawn("fragment_of_seren", 0, -6);
+        try {
+            com.runecraft.boss.BossScript s = fragment.script();
+            java.util.Set<String> specials = java.util.Set.of("pull", "shadows", "healing_beams", "crystal_judgement");
+            for (int i = 0; i < 40; i++) {
+                AttackDef a = s.chooseAttack(fragment, p(), 8);
+                expect(a != null && !specials.contains(a.name()), "the goal asking for her next attack " + (i + 1) + " times made "
+                        + (a == null ? "nothing" : a.name()));
+            }
+            List<String> made = new ArrayList<>();
+            for (int i = 0; i < 8; i++) {
+                AttackDef a = s.chooseAttack(fragment, p(), 8);
+                s.beforeAttack(fragment, p(), a);
+                made.add(a.name());
+            }
+            expect(made.get(3).equals("pull") && made.get(7).equals("shadows")
+                    && made.stream().filter(specials::contains).count() == 2, "her first 8 attacks: " + made);
+            out.append("; the Fragment's specials on her 4th and 8th attacks");
+        } finally {
+            fragment.discard();
+            c.heal();
+        }
+        return out.toString();
     }
 
     // ------------------------------------------------------------------ floor markers

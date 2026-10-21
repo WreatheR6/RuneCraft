@@ -1813,11 +1813,16 @@ final class SlayerScripts {
                 }
                 default -> {
                     // Acid drip: a homing blob; the player then drips venom for 6 ticks, leaving a pool wherever they stand.
+                    // It flies to the player as a typeless projectile, drawn on its way, and lands on arrival (round 42).
+                    // // playability: OSRS a homing projectile; here it hit on the tick it was spat, with nothing on screen
                     BossFx.warn(boss, "Araxxor's venom drips onto you - keep moving!");
-                    com.runecraft.combat.CombatHooks.nameAttack("acid_ball", null);
-                    CombatHandler.applyDamage(boss, target, boss.getRandom().nextInt(SlayerBosses.ARAXXOR_DRIP_MAX + 1));
-                    com.runecraft.combat.PoisonService.venom(target, now);
-                    dripTicks = SlayerBosses.ARAXXOR_DRIP_TICKS;
+                    int roll = boss.getRandom().nextInt(SlayerBosses.ARAXXOR_DRIP_MAX + 1);
+                    com.runecraft.boss.Mechanics.deliverProjectile(boss, target, null, true, 32, () -> {
+                        com.runecraft.combat.CombatHooks.nameAttack("acid_ball", null);
+                        CombatHandler.applyDamage(boss, target, roll);
+                        com.runecraft.combat.PoisonService.venom(target, now);
+                        dripTicks = SlayerBosses.ARAXXOR_DRIP_TICKS;
+                    });
                 }
             }
         }
