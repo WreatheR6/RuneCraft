@@ -718,9 +718,11 @@ final class ToaBossRooms {
         @Override
         public void decorate() {
             BlockPos c = center();
-            // The four quadrant symbols: fire, shadow, lightning, ice.
+            // The four quadrant symbols: fire, shadow, lightning, ice. The ice mark is light blue terracotta rather than packed
+            // ice since round 42: steps on a slippery block don't drop trailing orbs (they may be a slide), so an icy mark
+            // was a patch to walk across freely.
             net.minecraft.world.level.block.state.BlockState[] marks = {Blocks.MAGMA_BLOCK.defaultBlockState(), Blocks.CRYING_OBSIDIAN.defaultBlockState(),
-                    Blocks.YELLOW_GLAZED_TERRACOTTA.defaultBlockState(), Blocks.PACKED_ICE.defaultBlockState()};
+                    Blocks.YELLOW_GLAZED_TERRACOTTA.defaultBlockState(), Blocks.LIGHT_BLUE_GLAZED_TERRACOTTA.defaultBlockState()};
             for (int q = 0; q < 4; q++) {
                 Vec3 v = quadrantCentre(q);
                 BlockPos m = BlockPos.containing(v.x, c.getY(), v.z);
@@ -1101,13 +1103,7 @@ final class ToaBossRooms {
             for (int sp : pool.subList(0, Math.min(pool.size(), Invocation.akkhaSpecialsAtOnce(inv)))) {
                 switch (sp) {
                     case 0 -> memoryBlast(inv);
-                    case 1 -> {
-                        warn("Magical orbs begin to materialise around you! Stand still - every step leaves an orb.");
-                        trailTicks = 10;
-                        trailLast.clear();
-                        walked.clear();
-                        lastMc.clear();
-                    }
+                    case 1 -> startTrailingOrbs();
                     default -> detonate(inv);
                 }
             }
@@ -1156,10 +1152,21 @@ final class ToaBossRooms {
         private final Map<UUID, Double> walked = new HashMap<>();
         private final Map<UUID, Vec3> lastMc = new HashMap<>();
 
+        /** Trailing Orbs begin (OSRS: for ten ticks every tile a player walks leaves an orb behind them). */
+        private void startTrailingOrbs() {
+            warn("Magical orbs begin to materialise around you! Stand still - every step leaves an orb.");
+            trailTicks = 10;
+            trailLast.clear();
+            walked.clear();
+            lastMc.clear();
+        }
+
         /**
          * Every Minecraft tick while the orbs materialise: adds up each player's own steps ({@link
-         * com.runecraft.osrs.content.raids.RaidRealtime#inputStep}): on the ground, not pressed against a body (Akkha or a
-         * shadow shoving them), not sliding on ice, neither standing still nor teleported.
+         * com.runecraft.osrs.content.raids.RaidRealtime#ownStep}), on the ground or in the air (a jump is a step), less
+         * the part pointing away from a body they overlap (Akkha or a shadow shoving them; walking round him still counts);
+         * not sliding on ice, neither standing still nor teleported. No hit knocks a player back here (OSRS hits never push:
+         * OsrsKnockback), so there is no knockback to leave out.
          */
         @Override
         public void bossTick(DataBossEntity boss) {
@@ -1171,19 +1178,30 @@ final class ToaBossRooms {
                 return;
             }
             for (ServerPlayer p : players()) {
-                Vec3 now = p.position();
-                Vec3 before = lastMc.put(p.getUUID(), now);
-                if (before == null) {
-                    continue;
-                }
-                double step = Math.sqrt(RaidEffects.horizontalDistSq(before, now));
-                net.minecraft.world.phys.AABB box = p.getBoundingBox().inflate(0.15, 0, 0.15);
-                boolean pushed = !world().getEntities(p, box, e -> e instanceof LivingEntity && !(e instanceof ServerPlayer)).isEmpty();
-                BlockPos below = BlockPos.containing(now.x, now.y - 0.5, now.z);
-                boolean slippery = world().getBlockState(below).getBlock().getFriction() > 0.6f;
-                if (com.runecraft.osrs.content.raids.RaidRealtime.inputStep(step, p.onGround(), pushed, slippery)) {
-                    walked.merge(p.getUUID(), step, Double::sum);
-                }
+                addOwnStep(p);
+            }
+        }
+
+        /** One Minecraft tick of {@link #bossTick} for one player. */
+        private void addOwnStep(ServerPlayer p) {
+            Vec3 now = p.position();
+            Vec3 before = lastMc.put(p.getUUID(), now);
+            if (before == null) {
+                return;
+            }
+            // The bodies whose boxes overlap the player's (Minecraft only pushes overlapping boxes, away from the centre).
+            List<net.minecraft.world.entity.Entity> bodies = world().getEntities(p, p.getBoundingBox(),
+                    e -> e instanceof LivingEntity && e.isAlive() && !e.isSpectator());
+            double[] away = new double[bodies.size() * 2];
+            for (int i = 0; i < bodies.size(); i++) {
+                away[2 * i] = now.x - bodies.get(i).getX();
+                away[2 * i + 1] = now.z - bodies.get(i).getZ();
+            }
+            BlockPos below = BlockPos.containing(now.x, now.y - 0.5, now.z);
+            boolean slippery = world().getBlockState(below).getBlock().getFriction() > 0.6f;
+            double own = com.runecraft.osrs.content.raids.RaidRealtime.ownStep(now.x - before.x, now.z - before.z, away, slippery);
+            if (own > 0) {
+                walked.merge(p.getUUID(), own, Double::sum);
             }
         }
 
@@ -1211,8 +1229,9 @@ final class ToaBossRooms {
                 Vec3 last = trailLast.put(p.getUUID(), now);
                 double walked = this.walked.getOrDefault(p.getUUID(), 0.0);
                 this.walked.put(p.getUUID(), 0.0);
-                // Only the player's own steps since the last game tick count (Akkha's body shoving them, ice sliding and
-                // teleports don't): see bossTick. // playability: OSRS drops an orb on each tile a player walks off
+                // Only the player's own steps since the last game tick count, walked or jumped (Akkha's body shoving them,
+                // ice sliding and teleports don't): see bossTick. // playability: OSRS drops an orb on each tile a player
+                // walks off
                 if (last != null && walked >= com.runecraft.osrs.content.raids.RaidRealtime.ORB_STEP) {
                     // CA "Dropped the ball": moving while the orbs materialise drops one behind you.
                     com.runecraft.content.systems.CombatAchievementService.flag(p, ToaLoot.FLAG_AKKHA_ORB_DROPPED);
@@ -1308,10 +1327,70 @@ final class ToaBossRooms {
             t.moveTo(BlockPos.containing(a.x + (a.x < center().getX() + 0.5 ? 2 : -2), a.y, a.z));
         }
 
+        /**
+         * Self-test: Trailing Orbs follow the player's own steps, walked on the ground, jumped through the air and walked round
+         * Akkha pressed against him (only the part of a step pointing away from a body is its shove). Entities don't tick
+         * while a check runs, so each Minecraft tick's step is made here (0.2 blocks, walking pace) and Akkha's boss tick,
+         * which adds the steps up, is called by hand; the raid game tick then drops the orbs. The special ends afterwards.
+         */
+        private String selfTestTrailingOrbs(RaidSelfTest t) {
+            ServerPlayer p = t.player();
+            int mcPerTick = com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK;
+            int before = orbsDropped;
+            startTrailingOrbs();
+            Vec3 at = vec(-8, -6);
+            selfTestStep(p, at, true);
+            bossTick(akkha);
+            t.tick(1);
+            for (int leg = 0; leg < 2; leg++) {
+                boolean ground = leg == 0;
+                int legBefore = orbsDropped;
+                for (int g = 0; g < 2; g++) {
+                    for (int mc = 0; mc < mcPerTick; mc++) {
+                        at = at.add(0.2, 0, 0);
+                        // in the air: the top of a jump arc, 0.6 above the floor, not on the ground
+                        selfTestStep(p, ground ? at : at.add(0, 0.6, 0), ground);
+                        bossTick(akkha);
+                    }
+                    t.tick(1);
+                }
+                RaidSelfTest.expect(orbsDropped >= legBefore + 2, "Akkha: two ticks " + (ground ? "walking" : "jumping") + " during Trailing Orbs dropped "
+                        + (orbsDropped - legBefore) + " orbs (one a tick expected)");
+            }
+            // Round Akkha, inside his box the whole way (a melee player pressed against him).
+            Vec3 a = akkha.position();
+            double r = Math.min(0.6, (akkha.getBbWidth() + p.getBbWidth()) / 2 - 0.1);
+            double angle = 0;
+            selfTestStep(p, new Vec3(a.x + r, a.y, a.z), true);
+            bossTick(akkha); // the jump over to him is a teleport: not counted
+            int roundBefore = orbsDropped;
+            for (int mc = 0; mc < mcPerTick; mc++) {
+                angle += 0.2 / r;
+                selfTestStep(p, new Vec3(a.x + r * Math.cos(angle), a.y, a.z + r * Math.sin(angle)), true);
+                RaidSelfTest.expect(p.getBoundingBox().intersects(akkha.getBoundingBox()), "Akkha: the self-test player left his box while walking round him");
+                bossTick(akkha);
+            }
+            t.tick(1);
+            RaidSelfTest.expect(orbsDropped > roundBefore, "Akkha: walking round him pressed against him dropped no trailing orb");
+            trailTicks = 0;
+            trail.clear();
+            trailLast.clear();
+            walked.clear();
+            lastMc.clear();
+            return (orbsDropped - before) + " trailing orbs dropped walking, jumping and pressed against Akkha";
+        }
+
+        /** Self-test: puts the player at {@code at}, on the ground or not, as one Minecraft tick's movement. */
+        private void selfTestStep(ServerPlayer p, Vec3 at, boolean onGround) {
+            p.teleportTo(world(), at.x, at.y, at.z, p.getYRot(), p.getXRot());
+            p.setOnGround(onGround);
+        }
+
         @Override
         String selfTestSolve(RaidSelfTest t) {
             int shadowsKilled = 0;
             int[] kills = {0};
+            String orbs = selfTestTrailingOrbs(t);
             selfTestStandBeside(t);
             String r = grind(t, akkha, AttackType.MAGIC, 30, () -> {
                 if (finalStand || hidden || !shadowsUp() || !alive(akkha)) {
@@ -1340,7 +1419,7 @@ final class ToaBossRooms {
             RaidSelfTest.expect(specialsUsed <= attacks / every && (attacks < 2 * every || specialsUsed >= 1),
                     "Akkha: " + specialsUsed + " specials in " + attacks + " attacks (one every " + every + ")");
             RaidSelfTest.expect(finalStand, "Akkha: he died without his final stand");
-            return r + ", " + (kills[0] + shadowsKilled) + " shadows dispelled";
+            return r + ", " + (kills[0] + shadowsKilled) + " shadows dispelled, " + orbs;
         }
     }
 

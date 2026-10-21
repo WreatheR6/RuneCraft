@@ -12,8 +12,8 @@ import java.util.List;
  *   (24 MC) apart, in the order they were announced ({@link #spacedTick}, {@link Timeline});</li>
  *   <li>a raid projectile flies at least {@value #PROJECTILE_MIN_TICKS} game ticks, drawn all the way;</li>
  *   <li>tile-exact safe spots get lenient areas: Zebak's shelter widens behind a rock ({@link #inShelterCone}), the
- *   Sotetseg maze forgives a foot over a tile edge ({@link #offPath}), Akkha's trailing orbs only follow real steps
- *   ({@link #inputStep});</li>
+ *   Sotetseg maze forgives a foot over a tile edge ({@link #offPath}), Akkha's trailing orbs only follow the player's own steps
+ *   ({@link #ownStep});</li>
  *   <li>warnings name compass directions ({@link #compass}).</li>
  * </ul>
  * Every OSRS number (max hits, patterns, cycle lengths, prayer rules) stays: only when a hit resolves and how it is shown
@@ -194,13 +194,36 @@ public final class RaidRealtime {
     public static final double ORB_STEP = 0.5;
 
     /**
-     * Whether one Minecraft tick's horizontal movement of {@code step} blocks was the player walking: on the ground, not
-     * pressed against another creature (a boss shoving through them), not sliding on a slippery block, and neither standing
-     * still nor teleported. Only such steps drop Akkha's trailing orbs. // playability: OSRS players move tile by tile only
-     * when they click; a Minecraft player is also shoved by bodies and slides on ice
+     * The part of one Minecraft tick's horizontal movement ({@code dx}, {@code dz}) the player made of their own accord, in
+     * blocks, or 0 when none of it counts. Only such steps drop Akkha's trailing orbs. On the ground and in the air alike: a
+     * jump is a step too (there is no jumping in OSRS, so a jump arc can't carry a player past the orbs). Standing still
+     * (drift), a teleport and sliding on a slippery block don't count. For each body the player overlaps, {@code away} holds
+     * the offset from that body's centre to the player's (x, z pairs): a body shoves straight away from its centre, so the
+     * part of the step pointing away from it is taken off and the rest (walking round it, or into it) still counts.
+     * // playability: OSRS players move tile by tile only when they click; a Minecraft player also jumps, is shoved by the
+     * bodies they touch and slides on ice
      */
-    public static boolean inputStep(double step, boolean onGround, boolean pushed, boolean slippery) {
-        return onGround && !pushed && !slippery && step >= MIN_INPUT_STEP && step <= MAX_INPUT_STEP;
+    public static double ownStep(double dx, double dz, double[] away, boolean slippery) {
+        if (slippery || Math.hypot(dx, dz) > MAX_INPUT_STEP) {
+            return 0;
+        }
+        double x = dx;
+        double z = dz;
+        for (int i = 0; away != null && i + 1 < away.length; i += 2) {
+            double len = Math.hypot(away[i], away[i + 1]);
+            if (len < 1e-6) {
+                continue; // centre on centre: Minecraft doesn't push either
+            }
+            double ux = away[i] / len;
+            double uz = away[i + 1] / len;
+            double out = x * ux + z * uz;
+            if (out > 0) {
+                x -= ux * out;
+                z -= uz * out;
+            }
+        }
+        double own = Math.hypot(x, z);
+        return own >= MIN_INPUT_STEP ? own : 0;
     }
 
     // ------------------------------------------------------------------ words

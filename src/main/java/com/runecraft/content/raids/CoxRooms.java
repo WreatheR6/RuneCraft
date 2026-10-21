@@ -3130,15 +3130,21 @@ final class CoxRooms {
 
         /**
          * The Olm's specials still to land, one at a time (crystal bursts, lightning, swaps, fire walls, crystal bombs,
-         * falling crystals): {@link com.runecraft.osrs.content.raids.RaidRealtime.Timeline}. // playability: OSRS lands them
+         * falling crystals, acid): {@link com.runecraft.osrs.content.raids.RaidRealtime.Timeline}. // playability: OSRS lands them
          * on their own ticks however close together; here two that need different steps land at least two game ticks apart,
          * in the order announced, and the queue is shown mid-screen
          */
         private final com.runecraft.osrs.content.raids.RaidRealtime.Timeline timeline = new com.runecraft.osrs.content.raids.RaidRealtime.Timeline();
-        /** Specials sequenced, how many were pushed later to keep their spacing, and Crystal Burst hits (self-test). */
+        /**
+         * Specials sequenced, how many were pushed later to keep their spacing, Crystal Burst hits, acid pools sprayed and
+         * formed, and the game tick the last spray's pools form (self-test).
+         */
         int sequenced;
         int spaced;
         int burstHits;
+        int acidSprayed;
+        int acidFormed;
+        long acidLands;
 
         /**
          * Puts one of the Olm's specials on its timeline: returns its delay in game ticks (at least {@code want}), and shows the
@@ -3582,11 +3588,27 @@ final class CoxRooms {
             switch (attack) {
                 case "acid_spray" -> {
                     say("The Great Olm sprays acid across the chamber!");
+                    // The acid flies to its tiles as raid strikes on the Olm's timeline (an order cue when other specials are
+                    // coming): each pool is outlined from the spray and forms, burning whoever stands in it, no sooner than the
+                    // strike floor; then it lasts its full OLM_ACID_TICKS. // playability: OSRS lands the acid a tick or two
+                    // after the spray, whatever else lands that tick; the pools formed at once and burned from the next tick
+                    int lead = sequence(com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS, "acid", true);
+                    DataBossEntity source = head;
+                    Stage sprayedIn = stage;
+                    int sprayPhase = phase;
+                    java.util.function.BooleanSupplier room = current();
                     for (ServerPlayer p : players) {
                         for (int i = 0; i < 3; i++) {
                             Vec3 at = p.position().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4);
-                            pools.add(new Pool(at, t + CoxRules.OLM_ACID_TICKS, CoxRules.OLM_ACID_MIN, CoxRules.OLM_ACID_MAX,
-                                    CoxRules.OLM_ACID_POISON));
+                            acidLands = RaidEffects.mark(world(), at, 0.8).delay(lead).source(source).warn(ParticleTypes.ITEM_SLIME)
+                                    .live(() -> room.getAsBoolean() && alive(source) && stage == sprayedIn && phase == sprayPhase)
+                                    .onLand(() -> {
+                                        pools.add(new Pool(at, t + CoxRules.OLM_ACID_TICKS, CoxRules.OLM_ACID_MIN, CoxRules.OLM_ACID_MAX,
+                                                CoxRules.OLM_ACID_POISON));
+                                        acidFormed++;
+                                    })
+                                    .start();
+                            acidSprayed++;
                         }
                     }
                 }
@@ -4036,6 +4058,21 @@ final class CoxRooms {
                 w.tick(1);
             }
             w.expect(burstHits == burstsBefore, "a crystal burst hit a player who stepped off it");
+            // Acid Spray (round 42): three pools around each player, raid strikes on the Olm's timeline outlined from the spray,
+            // that form (and burn) no sooner than the strike floor. The player then walks clear of them. // playability
+            w.moveTo(at(0, south ? 5 : -5));
+            int poolsBefore = pools.size();
+            int sprayedBefore = acidSprayed;
+            int formedBefore = acidFormed;
+            long sprayedAt = RaidEffects.now();
+            power("acid_spray", w.player(), List.of(w.player()));
+            w.moveTo(at(-10, south ? 5 : -5));
+            w.expect(acidSprayed == sprayedBefore + 3 && pools.size() == poolsBefore && acidLands - sprayedAt >= com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS,
+                    "the Olm's acid spray made " + (acidSprayed - sprayedBefore) + " pools, " + (pools.size() - poolsBefore)
+                    + " of them at once, landing in " + (acidLands - sprayedAt) + " ticks");
+            long lands = acidLands;
+            w.until(() -> RaidEffects.now() >= lands, (int) (lands - sprayedAt) + 2, "the Olm's acid never landed");
+            w.expect(acidFormed >= formedBefore + 3, "the Olm's acid spray formed " + (acidFormed - formedBefore) + " of its 3 pools");
             int guard = 0;
             int lastPhase = phase;
             while (stage != Stage.HEAD && guard++ < 3000) {

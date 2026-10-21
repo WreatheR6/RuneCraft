@@ -84,13 +84,44 @@ class RaidRealtimeTest {
 
     @Test
     void trailingOrbSteps() {
-        assertTrue(RaidRealtime.inputStep(0.2, true, false, false), "walking");
-        assertTrue(RaidRealtime.inputStep(0.065, true, false, false), "sneaking");
-        assertFalse(RaidRealtime.inputStep(0.01, true, false, false), "standing still (drift)");
-        assertFalse(RaidRealtime.inputStep(3.0, true, false, false), "teleported");
-        assertFalse(RaidRealtime.inputStep(0.2, true, true, false), "shoved by a body");
-        assertFalse(RaidRealtime.inputStep(0.2, true, false, true), "sliding on ice");
-        assertFalse(RaidRealtime.inputStep(0.2, false, false, false), "in the air");
+        double[] none = {};
+        assertEquals(0.2, RaidRealtime.ownStep(0.2, 0, none, false), 1e-9, "walking");
+        assertEquals(0.065, RaidRealtime.ownStep(0, 0.065, none, false), 1e-9, "sneaking");
+        assertEquals(0, RaidRealtime.ownStep(0.01, 0, none, false), "standing still (drift)");
+        assertEquals(0, RaidRealtime.ownStep(3.0, 0, none, false), "teleported");
+        assertEquals(0, RaidRealtime.ownStep(0.2, 0, none, true), "sliding on ice");
+        // In the air counts too (round 42 review): there is no on-ground condition any more, a jump is a step.
+        assertTrue(RaidRealtime.ownStep(0.2, 0, none, false) > 0, "jumping (in the air)");
+        assertEquals(0.6, RaidRealtime.ownStep(0.36, 0.48, none, false), 1e-9, "the jump tick of a sprint-jump");
+
+        // Pressed against a body east of the player (the player is west of it: away = (-1, 0)).
+        double[] west = {-0.5, 0};
+        assertEquals(0, RaidRealtime.ownStep(-0.2, 0, west, false), "shoved straight away from a body");
+        assertEquals(0.2, RaidRealtime.ownStep(0, 0.2, west, false), 1e-9, "walking round a body, pressed against it");
+        assertEquals(0.2, RaidRealtime.ownStep(0.2, 0, west, false), 1e-9, "walking into a body");
+        assertEquals(0.2, RaidRealtime.ownStep(-0.2, 0.2, west, false), 1e-9, "only the shove (away) part is taken off");
+        assertEquals(0.2, RaidRealtime.ownStep(0, 0.2, new double[]{0, 0}, false), 1e-9, "a body centre on centre doesn't push");
+        assertEquals(0, RaidRealtime.ownStep(-0.2, 0.2, new double[]{-1, 0, 0, 1}, false), "squeezed out between two bodies");
+
+        // A sprint-jump across the arena: about 11 Minecraft ticks in the air for each one on the ground. The game tick's
+        // steps add up past an orb's step either way (they used to count only the tick on the ground).
+        double airborne = 0;
+        for (int mc = 0; mc < 12; mc++) {
+            airborne += RaidRealtime.ownStep(0.3, 0, none, false);
+        }
+        assertTrue(airborne >= RaidRealtime.ORB_STEP, "a game tick of jumping drops an orb (" + airborne + ")");
+        // Walking round Akkha pressed against him (0.6 from his centre, 0.2 a Minecraft tick): the steps still add up.
+        double round = 0;
+        double r = 0.6;
+        double a = 0;
+        for (int mc = 0; mc < 12; mc++) {
+            double b = a + 0.2 / r;
+            double nx = r * Math.cos(b);
+            double nz = r * Math.sin(b);
+            round += RaidRealtime.ownStep(nx - r * Math.cos(a), nz - r * Math.sin(a), new double[]{nx, nz}, false);
+            a = b;
+        }
+        assertTrue(round >= RaidRealtime.ORB_STEP, "a game tick walking round Akkha drops an orb (" + round + ")");
     }
 
     @Test
