@@ -82,7 +82,12 @@ public class OsrsMonsterEntity extends Monster implements OsrsCombatant {
         this.goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.8));
         this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 8.0f));
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
-        targetGoal = new OsrsTargetGoal(this, true);
+        addTargetGoal(true);
+    }
+
+    /** Registers this monster's OSRS target goal; {@code hunts}: it looks for players to attack unprovoked. */
+    protected final void addTargetGoal(boolean hunts) {
+        targetGoal = new OsrsTargetGoal(this, hunts);
         this.targetSelector.addGoal(1, targetGoal);
     }
 

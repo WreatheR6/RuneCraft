@@ -62,13 +62,20 @@ public final class LootDrops {
             e.setDefaultPickUpDelay();
             e.lifespan = MonsterAi.LOOT_LIFESPAN_MC;
             boolean tradeable = !com.runecraft.osrs.data.Untradeables.untradeable(Inv.idOf(s));
-            if (winner != null && MonsterAi.lootPrivate(0, tradeable, wilderness)) {
+            boolean isPrivate = winner != null && MonsterAi.lootPrivate(0, tradeable, wilderness);
+            if (isPrivate) {
                 e.setTarget(winner.getUUID());
                 e.addTag(PRIVATE_TAG);
+                if (tradeable) {
+                    // listed before it joins the world: the load hook below releases private drops it doesn't know
+                    synchronized (LootDrops.class) {
+                        PENDING.put(e.getUUID(), new Release(level.dimension(), level.getGameTime() + MonsterAi.PRIVATE_LOOT_MC));
+                    }
+                }
             }
-            if (level.addFreshEntity(e) && winner != null && tradeable && e.getTarget() != null) {
+            if (!level.addFreshEntity(e) && isPrivate) {
                 synchronized (LootDrops.class) {
-                    PENDING.put(e.getUUID(), new Release(level.dimension(), level.getGameTime() + MonsterAi.PRIVATE_LOOT_MC));
+                    PENDING.remove(e.getUUID());
                 }
             }
         });
