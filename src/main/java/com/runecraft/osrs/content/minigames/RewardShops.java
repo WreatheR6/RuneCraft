@@ -219,13 +219,15 @@ public final class RewardShops {
                 .item("toadflax", BRIMHAVEN_VOUCHERS, 3)
                 .item("snapdragon", BRIMHAVEN_VOUCHERS, 10);
 
-        // Trouble Brewing: Honest Jimmy's House of Stuff (pieces of eight; OSRS Wiki: ten times each item's value,
-        // rum 20).
+        // Trouble Brewing: Honest Jimmy's House of Stuff (pieces of eight; OSRS Wiki store page): naval clothing, the six
+        // banners, the stuff and the red and blue rum that teleport to Mos Le'Harmless.
         RewardShop tb = shop("trouble_brewing", "Honest Jimmy's House of Stuff");
         for (String c : MinigameItems.NAVAL_COLOURS) {
             tb.item(c + "_naval_shirt", EIGHT, 1000).item(c + "_tricorn_hat", EIGHT, 500).item(c + "_navy_slacks", EIGHT, 1000);
         }
-        tb.item("bottle_of_rum", EIGHT, 20).item("the_stuff", EIGHT, 50);
+        tb.item("cutthroat_flag", EIGHT, 2000).item("gilded_smile_flag", EIGHT, 2000).item("bronze_fist_flag", EIGHT, 3000)
+                .item("lucky_shot_flag", EIGHT, 4000).item("treasure_flag", EIGHT, 5000).item("phasmatys_flag", EIGHT, 6000)
+                .item("the_stuff", EIGHT, 50).item("rum_red", EIGHT, 20).item("rum_blue", EIGHT, 20);
 
         // Volcanic Mine: Petrified Pete's Ore Shop (OSRS Wiki prices; ores and minerals come noted, see NOTED). The large water
         // container (10,000 points) doubles the heat-proof vessel's throws (VolcanicMine.LARGE_VESSEL_FLAG). Not stocked here:

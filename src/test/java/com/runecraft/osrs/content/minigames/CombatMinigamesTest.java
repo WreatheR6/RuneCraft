@@ -197,7 +197,7 @@ class CombatMinigamesTest {
         assertEquals(1000, cost("trouble_brewing", "grey_naval_shirt", MinigameCurrencies.EIGHT));
         assertEquals(500, cost("trouble_brewing", "black_tricorn_hat", MinigameCurrencies.EIGHT));
         assertEquals(1000, cost("trouble_brewing", "brown_navy_slacks", MinigameCurrencies.EIGHT));
-        assertEquals(20, cost("trouble_brewing", "bottle_of_rum", MinigameCurrencies.EIGHT));
+        assertEquals(20, cost("trouble_brewing", "rum_red", MinigameCurrencies.EIGHT));
         assertEquals(7, MinigameItems.NAVAL_COLOURS.size());
     }
 

@@ -54,7 +54,8 @@ public final class MinigameItemUse {
             }
             if (com.runecraft.content.minigames.games.NightmareZoneSession.drink(sp, stack, hand, id) || blighted(sp, stack, hand, id)
                     || com.runecraft.content.minigames.games.VolcanicMineSession.useVessel(sp, id)
-                    || com.runecraft.content.minigames.games.WintertodtSession.useKnife(sp, id)) {
+                    || com.runecraft.content.minigames.games.WintertodtSession.useKnife(sp, id)
+                    || com.runecraft.content.minigames.games.TroubleBrewingSession.useKnife(sp, id)) {
                 return InteractionResultHolder.success(stack);
             }
             boolean used = switch (id) {
@@ -92,6 +93,7 @@ public final class MinigameItemUse {
                     bonesToPeaches(sp);
                     yield false;
                 }
+                case "rum_red", "rum_blue" -> rumTeleport(sp);
                 case "plank_sack" -> {
                     PlankSack.use(sp, stack);
                     yield false;
@@ -120,6 +122,23 @@ public final class MinigameItemUse {
             }
             return InteractionResultHolder.pass(stack);
         });
+    }
+
+    /** Rum (red) or (blue) from Honest Jimmy: drinking it teleports to the Trouble Brewing lobby (Wilderness level 20). */
+    private static boolean rumTeleport(ServerPlayer p) {
+        com.runecraft.osrs.content.minigames.Minigame tb = com.runecraft.osrs.content.minigames.Minigame.TROUBLE_BREWING;
+        net.minecraft.server.level.ServerLevel world = com.runecraft.world.Gielinor.world(p.getServer());
+        if (world == null || MinigameManager.session(p) != null) {
+            return false;
+        }
+        net.minecraft.core.BlockPos pos = com.runecraft.world.Gielinor.safeSpot(world,
+                com.runecraft.osrs.GielinorMap.toBlockX(tb.entranceX()), com.runecraft.osrs.GielinorMap.toBlockZ(tb.entranceY()) + 3);
+        if (!com.runecraft.content.systems.SysTeleport.teleportTo(p, pos, "Mos Le'Harmless",
+                com.runecraft.content.systems.SysTeleport.SPELL_WILDERNESS)) {
+            return false;
+        }
+        Msg.game(p, "You drink the rum and feel yourself whisked away to the brewery.");
+        return true;
     }
 
     static void give(ServerPlayer p, String item, int count) {

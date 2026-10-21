@@ -130,6 +130,51 @@ class SkillingMinigamesRound40Test {
         assertTrue(ItemCatalog.exists("pet_heron"));
     }
 
+    // ------------------------------------------------------------------ Trouble Brewing
+
+    @Test
+    void troubleBrewingFollowsTheWiki() {
+        assertEquals(5, MinigameRules.TroubleBrewing.WATER_PER_RUM);
+        assertEquals(3, MinigameRules.TroubleBrewing.COLOURED_PER_RUM);
+        assertEquals(3, MinigameRules.TroubleBrewing.BOILERS);
+        assertEquals(3, MinigameRules.TroubleBrewing.BOILER_MIN_LOGS);
+        assertEquals(10, MinigameRules.TroubleBrewing.BOILER_MAX_LOGS);
+        assertEquals(75, MinigameRules.TroubleBrewing.LOG_STORE);
+        assertEquals(2000, MinigameRules.TroubleBrewing.GAME_TICKS);
+        assertEquals(64, MinigameRules.TroubleBrewing.BREW_TICKS);
+        assertEquals(200.0, MinigameRules.TroubleBrewing.BITTERNUT_XP);
+        assertEquals(100.0, MinigameRules.TroubleBrewing.DEPOSIT_XP);
+        assertEquals(50.0, MinigameRules.TroubleBrewing.BITTERNUT_HUNTER_XP);
+        assertEquals(40.0, MinigameRules.TroubleBrewing.SWEETGRUB_HUNTER_XP);
+        assertEquals(50.0, MinigameRules.TroubleBrewing.BARK_FLETCHING_XP);
+        assertEquals(100.0, MinigameRules.TroubleBrewing.LIGHT_FIREMAKING_XP);
+        assertEquals(3, MinigameRules.TroubleBrewing.rumThirds("bitternut"));
+        assertEquals(1, MinigameRules.TroubleBrewing.rumThirds("bowl_of_red_water"));
+        assertEquals(0, MinigameRules.TroubleBrewing.rumThirds("minecraft:water_bucket"));
+        assertEquals(10 * 3 + 100, MinigameRules.TroubleBrewing.piecesOfEight(3, 250));
+        String e = MinigameCurrencies.EIGHT;
+        for (String c : MinigameItems.NAVAL_COLOURS) {
+            assertCost("trouble_brewing", c + "_naval_shirt", e, 1000);
+            assertCost("trouble_brewing", c + "_tricorn_hat", e, 500);
+            assertCost("trouble_brewing", c + "_navy_slacks", e, 1000);
+        }
+        assertCost("trouble_brewing", "cutthroat_flag", e, 2000);
+        assertCost("trouble_brewing", "gilded_smile_flag", e, 2000);
+        assertCost("trouble_brewing", "bronze_fist_flag", e, 3000);
+        assertCost("trouble_brewing", "lucky_shot_flag", e, 4000);
+        assertCost("trouble_brewing", "treasure_flag", e, 5000);
+        assertCost("trouble_brewing", "phasmatys_flag", e, 6000);
+        assertCost("trouble_brewing", "the_stuff", e, 50);
+        assertCost("trouble_brewing", "rum_red", e, 20);
+        assertCost("trouble_brewing", "rum_blue", e, 20);
+        // 39,590 pieces of eight buy everything once (wiki).
+        int all = RewardShops.get("trouble_brewing").entries().stream().mapToInt(x -> x.costs().get(0).amount()).sum();
+        assertEquals(39_590, all);
+        for (String item : List.of("tb_red_flowers", "bowl_of_red_water", "scrapey_tree_logs", "bitternut", "sweetgrubs", "scrapey_tree_bark")) {
+            assertTrue(ItemCatalog.exists(item), item);
+        }
+    }
+
     @Test
     void outfitsAddUpTo2Point5Percent() {
         assertEquals(1.025, SkillingOutfits.multiplier(SkillingOutfits.FARMER, SkillingOutfits.FARMER), 1e-9);

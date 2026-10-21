@@ -557,7 +557,20 @@ public final class MinigameItems {
             wear(items, c[0] + "_tricorn_hat", cap + " tricorn hat", "cowl", col, Slot.HEAD, 1, EquipmentStats.NONE);
             wear(items, c[0] + "_navy_slacks", cap + " navy slacks", "chaps", col, Slot.LEGS, 1, EquipmentStats.NONE);
         }
-        single(items, "the_stuff", "The stuff", "potion", 0x80E040, 1, "Makes brewing at Keldagrim much faster.");
+        single(items, "the_stuff", "The stuff", "potion", 0x80E040, 5, "Makes brewing at Keldagrim much faster.");
+        // In-game supplies (taken away at the end) and Honest Jimmy's rum teleports and banners (OSRS Wiki).
+        simple(items, "tb_red_flowers", "Red flowers", "herb", 0xC03030, 0, "Some red flowers, for the kettle.");
+        simple(items, "tb_blue_flowers", "Blue flowers", "herb", 0x3050C0, 0, "Some blue flowers, for the kettle.");
+        single(items, "bowl_of_red_water", "Bowl of red water", "bowl", 0xC03030, 0, "A bowl of red-coloured water.");
+        single(items, "bowl_of_blue_water", "Bowl of blue water", "bowl", 0x3050C0, 0, "A bowl of blue-coloured water.");
+        single(items, "scrapey_tree_logs", "Scrapey tree logs", "log", 0x8A6A4A, 0, "Logs from a scrapey tree. Scrape the bark off with a knife.");
+        single(items, "rum_red", "Rum", "beer", 0xC03030, 10, "A bottle of Trouble Brewing rum. Drink it to go to Mos Le'Harmless.");
+        single(items, "rum_blue", "Rum", "beer", 0x3050C0, 10, "A bottle of Trouble Brewing rum. Drink it to go to Mos Le'Harmless.");
+        for (String[] f : new String[][]{{"cutthroat_flag", "Cutthroat flag", "C02020"}, {"gilded_smile_flag", "Gilded smile flag", "E0C030"},
+                {"bronze_fist_flag", "Bronze fist flag", "B08D57"}, {"lucky_shot_flag", "Lucky shot flag", "30A040"},
+                {"treasure_flag", "Treasure flag", "E0A030"}, {"phasmatys_flag", "Phasmatys flag", "60C0A0"}}) {
+            single(items, f[0], f[1], "cape", Integer.parseInt(f[2], 16), 200, "A pirate banner from Honest Jimmy.");
+        }
     }
 
     // ------------------------------------------------------------------ Shades of Mort'ton

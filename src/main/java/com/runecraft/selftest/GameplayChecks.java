@@ -136,6 +136,8 @@ final class GameplayChecks {
                 () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::mahoganyHomes)));
         checks.add(new SelfTest.Check("minigame:trawler_round",
                 () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::fishingTrawler)));
+        checks.add(new SelfTest.Check("minigame:brewing_round",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::troubleBrewing)));
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }

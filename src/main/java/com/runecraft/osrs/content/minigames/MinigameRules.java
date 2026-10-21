@@ -967,21 +967,65 @@ public final class MinigameRules {
     }
 
     // ---------------------------------------------------------------- Trouble Brewing
+    /**
+     * Trouble Brewing (OSRS Wiki "Trouble Brewing", after the January 2025 XP rescale): a bottle of rum takes 1 bitternut,
+     * 1 sweetgrubs, 1 scrapey bark, 5 buckets of water and 3 bowls of the team's coloured water from the hopper, and three
+     * lit boilers with at least 3 logs each; it brews in 38 seconds and must be packed in the crate by someone whose
+     * ingredients went into it. Each resource deposited is 1 contribution (pieces of eight: 10 per team bottle plus the
+     * contribution, at most 100); each non-water ingredient also earns a rum reward of 100 Crafting, 250 Cooking and 150
+     * Firemaking XP at the end (a third for each bowl of coloured water).
+     */
     public static final class TroubleBrewing {
         /** A game lasts 20 minutes. */
         public static final int GAME_TICKS = 2000;
         /** 10 pieces of eight per bottle of rum the team makes, plus 1 per resource deposited (max 100). */
         public static final int EIGHT_PER_RUM = 10;
         public static final int MAX_CONTRIBUTION = 100;
-        /** Cooking XP for depositing a bitternut (200) or scrapey bark / sweetgrubs (100). */
+        /** Cooking XP for depositing a bitternut (200), sweetgrubs, scrapey bark or a bowl of coloured water (100); water none. */
         public static final double BITTERNUT_XP = 200;
         public static final double DEPOSIT_XP = 100;
-        /** Rum contribution reward per bottle the player helped make: Crafting 100, Cooking 250, Firemaking 150. */
+        /** Rum reward per credit: Crafting 100, Cooking 250, Firemaking 150. */
         public static final double RUM_CRAFTING_XP = 100;
         public static final double RUM_COOKING_XP = 250;
         public static final double RUM_FIREMAKING_XP = 150;
-        /** A bottle takes 38 seconds to brew (64 game ticks). */
+        /** A bottle takes 38 seconds to brew (64 game ticks); unpacked, it breaks about 34 seconds after it arrives. */
         public static final int BREW_TICKS = 64;
+        public static final int BOTTLE_BREAK_TICKS = 57;
+        /** One bottle's ingredients. */
+        public static final int WATER_PER_RUM = 5;
+        public static final int COLOURED_PER_RUM = 3;
+        /** Boilers: three, each needs 3 logs (holds 10) and to be lit; the log store starts with 75 logs. */
+        public static final int BOILERS = 3;
+        public static final int BOILER_MIN_LOGS = 3;
+        public static final int BOILER_MAX_LOGS = 10;
+        public static final int LOG_STORE = 75;
+        /** A lit boiler burns a log this often, rum or no rum (approx). */
+        public static final int LOG_BURN_TICKS = 50; // approx
+        /** XP for obtaining resources: a bitternut 50 Hunter, a caught monkey 15 Agility and 15 Hunter, sweetgrubs 40 Hunter,
+         * scrapey bark 50 Fletching; lighting a boiler 100 Firemaking. */
+        public static final double BITTERNUT_HUNTER_XP = 50;
+        public static final double MONKEY_XP = 15;
+        public static final double SWEETGRUB_HUNTER_XP = 40;
+        public static final double BARK_FLETCHING_XP = 50;
+        public static final double LIGHT_FIREMAKING_XP = 100;
+        /** At most 2 bitternuts and 5 flowers carried; the kettle holds 10 flowers. */
+        public static final int MAX_NUTS = 2;
+        public static final int MAX_FLOWERS = 5;
+        public static final int KETTLE_MAX = 10;
+        /** Using raw meat on a sweetgrub mound: 1/5 it collapses, else 1/5 a swarm of sweetflies, else sweetgrubs. */
+        public static final int GRUB_ROLL = 5;
+        /** Fletching scrapey bark: 1/50 to catch a disease (4 damage). */
+        public static final int DISEASE_ROLL = 50;
+        public static final int DISEASE_DAMAGE = 4;
+
+        /** Rum credits, in thirds, an ingredient earns its depositor: 3 for a solid ingredient, 1 per bowl of coloured water. */
+        public static int rumThirds(String ingredient) {
+            return switch (ingredient) {
+                case "bitternut", "sweetgrubs", "scrapey_tree_bark" -> 3;
+                case "bowl_of_red_water", "bowl_of_blue_water" -> 1;
+                default -> 0;
+            };
+        }
 
         private TroubleBrewing() {
         }

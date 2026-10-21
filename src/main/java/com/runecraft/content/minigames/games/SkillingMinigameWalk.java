@@ -81,6 +81,10 @@ public final class SkillingMinigameWalk {
         return run(p, SkillingMinigameWalk::trawlerRound);
     }
 
+    public static String troubleBrewing(ServerPlayer p) {
+        return run(p, SkillingMinigameWalk::brewingRound);
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private static void expect(boolean ok, String message) {
@@ -645,6 +649,124 @@ public final class SkillingMinigameWalk {
         expect(until(200, sink::isEnded), "16 open leaks didn't sink the trawler in 200 ticks (water " + sink.selfTestView(player).water() + ")");
         expect(MinigameManager.session(player) == null, "the player is still aboard the sunk trawler");
         notes.add("16 leaks sank the trawler");
+    }
+
+    // ------------------------------------------------------------------ Trouble Brewing
+
+    private void brewingRound() {
+        step = "workbench";
+        player.getInventory().clearContent();
+        TroubleBrewingSession tb = (TroubleBrewingSession) start(Minigame.TROUBLE_BREWING);
+        use(tb.selfTestBlock("tb_workbench"), "tb_workbench");
+        for (String tool : new String[]{"knife", "tinderbox", "bronze_axe", "minecraft:bucket", "minecraft:bowl", "minecraft:beef"}) {
+            expect(Inv.has(player, tool, 1), "the workbench handed out no " + tool);
+        }
+
+        step = "water";
+        use(tb.selfTestBlock("tb_water_pump"), "tb_water_pump");
+        expect(Inv.count(player, "minecraft:water_bucket") == 5, "the pump filled " + Inv.count(player, "minecraft:water_bucket")
+                + " buckets");
+
+        step = "coloured water";
+        use(tb.selfTestBlock("tb_flowers"), "tb_flowers");
+        expect(Inv.count(player, "tb_red_flowers") == MinigameRules.TroubleBrewing.MAX_FLOWERS, "picked "
+                + Inv.count(player, "tb_red_flowers") + " flowers");
+        use(tb.selfTestBlock("tb_kettle"), "tb_kettle");
+        expect(Inv.count(player, "bowl_of_red_water") == 3, "the kettle filled " + Inv.count(player, "bowl_of_red_water") + " bowls");
+
+        step = "bitternut";
+        double hunter = xp(Skill.HUNTER);
+        use(tb.selfTestBlock("tb_bitternut_tree"), "tb_bitternut_tree");
+        expect(until(10, () -> Inv.has(player, "bitternut", 1)), "the dyed monkey brought no bitternut");
+        expect(xp(Skill.HUNTER) - hunter == 65, "a monkey and a bitternut gave " + (xp(Skill.HUNTER) - hunter) + " Hunter XP, not 15 + 50");
+        use(tb.selfTestBlock("tb_kettle"), "tb_kettle");
+        expect(Inv.count(player, "bowl_of_red_water") == 3, "refilling the monkey's bowl at the kettle failed");
+
+        step = "sweetgrubs";
+        for (int i = 0; i < 12 && !Inv.has(player, "sweetgrubs", 1); i++) {
+            if (!Inv.has(player, "minecraft:beef", 1)) {
+                use(tb.selfTestBlock("tb_workbench"), "tb_workbench");
+            }
+            use(tb.selfTestBlock("tb_sweetgrub_mound"), "tb_sweetgrub_mound");
+            if (!Inv.has(player, "sweetgrubs", 1)) {
+                until(60, () -> false); // a collapsed mound fills again
+            }
+        }
+        expect(Inv.has(player, "sweetgrubs", 1), "12 tries at the mound brought no sweetgrubs");
+
+        step = "scrapey bark";
+        use(tb.selfTestBlock("tb_scrapey_tree"), "tb_scrapey_tree");
+        expect(until(40, () -> Inv.has(player, "scrapey_tree_logs", 1)), "40 ticks chopping the scrapey tree gave no logs");
+        ActionManager.cancel(player);
+        double fletching = xp(Skill.FLETCHING);
+        int logs = Inv.count(player, "scrapey_tree_logs");
+        expect(TroubleBrewingSession.useKnife(player, "knife"), "the knife didn't work on the scrapey logs");
+        expect(Inv.count(player, "scrapey_tree_bark") == logs && xp(Skill.FLETCHING) - fletching == 50.0 * logs,
+                "scraping " + logs + " logs: " + Inv.count(player, "scrapey_tree_bark") + " bark, Fletching +" + (xp(Skill.FLETCHING) - fletching));
+        while (Inv.count(player, "scrapey_tree_bark") > 1) {
+            Inv.remove(player, "scrapey_tree_bark", 1);
+        }
+        notes.add("water, red water, a bitternut, sweetgrubs and bark gathered");
+
+        step = "boilers";
+        double fm = xp(Skill.FIREMAKING);
+        for (int i = 0; i < 3; i++) {
+            use(tb.selfTestBlock("tb_log_store"), "tb_log_store");
+            use(tb.selfTestBoiler(i), "tb_boiler");
+        }
+        expect(tb.selfTestView(player).litBoilers() == 3 && xp(Skill.FIREMAKING) - fm == 300, "three boilers: "
+                + tb.selfTestView(player).litBoilers() + " ready, Firemaking +" + (xp(Skill.FIREMAKING) - fm));
+
+
+        step = "hopper";
+        double cooking = xp(Skill.COOKING);
+        while (Inv.count(player, "sweetgrubs") > 1) {
+            Inv.remove(player, "sweetgrubs", 1);
+        }
+        while (Inv.count(player, "bitternut") > 1) {
+            Inv.remove(player, "bitternut", 1);
+        }
+        use(tb.selfTestBlock("tb_brewing_vat"), "tb_brewing_vat");
+        expect(xp(Skill.COOKING) - cooking == 200 + 100 + 100 + 300, "the hopper gave " + (xp(Skill.COOKING) - cooking)
+                + " Cooking XP, not 700 (bitternut 200, grubs and bark 100, 3 bowls 300; water none)");
+        expect(tb.selfTestView(player).contribution() == 3 + 1 + 1 + 1 + 3 + 5, "contribution " + tb.selfTestView(player).contribution()
+                + " (3 boilers lit + 11 resources)");
+
+        step = "brew";
+        expect(until(5, () -> tb.selfTestView(player).brewing()), "a full hopper with three lit boilers didn't start a bottle");
+        expect(until(MinigameRules.TroubleBrewing.BREW_TICKS + 3, () -> tb.selfTestView(player).bottleWaiting()),
+                "the bottle didn't come off the line in 38 seconds");
+        use(tb.selfTestBlock("tb_crate"), "tb_crate");
+        expect(tb.selfTestView(player).teamBottles() == 1 && !tb.selfTestView(player).bottleWaiting(), "packing the bottle failed");
+        notes.add("a bottle brewed in " + MinigameRules.TroubleBrewing.BREW_TICKS + " ticks and packed");
+
+        step = "end";
+        int contribution = tb.selfTestView(player).contribution();
+        double craft = xp(Skill.CRAFTING);
+        cooking = xp(Skill.COOKING);
+        fm = xp(Skill.FIREMAKING);
+        int eight = Inv.count(player, "pieces_of_eight");
+        tb.selfTestNearEnd();
+        expect(until(10, tb::isEnded), "the game didn't end at 20 minutes");
+        int got = Inv.count(player, "pieces_of_eight") - eight;
+        expect(got == MinigameRules.TroubleBrewing.piecesOfEight(1, contribution), "pieces of eight " + got + ", not "
+                + MinigameRules.TroubleBrewing.piecesOfEight(1, contribution));
+        // Four rum credits: the bitternut, the grubs, the bark and three bowls of red water.
+        expect(xp(Skill.CRAFTING) - craft == 400 && xp(Skill.COOKING) - cooking == 1000 && xp(Skill.FIREMAKING) - fm == 600,
+                "rum rewards: Crafting +" + (xp(Skill.CRAFTING) - craft) + ", Cooking +" + (xp(Skill.COOKING) - cooking) + ", Firemaking +"
+                        + (xp(Skill.FIREMAKING) - fm));
+        expect(!Inv.has(player, "minecraft:bucket", 1) && !Inv.has(player, "logs", 1), "brewery supplies left the game");
+        notes.add(got + " pieces of eight and 4 rum rewards");
+
+        step = "shop";
+        Inv.give(player, "pieces_of_eight", 3000);
+        int before = Inv.count(player, "pieces_of_eight");
+        RewardShopService.buy(player, "trouble_brewing", entry("trouble_brewing", "cutthroat_flag"), 1);
+        RewardShopService.buy(player, "trouble_brewing", entry("trouble_brewing", "rum_red"), 1);
+        expect(Inv.has(player, "cutthroat_flag", 1) && Inv.has(player, "rum_red", 1) && before - Inv.count(player, "pieces_of_eight") == 2020,
+                "Honest Jimmy: flag " + Inv.has(player, "cutthroat_flag", 1) + ", rum " + Inv.has(player, "rum_red", 1) + ", paid "
+                        + (before - Inv.count(player, "pieces_of_eight")));
+        notes.add("bought the cutthroat flag (2,000) and red rum (20)");
     }
 
     /** Heats or cools the preform into [lo, hi], restarting the lava or waterfall near the goal to keep the steps small. */
