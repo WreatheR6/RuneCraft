@@ -5,6 +5,7 @@ import com.runecraft.osrs.FreezeLock;
 import com.runecraft.platform.ServerTickEvents;
 import com.runecraft.world.Gielinor;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.resources.ResourceKey;
@@ -12,6 +13,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
@@ -27,9 +29,14 @@ import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
  *   so its immunity starts then too, as in OSRS; before, only a freeze that ran out did. A freeze refreshed while it is still on
  *   is left to vanilla's merge, so the scripts that renew a bind every tick keep working.</li>
  *   <li>Enforcement (round 42): Minecraft moves a player on their own client, so the server holds a frozen player at the spot
- *   the freeze caught them and puts them back when they walk or hop off it ({@link FreezeLock#step}); a teleport while frozen
- *   (allowed in OSRS) moves the held spot with them. // playability: OSRS can't move a frozen player at all; momentum from
- *   before the freeze may drift {@link FreezeLock#SLACK_BLOCKS} blocks.</li>
+ *   the freeze caught them and puts them back when they walk, hop or step off it, however far ({@link FreezeLock#step}), at
+ *   their own height when they fit there, else the held spot's ({@link FreezeLock#returnY}: never inside the ledge they
+ *   slid off). Only a move the server makes moves the held spot: every server teleport (vanilla's
+ *   {@code ServerGamePacketListenerImpl.teleport}, which every {@code teleportTo}, command, pearl and RuneCraft teleport goes
+ *   through, reported by {@code mixin.ServerGamePacketListenerImplMixin}; OSRS allows teleporting while frozen) and a boss's
+ *   pull ({@link #moved}). Vanilla's own snap-backs of a bad client move (moved too quickly / wrongly) don't count, so a
+ *   client that ignores the freeze can't step out of it. // playability: OSRS can't move a frozen player at all; momentum
+ *   from before the freeze may drift {@link FreezeLock#SLACK_BLOCKS} blocks.</li>
  * </ul>
  * Run-energy Slowness II is never a freeze.
  */
@@ -41,11 +48,15 @@ public final class FreezeRules {
 
     /** Minecraft tick each player's last freeze ended (ran out or was broken). */
     private static final Map<UUID, Long> ENDED = new ConcurrentHashMap<>();
-    /** Where each frozen player is held, and where they stood last tick. */
+    /** Where each frozen player is held. */
     private static final Map<UUID, Hold> HOLDS = new ConcurrentHashMap<>();
+    /** Held players the server teleported since their last {@link #enforce}: held at the new spot. */
+    private static final Set<UUID> TELEPORTED = ConcurrentHashMap.newKeySet();
+    /** True while the server thread handles a client's move packet (its snap-backs aren't the server moving the player). */
+    private static boolean clientMove;
     private static boolean registered;
 
-    private record Hold(ResourceKey<Level> level, Vec3 anchor, Vec3 last) {
+    private record Hold(ResourceKey<Level> level, Vec3 anchor) {
     }
 
     private FreezeRules() {
@@ -94,6 +105,8 @@ public final class FreezeRules {
                 ENDED.remove(p.getUUID());
             }
         });
+        // a move packet that threw on the server thread mustn't leave every later teleport looking like a snap-back
+        ServerTickEvents.START_SERVER_TICK.register(server -> clientMove = false);
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (ServerPlayer p : server.getPlayerList().getPlayers()) {
                 enforce(p);
@@ -103,34 +116,42 @@ public final class FreezeRules {
 
     private static void ended(ServerPlayer p) {
         ENDED.put(p.getUUID(), ActionManager.mcTick());
-        HOLDS.remove(p.getUUID());
+        release(p.getUUID());
+    }
+
+    private static void release(UUID id) {
+        HOLDS.remove(id);
+        TELEPORTED.remove(id);
     }
 
     /**
      * One Minecraft tick of the server's hold on a frozen player (every listed player at the end of each server tick; the
-     * self-tests call it for their fake player): puts them back on the held spot when they walked or hopped off it. Returns
-     * whether they were put back.
+     * self-tests call it for their fake player): puts them back on the held spot when they walked, hopped or stepped off it,
+     * and moves the spot with a server teleport. Returns whether they were put back.
      */
     public static boolean enforce(ServerPlayer p) {
         UUID id = p.getUUID();
         if (!frozen(p) || p.isSpectator() || p.isCreative() || p.isPassenger() || !p.isAlive()) {
-            HOLDS.remove(id);
+            release(id);
             return false;
         }
         Vec3 pos = p.position();
         Hold h = HOLDS.get(id);
         boolean same = h != null && h.level() == p.level().dimension();
-        FreezeLock.Step step = FreezeLock.step(same, same ? h.anchor().x : 0, same ? h.anchor().z : 0, same ? h.last().x : 0,
-                same ? h.last().z : 0, pos.x, pos.z);
+        FreezeLock.Step step = FreezeLock.step(same, TELEPORTED.remove(id), same ? h.anchor().x : 0, same ? h.anchor().z : 0,
+                pos.x, pos.z);
         switch (step) {
-            case ANCHOR -> HOLDS.put(id, new Hold(p.level().dimension(), pos, pos));
-            case STAY -> HOLDS.put(id, new Hold(h.level(), h.anchor(), pos));
+            case ANCHOR -> HOLDS.put(id, new Hold(p.level().dimension(), pos));
+            case STAY -> {
+            }
             case RETURN -> {
-                Vec3 back = new Vec3(h.anchor().x, pos.y, h.anchor().z);
-                p.teleportTo(back.x, back.y, back.z);
+                Vec3 anchor = h.anchor();
+                AABB over = p.getBoundingBox().move(anchor.x - pos.x, 0, anchor.z - pos.z);
+                double y = FreezeLock.returnY(anchor.y, pos.y, p.level().noCollision(p, over));
+                p.teleportTo(anchor.x, y, anchor.z);
+                TELEPORTED.remove(id); // the server's own put-back, not a teleport that moves the held spot
                 p.setDeltaMovement(0, Math.min(0, p.getDeltaMovement().y), 0);
                 p.hurtMarked = true;
-                HOLDS.put(id, new Hold(h.level(), h.anchor(), back));
                 return true;
             }
         }
@@ -140,13 +161,36 @@ public final class FreezeRules {
     /** The server moved a frozen player on purpose (a boss's pull): the freeze holds them at the new spot. */
     public static void moved(ServerPlayer p) {
         if (frozen(p)) {
-            HOLDS.put(p.getUUID(), new Hold(p.level().dimension(), p.position(), p.position()));
+            HOLDS.put(p.getUUID(), new Hold(p.level().dimension(), p.position()));
+            TELEPORTED.remove(p.getUUID());
         }
+    }
+
+    /**
+     * {@code mixin.ServerGamePacketListenerImplMixin}: the server is about to teleport {@code p} (any {@code teleportTo},
+     * command, pearl or RuneCraft teleport). Unless it is vanilla snapping back a bad client move, a held player's spot moves
+     * with them at their next {@link #enforce}.
+     */
+    public static void teleporting(ServerPlayer p) {
+        if (p != null && !clientMove && onServerThread(p) && HOLDS.containsKey(p.getUUID())) {
+            TELEPORTED.add(p.getUUID());
+        }
+    }
+
+    /** {@code mixin.ServerGamePacketListenerImplMixin}: the server thread starts ({@code true}) or ends a client's move packet. */
+    public static void clientMove(ServerPlayer p, boolean handling) {
+        if (p != null && onServerThread(p)) {
+            clientMove = handling;
+        }
+    }
+
+    private static boolean onServerThread(ServerPlayer p) {
+        return p.getServer() != null && p.getServer().isSameThread();
     }
 
     /** Self-test hook: forgets the player's last freeze and held spot. */
     public static void forget(ServerPlayer player) {
         ENDED.remove(player.getUUID());
-        HOLDS.remove(player.getUUID());
+        release(player.getUUID());
     }
 }

@@ -771,26 +771,53 @@ final class PrayerFeedbackChecks {
     }
 
     /**
-     * A freeze broken early (a cure) starts the 5-tick immunity too, and the server holds a frozen player: walked 0.8 blocks
-     * they are put back, teleported 3 blocks (OSRS allows teleporting while frozen) they are held at the new spot.
+     * A freeze broken early (a cure) starts the 5-tick immunity too, and the server holds a frozen player: their own moves
+     * (simulated with {@code setPos}, which no teleport reports) are put back however far, 0.8 or 3 blocks, at the held
+     * height after a drop (never inside the floor under the held spot) and at their own after a freeze caught them mid-jump;
+     * a server teleport of 3 blocks (OSRS allows teleporting while frozen; reported by the teleport mixin) holds them at the
+     * new spot.
      */
     private String brokenFreezeImmunity() {
         FreezeRules.forget(p());
+        c.home();
         p().addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 200, 10, false, true));
         if (!FreezeRules.frozen(p())) {
             throw new SelfTest.Skip("the freeze didn't take (outside Gielinor?)");
         }
         FreezeRules.enforce(p()); // held here
         net.minecraft.world.phys.Vec3 at = p().position();
-        p().teleportTo(at.x + 0.8, at.y, at.z);
+        p().setPos(at.x + 0.8, at.y, at.z);
         if (!FreezeRules.enforce(p()) || Math.abs(p().getX() - at.x) > 0.01 || Math.abs(p().getZ() - at.z) > 0.01) {
             throw failure("a frozen player who walked 0.8 blocks stayed at " + p().position() + " (held at " + at + ")");
         }
+        // a client that ignores the freeze steps 3 blocks in one tick: no teleport, so it is put back too
+        p().setPos(at.x + 3, at.y, at.z);
+        if (!FreezeRules.enforce(p()) || Math.abs(p().getX() - at.x) > 0.01) {
+            throw failure("a frozen player who stepped 3 blocks on their own (no server teleport) was left at " + p().position()
+                    + " (held at " + at + ")");
+        }
+        // slid 0.6 blocks off the held spot and dropped a block: over the held spot at that height is the floor itself
+        p().setPos(at.x + 0.6, at.y - 1, at.z);
+        if (!FreezeRules.enforce(p()) || Math.abs(p().getY() - at.y) > 0.01 || Math.abs(p().getX() - at.x) > 0.01) {
+            throw failure("a frozen player who dropped a block off the held spot was put back at " + p().position()
+                    + " (held at " + at + "; their own height is inside the floor)");
+        }
+        // caught mid-jump, then landed and walked off: put back on the floor, not lifted into the air
+        FreezeRules.forget(p());
+        p().setPos(at.x, at.y + 1, at.z);
+        FreezeRules.enforce(p()); // held in the air
+        p().setPos(at.x + 0.8, at.y, at.z);
+        if (!FreezeRules.enforce(p()) || Math.abs(p().getY() - at.y) > 0.01 || Math.abs(p().getX() - at.x) > 0.01) {
+            throw failure("a frozen player caught mid-jump who landed and walked off was put back at " + p().position()
+                    + " (expected the floor under the held spot, " + at + ")");
+        }
+        // a server teleport while frozen (OSRS allows it): held at the new spot
         p().teleportTo(at.x + 3, at.y, at.z);
         if (FreezeRules.enforce(p()) || Math.abs(p().getX() - (at.x + 3)) > 0.01) {
-            throw failure("a frozen player teleported 3 blocks was put back to " + p().position());
+            throw failure("a frozen player teleported 3 blocks was put back to " + p().position()
+                    + " (the teleport mixin didn't report the server's move?)");
         }
-        p().teleportTo(at.x + 3.6, at.y, at.z);
+        p().setPos(at.x + 3.6, at.y, at.z);
         if (!FreezeRules.enforce(p()) || Math.abs(p().getX() - (at.x + 3)) > 0.01) {
             throw failure("after the teleport the freeze didn't hold the player at the new spot (" + p().position() + ")");
         }
@@ -808,7 +835,7 @@ final class PrayerFeedbackChecks {
         }
         p().removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
         FreezeRules.forget(p());
-        return "held against a 0.8-block walk, moved by a 3-block teleport; immune for " + FreezeRules.IMMUNITY_MC
-                + " MC after a freeze broken early";
+        return "held against a 0.8- and a 3-block step and a drop off the spot (back at the held height), moved by a 3-block "
+                + "teleport; immune for " + FreezeRules.IMMUNITY_MC + " MC after a freeze broken early";
     }
 }
