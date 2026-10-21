@@ -9,6 +9,7 @@ import com.runecraft.osrs.Prayer;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.bosses.BossMechanics;
+import com.runecraft.osrs.content.bosses.BossRealtime;
 import com.runecraft.osrs.content.bosses.Dt2Bosses;
 import com.runecraft.osrs.content.bosses.WhispererRules;
 import com.runecraft.osrs.content.systems.CombatAchievements;
@@ -47,6 +48,9 @@ import org.joml.Vector3f;
  * <ul>
  *   <li>Volleys of three projectiles a tick apart (five awakened), soul bolts (magic, 36) and tentacle lashes (ranged, 40),
  *   all one style before her first special, then two and one, after the third alternating; protection prayers block them.
+ *   A projectile of the other style leaves two ticks after the one before it, and the rest after the volley is shortened by
+ *   as much, so each projectile can be prayed and the cycle keeps its OSRS length ({@link BossRealtime#volleyGapTicks};
+ *   // playability: OSRS one tick apart, a one-tick prayer flick).
  *   After each volley her tentacles converge on the player's tile: move off it or take 20 (awakened 30) and lose as much
  *   sanity.</li>
  *   <li>Next to her she whacks with her tentacles instead: two hits, the second the same as the first, through prayer (which
@@ -105,6 +109,8 @@ final class WhispererScript extends ScriptedBoss {
     private int specialTick;
     private boolean nextMagic;
     private final List<AttackDef> volley = new ArrayList<>();
+    /** Game ticks the running volley's style switches added (taken back from the rest after it). */
+    private int volleyExtra;
     private boolean enraged;
     private boolean enragePending;
     private int enrageAttacks;
@@ -163,7 +169,34 @@ final class WhispererScript extends ScriptedBoss {
         if (enraged) {
             return 2;
         }
-        return volley.isEmpty() ? super.attackDelay(boss, attack) : 1;
+        if (attack != Dt2Bosses.WHISPER_MAGIC && attack != Dt2Bosses.WHISPER_RANGED) {
+            volleyExtra = 0;
+            return super.attackDelay(boss, attack); // her tentacle whack (it cancelled the volley)
+        }
+        if (!volley.isEmpty()) {
+            // playability: a projectile of the other style leaves 2 ticks after this one (OSRS 1), so the two land 20+ MC apart
+            int gap = BossRealtime.volleyGapTicks(attack == Dt2Bosses.WHISPER_MAGIC, volley.get(0) == Dt2Bosses.WHISPER_MAGIC);
+            volleyExtra += gap - BossRealtime.WHISPERER_VOLLEY_GAP_TICKS;
+            return gap;
+        }
+        // the volley's last projectile: the rest gives back what the switches added, so the cycle keeps its OSRS length
+        int rest = BossRealtime.volleyRestTicks(super.attackDelay(boss, attack), volleyExtra);
+        volleyExtra = 0;
+        return rest;
+    }
+
+    /** Self-test: her next volley, as magic ({@code true}) and ranged projectiles in order. */
+    void selfTestVolley(boolean[] magic) {
+        volley.clear();
+        volleyExtra = 0;
+        for (boolean m : magic) {
+            volley.add(m ? Dt2Bosses.WHISPER_MAGIC : Dt2Bosses.WHISPER_RANGED);
+        }
+    }
+
+    /** Self-test: projectiles left in her running volley. */
+    int selfTestVolleyLeft() {
+        return volley.size();
     }
 
     private int scaled(DataBossEntity boss, AttackDef a) {

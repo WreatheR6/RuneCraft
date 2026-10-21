@@ -4,6 +4,7 @@ import com.runecraft.action.ActionManager;
 import com.runecraft.combat.CombatHandler;
 import com.runecraft.combat.CombatHooks;
 import com.runecraft.osrs.content.bosses.BossMechanics;
+import com.runecraft.osrs.content.bosses.BossRealtime;
 import com.runecraft.platform.ServerPlayConnectionEvents;
 import com.runecraft.platform.ServerPlayerEvents;
 import com.runecraft.platform.ServerTickEvents;
@@ -28,6 +29,8 @@ final class BossDots {
     private static final Map<UUID, BossMechanics.Burn> BURNS = new HashMap<>();
     private static final Map<UUID, BossMechanics.Bleed> BLEEDS = new HashMap<>();
     private static final Map<UUID, Vec3> LAST_POS = new HashMap<>();
+    /** Whether each bleeding player was sprinting at the previous game tick (the sprint rule needs a whole tick of it). */
+    private static final Map<UUID, Boolean> LAST_SPRINT = new HashMap<>();
     /** Who inflicted each player's damage over time (credited while it is alive). */
     private static final Map<UUID, WeakReference<LivingEntity>> SOURCES = new HashMap<>();
     private static long lastGameTick = -1;
@@ -51,6 +54,7 @@ final class BossDots {
         BURNS.remove(id);
         BLEEDS.remove(id);
         LAST_POS.remove(id);
+        LAST_SPRINT.remove(id);
         SOURCES.remove(id);
     }
 
@@ -75,11 +79,19 @@ final class BossDots {
         bleed(null, p, perHit);
     }
 
-    /** Starts (or restarts) a bleed inflicted by {@code source}. */
+    /**
+     * Starts (or restarts) a bleed inflicted by {@code source}. A fresh bleed says so in the middle of the screen, with the
+     * rule that running makes it worse. // playability: OSRS shows only the bleed's hitsplats
+     */
     static void bleed(LivingEntity source, ServerPlayer p, int perHit) {
+        boolean fresh = !bleeding(p);
         BLEEDS.computeIfAbsent(p.getUUID(), u -> new BossMechanics.Bleed()).start(perHit);
         LAST_POS.put(p.getUUID(), p.position());
+        LAST_SPRINT.put(p.getUUID(), p.isSprinting());
         source(source, p);
+        if (fresh) {
+            com.runecraft.util.Msg.telegraph(p, "You're bleeding! Walk - running makes it worse.", net.minecraft.ChatFormatting.RED);
+        }
     }
 
     private static void source(LivingEntity source, ServerPlayer p) {
@@ -181,8 +193,12 @@ final class BossDots {
         BossMechanics.Bleed bleed = BLEEDS.get(id);
         if (bleed != null) {
             Vec3 last = LAST_POS.put(id, p.position());
-            // Running (sprinting, about a tile or more a tick) makes the bleed hit every tick.
-            boolean running = last != null && p.isSprinting() && last.distanceToSqr(p.position()) > 1.0;
+            Boolean wasSprinting = LAST_SPRINT.put(id, p.isSprinting());
+            // Running makes the bleed hit every tick: a whole game tick of sprinting at sprint pace (BossRealtime.bleedRunning).
+            // playability: OSRS counts any tick the player runs; a Minecraft player's walk already covers more ground than an
+            // OSRS run, and a sprint tapped to dodge an axe shouldn't triple the bleed
+            double moved = last == null ? 0 : Math.hypot(p.getX() - last.x, p.getZ() - last.z);
+            boolean running = BossRealtime.bleedRunning(wasSprinting != null && wasSprinting, p.isSprinting(), moved);
             int d = bleed.tick(running);
             if (d > 0 && p.isAlive()) {
                 hit(p, "bleed", d);
@@ -190,6 +206,7 @@ final class BossDots {
             if (!bleed.active()) {
                 BLEEDS.remove(id);
                 LAST_POS.remove(id);
+                LAST_SPRINT.remove(id);
             }
         }
         if (!BURNS.containsKey(id) && !BLEEDS.containsKey(id)) {

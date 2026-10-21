@@ -37,6 +37,8 @@ final class VorkathScript extends ScriptedBoss {
     private boolean acidNext;
     private int acidTicks;
     private final List<Vec3> acid = new ArrayList<>();
+    /** When each player was last burnt by any of the pools: one acid hit a tick between them (they may overlap). */
+    private final java.util.Map<java.util.UUID, Long> acidHits = new java.util.HashMap<>();
     private Mob spawn;
     private ServerPlayer frozen;
     private int normalsSinceSpecial;
@@ -211,6 +213,19 @@ final class VorkathScript extends ScriptedBoss {
         for (int i = 0; i < 27; i++) {
             acid.add(around(boss, homeVec(), 11));
         }
+        acidHits.clear();
+        // The pools are ground hazards of acid (round 42): lime floor blocks under them while the phase lasts, put back when it
+        // ends; up to 10 a tick on a player in one, which Vorkath leeches. // playability: OSRS hits from the tick they land,
+        // here 12 MC after (the hazards' arming), the pools drawn as they land
+        for (Vec3 a : acid) {
+            com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), a, ZulrahVorkath.ACID_MAX, ZulrahVorkath.RAPID_FIRE_SHOTS, boss,
+                    com.runecraft.boss.HazardKind.ACID, "acid_pool", (p, dealt) -> {
+                        walkFailed.add(p.getUUID());
+                        if (boss.isAlive() && dealt > 0) {
+                            boss.heal(mcHp(boss, dealt));
+                        }
+                    }, acidHits);
+        }
         acidTicks = ZulrahVorkath.RAPID_FIRE_SHOTS;
         cooldown = ZulrahVorkath.RAPID_FIRE_SHOTS + 2;
         walkHits.clear();
@@ -274,9 +289,6 @@ final class VorkathScript extends ScriptedBoss {
     protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
         if (acidTicks > 0) {
             acidTicks--;
-            for (Vec3 a : acid) {
-                BossFx.world(boss).sendParticles(ParticleTypes.SNEEZE, a.x, a.y + 0.1, a.z, 2, 0.4, 0.02, 0.4, 0);
-            }
             if (target != null) {
                 strike(boss, target.position(), 2, 0, 0.9, ParticleTypes.SMALL_FLAME, (hit, pos) -> {
                     for (ServerPlayer h : hit) {
@@ -286,19 +298,9 @@ final class VorkathScript extends ScriptedBoss {
                                 + h.getRandom().nextInt(ZulrahVorkath.VORKATH_RAPID_FIRE.maxHit() - ZulrahVorkath.RAPID_FIRE_MIN + 1));
                     }
                 });
-                for (Vec3 a : acid) {
-                    if (target.position().distanceToSqr(a) < 1.0) {
-                        int dmg = 1 + boss.getRandom().nextInt(ZulrahVorkath.ACID_MAX);
-                        walkFailed.add(target.getUUID());
-                        com.runecraft.combat.CombatHooks.nameAttack("acid_pool", null);
-                        CombatHandler.applyDamage(boss, target, dmg);
-                        boss.heal(mcHp(boss, dmg));
-                        break;
-                    }
-                }
             }
             if (acidTicks == 0) {
-                acid.clear();
+                acid.clear(); // its pools (hazards) run out with the phase
                 for (java.util.Map.Entry<java.util.UUID, Integer> e : walkHits.entrySet()) {
                     if (e.getValue() >= ZulrahVorkath.THE_WALK_HITS && !walkFailed.contains(e.getKey())
                             && BossFx.world(boss).getPlayerByUUID(e.getKey()) instanceof ServerPlayer p) {
@@ -338,6 +340,7 @@ final class VorkathScript extends ScriptedBoss {
     /** Killed or reset: his zombified spawn goes and a player he froze can move again. */
     @Override
     public void onRemoved(DataBossEntity boss) {
+        com.runecraft.boss.Mechanics.clearHazards(boss); // its acid pools and their floor blocks go with it
         if (spawn != null) {
             SPAWNS.remove(spawn);
             spawn.discard();

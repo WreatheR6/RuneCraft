@@ -126,6 +126,22 @@ final class ClassicBossWalks {
     }
 
     /**
+     * One game tick in real time: eleven Minecraft ticks of the boss's per-tick script and the world's boss mechanics (hazards,
+     * pending hits), then {@link #tick}'s game tick, twelve Minecraft ticks in all.
+     */
+    private static long realTick(DataBossEntity boss, ServerPlayer p, long now) {
+        for (int m = 0; m < ActionManager.MC_TICKS_PER_GAME_TICK - 1; m++) {
+            ActionManager.advanceForSelfTest();
+            if (boss.isAlive() && !boss.isRemoved()) {
+                boss.script().tick(boss);
+            }
+            Mechanics.tickForSelfTest();
+            p.setHealth(p.getMaxHealth());
+        }
+        return tick(boss, p, now);
+    }
+
+    /**
      * Lets the monster hits already on their way to the player land (a projectile's flight, a wind-up, a telegraph: round 41's
      * real-time delivery), moving only the clock and the pending hits on, not the boss's script.
      */
@@ -280,15 +296,33 @@ final class ClassicBossWalks {
             expect(half == 20, "Vorkath took " + half + " of a 40 during the acid phase (expected half)");
             int[] fire0 = taken("rapid_fire");
             int acidTicks = 0;
-            for (int i = 0; i < ZulrahVorkath.RAPID_FIRE_SHOTS + 2 && v.acidPhase(); i++) {
-                now = tick(boss, p, now);
-                acidTicks++;
+            // Round 42: the pools are ground hazards (Mechanics), lime floor blocks while they last, ticked in real time here:
+            // twelve Minecraft ticks to each of Vorkath's game ticks. The fake player isn't in the world's player list, which is
+            // all a hazard sees, so the walk lends it to the hazards for the phase.
+            java.util.function.Function<net.minecraft.server.level.ServerLevel, List<ServerPlayer>> extraBefore = Mechanics.extraPlayers;
+            Mechanics.extraPlayers = w -> w == p.level() ? List.of(p) : List.of();
+            int marked = com.runecraft.boss.FloorMarkers.live();
+            try {
+                for (int i = 0; i < ZulrahVorkath.RAPID_FIRE_SHOTS + 2 && v.acidPhase(); i++) {
+                    now = realTick(boss, p, now);
+                    acidTicks++;
+                }
+            } finally {
+                Mechanics.extraPlayers = extraBefore;
             }
             expect(!v.acidPhase(), "the acid phase never ended");
             int[] acid = taken("acid_pool");
             expect(acid[1] > 0 && acid[0] > 0, "standing still in the acid phase hurt nothing (the pool under the player)");
-            // OSRS Wiki (Vorkath/Strategies): standing on acid deals up to 10 a tick, which Vorkath leeches as health.
-            expect(acid[1] == acidTicks, "the pool under the player hit " + acid[1] + " of the acid phase's " + acidTicks + " ticks");
+            // OSRS Wiki (Vorkath/Strategies): standing on acid deals up to 10 a tick, which Vorkath leeches as health. The pool
+            // arms 12 MC after it lands (round 41's hazards), then hits once a game tick.
+            expect(acid[1] >= acidTicks - 1 && acid[1] <= acidTicks, "the pool under the player hit " + acid[1] + " of the acid phase's "
+                    + acidTicks + " ticks");
+            for (int i = 0; i < 12 && Mechanics.hazardsOf(boss) > 0; i++) {
+                now = realTick(boss, p, now);
+            }
+            expect(Mechanics.hazardsOf(boss) == 0, "acid pools outlived the acid phase");
+            expect(com.runecraft.boss.FloorMarkers.live() <= marked, "the acid's lime floor blocks weren't put back ("
+                    + com.runecraft.boss.FloorMarkers.live() + " marked, " + marked + " before)");
             expect(acid[2] <= ZulrahVorkath.ACID_MAX && acid[0] >= acid[1], "an acid hit outside 1-" + ZulrahVorkath.ACID_MAX
                     + " (" + acid[0] + " in " + acid[1] + " hits, biggest " + acid[2] + ")");
             float leeched = boss.getHealth() - bossHp;

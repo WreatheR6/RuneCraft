@@ -555,15 +555,26 @@ public final class BossWalks {
         }
     }
 
+    /**
+     * Switches a prayer on as a player does, through the prayer key's own path ({@code PrayerService.set}: the level, points and
+     * conflict rules, an overhead replacing the other overheads, the switch grace stamped). Round 42: the walks no longer set
+     * active prayers directly.
+     */
     static void pray(ServerPlayer p, com.runecraft.osrs.Prayer pr) {
         com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
         if (data.prayerPoints() <= 0) {
             data.setPrayerPoints(99); // the walk tests mechanics, not prayer upkeep
         }
         if (!data.isActive(pr)) {
-            data.activePrayers().removeIf(x -> x == com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC
-                    || x == com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES || x == com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE);
-            data.activePrayers().add(pr);
+            com.runecraft.combat.PrayerService.set(p, pr, true);
+        }
+    }
+
+    /** {@link #pray} that throws when the prayer didn't come on (refused, or switched straight off by a lock). */
+    static void prayOrFail(ServerPlayer p, com.runecraft.osrs.Prayer pr) {
+        pray(p, pr);
+        if (!com.runecraft.player.Players.data(p).isActive(pr)) {
+            throw fail("the prayer key refused " + pr + " (" + com.runecraft.combat.PrayerService.lastRefusal + ")");
         }
     }
 

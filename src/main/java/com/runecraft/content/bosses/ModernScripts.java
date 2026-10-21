@@ -1350,7 +1350,8 @@ final class ModernScripts {
             Vec3 at = target.position();
             Vec3 side = boss.getRandom().nextBoolean() ? new Vec3(TILE, 0, 0) : new Vec3(0, 0, TILE);
             for (int k = -1; k <= 1; k++) {
-                Mechanics.addHazard(w, at.add(side.scale(k)), 3, 40, boss); // approx: until stepped on or covered
+                // bile: a green floor block while it lasts (approx: until stepped on or covered)
+                Mechanics.addHazard(w, at.add(side.scale(k)), 3, 40, boss, com.runecraft.boss.HazardKind.POISON);
             }
             if (attack == ModernBosses.MAGGOT_RANGED) {
                 PoisonService.poison(target, 8, now);

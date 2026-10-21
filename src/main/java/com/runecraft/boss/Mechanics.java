@@ -166,9 +166,17 @@ public final class Mechanics {
         final LivingEntity owner;
         final long placedMc;
         final long armAtMc;
-        final Map<UUID, Long> lastHit = new HashMap<>();
+        /** When it last hit each player: its own, or shared by a group of hazards that hit a player once between them. */
+        final Map<UUID, Long> lastHit;
+        /** Its look (null: the plain lime ring) and the floor block marking it while it lasts (null: none). */
+        final HazardKind kind;
+        final FloorMarkers.Mark mark;
+        /** The name its hits are reported under ("hazard" by default). */
+        final String name;
+        final HazardHit onHit;
 
-        Hazard(ServerLevel world, Vec3 pos, int damage, long untilGameTick, LivingEntity owner, long placedMc) {
+        Hazard(ServerLevel world, Vec3 pos, int damage, long untilGameTick, LivingEntity owner, long placedMc, HazardKind kind,
+               String name, HazardHit onHit, Map<UUID, Long> sharedLastHit) {
             this.world = world;
             this.pos = pos;
             this.damage = Math.max(1, damage);
@@ -176,7 +184,18 @@ public final class Mechanics {
             this.owner = owner;
             this.placedMc = placedMc;
             this.armAtMc = placedMc + ThreatTiming.HAZARD_ARM_MC;
+            this.kind = kind;
+            this.name = name == null ? "hazard" : name;
+            this.onHit = onHit;
+            this.lastHit = sharedLastHit != null ? sharedLastHit : new HashMap<>();
+            this.mark = kind == null ? null : FloorMarkers.place(world, pos, kind);
         }
+    }
+
+    /** Sees a hazard's hit on a player after it went on ({@code dealt}: what reached the player). */
+    @FunctionalInterface
+    public interface HazardHit {
+        void hit(ServerPlayer player, int dealt);
     }
 
     /**
@@ -215,6 +234,7 @@ public final class Mechanics {
     public static void register() {
         ServerTickEvents.END_SERVER_TICK.register(server -> tick());
         OsrsKnockback.register();
+        FloorMarkers.register(); // hazards' floor blocks: put back on stop, after a crash and when a chunk loads
     }
 
     /**
@@ -924,12 +944,60 @@ public final class Mechanics {
 
     /** Places a damaging ground hazard (e.g. acid pool, lava splat) for a number of game ticks; it arms 12 MC later. */
     public static void addHazard(ServerLevel world, Vec3 pos, int damage, int gameTicks, LivingEntity owner) {
-        HAZARDS.add(new Hazard(world, pos, damage, ActionManager.gameTick() + gameTicks, owner, ActionManager.mcTick()));
+        addHazard(world, pos, damage, gameTicks, owner, null, null, null, null);
+    }
+
+    /**
+     * A ground hazard of a kind (round 42): its ring in the kind's colour (acid lime, fire orange, poison green, gas grey) and
+     * the floor block under it swapped for the kind's coloured block while it lasts ({@link FloorMarkers}; put back when it
+     * expires or is cleared). Damage, arming and hit rate are the plain hazard's. // playability: OSRS tints the tile
+     */
+    public static void addHazard(ServerLevel world, Vec3 pos, int damage, int gameTicks, LivingEntity owner, HazardKind kind) {
+        addHazard(world, pos, damage, gameTicks, owner, kind, null, null, null);
+    }
+
+    /**
+     * {@link #addHazard(ServerLevel, Vec3, int, int, LivingEntity, HazardKind)} with its hits reported under {@code name} (null:
+     * "hazard"), {@code onHit} told of each hit (null: nothing), and {@code sharedLastHit} (null: its own) shared by hazards that
+     * hit a player at most once per 12 MC between them (pools that overlap, OSRS: one hit a tick).
+     */
+    public static void addHazard(ServerLevel world, Vec3 pos, int damage, int gameTicks, LivingEntity owner, HazardKind kind,
+                                 String name, HazardHit onHit, Map<UUID, Long> sharedLastHit) {
+        HAZARDS.add(new Hazard(world, pos, damage, ActionManager.gameTick() + gameTicks, owner, ActionManager.mcTick(), kind, name, onHit,
+                sharedLastHit));
     }
 
     /** Removes every ground hazard inside a box (raid rooms and instances being cleared). */
     public static void clearHazards(ServerLevel world, AABB box) {
-        HAZARDS.removeIf(h -> h.world == world && box.contains(h.pos));
+        HAZARDS.removeIf(h -> {
+            if (h.world == world && box.contains(h.pos)) {
+                FloorMarkers.release(h.mark);
+                return true;
+            }
+            return false;
+        });
+    }
+
+    /** Removes every ground hazard a monster placed (its fight ended: it died, reset or left). */
+    public static void clearHazards(LivingEntity owner) {
+        HAZARDS.removeIf(h -> {
+            if (owner != null && h.owner == owner) {
+                FloorMarkers.release(h.mark);
+                return true;
+            }
+            return false;
+        });
+    }
+
+    /** Self-test: ground hazards placed by a monster now. */
+    public static int hazardsOf(LivingEntity owner) {
+        int n = 0;
+        for (Hazard h : HAZARDS) {
+            if (h.owner == owner) {
+                n++;
+            }
+        }
+        return n;
     }
 
     /**
@@ -948,12 +1016,14 @@ public final class Mechanics {
             Hazard h = it.next();
             if (gameTick > h.untilGameTick) {
                 it.remove();
+                FloorMarkers.release(h.mark); // its floor block goes back
                 continue;
             }
             if (ThreatTiming.redraw(h.placedMc, nowMc)) {
                 boolean arming = nowMc < h.armAtMc;
-                int rgb = arming && ((nowMc - h.placedMc) / ThreatTiming.REDRAW_MC) % 2 == 1 ? 0xFFFFFF : ThreatCues.HAZARD_RGB;
-                ThreatCues.hazardRing(h.world, h.pos, rgb, ParticleTypes.SNEEZE, !arming);
+                int base = h.kind != null ? h.kind.rgb : ThreatCues.HAZARD_RGB;
+                int rgb = arming && ((nowMc - h.placedMc) / ThreatTiming.REDRAW_MC) % 2 == 1 ? 0xFFFFFF : base;
+                ThreatCues.hazardRing(h.world, h.pos, rgb, h.kind != null ? h.kind.fill : ParticleTypes.SNEEZE, !arming);
             }
             if (nowMc < h.armAtMc) {
                 continue;
@@ -968,8 +1038,12 @@ public final class Mechanics {
                 }
                 h.lastHit.put(p.getUUID(), nowMc);
                 hits.add(() -> {
-                    com.runecraft.combat.CombatHooks.nameAttack("hazard", null);
-                    CombatHandler.applyDamage(h.owner != null && h.owner.isAlive() ? h.owner : null, p, 1 + p.getRandom().nextInt(h.damage));
+                    com.runecraft.combat.CombatHooks.nameAttack(h.name, null);
+                    int dealt = CombatHandler.applyDamage(h.owner != null && h.owner.isAlive() ? h.owner : null, p,
+                            1 + p.getRandom().nextInt(h.damage));
+                    if (h.onHit != null) {
+                        h.onHit.hit(p, dealt);
+                    }
                 });
             }
         }

@@ -156,26 +156,38 @@ final class QuestBossScripts {
         private int special;
         private String last;
 
+        /**
+         * Her next attack. The attack goal asks for one every Minecraft tick (to know whether to chase), so nothing is counted
+         * here: the attack she actually makes is counted in {@link #beforeAttack}. (Counting here made a special out of every
+         * fourth goal tick instead of every fourth attack.)
+         */
         @Override
         public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (boss.def() == null) {
                 return null;
             }
-            attacks++;
-            String name;
-            if (attacks % 4 == 0) {
-                name = SPECIALS[special];
-                special = (special + 1) % SPECIALS.length;
-            } else {
-                name = distance <= 2.5 ? "swipe" : "crystal_volley";
-            }
-            last = name;
+            String name = QuestBossRules.fragmentSpecialNext(attacks) ? SPECIALS[special]
+                    : distance <= 2.5 ? "swipe" : "crystal_volley";
             for (AttackDef a : boss.def().attacks) {
                 if (a.name().equals(name)) {
                     return a;
                 }
             }
             return null;
+        }
+
+        /** The attack she really makes: counted, and a special moves her on to the next one in order. */
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (attack == null) {
+                return null;
+            }
+            attacks++;
+            if (attack.name().equals(SPECIALS[special])) {
+                special = (special + 1) % SPECIALS.length;
+            }
+            last = attack.name();
+            return attack;
         }
 
         @Override
@@ -1118,11 +1130,30 @@ final class QuestBossScripts {
         @Override
         public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
             if (breathing) {
-                com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(player);
-                data.setPrayerPoints(data.prayerPoints() - data.prayerPoints() * QuestBossRules.ELVARG_PRAYER_DRAIN_PERCENT / 100);
+                drain(player);
                 breathing = false;
             }
             return damage;
+        }
+
+        /**
+         * The hit's own attack: hits land in real time (round 41: the breath flies before it lands), so she may already have
+         * started her next attack, and {@link #breathing} would describe that one.
+         */
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type, AttackDef attack) {
+            if (attack == null) {
+                return onHitPlayer(boss, player, damage, type);
+            }
+            if (attack.special() == AttackDef.Special.DRAGONFIRE) {
+                drain(player);
+            }
+            return damage;
+        }
+
+        private static void drain(ServerPlayer player) {
+            com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(player);
+            data.setPrayerPoints(data.prayerPoints() - data.prayerPoints() * QuestBossRules.ELVARG_PRAYER_DRAIN_PERCENT / 100);
         }
     }
 
@@ -1160,7 +1191,8 @@ final class QuestBossScripts {
 
         @Override
         public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            boolean meleePrayer = com.runecraft.player.Players.data(target).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE);
+            boolean meleePrayer = com.runecraft.combat.CombatHandler.isProtected(com.runecraft.player.Players.data(target),
+                    AttackType.CRUSH); // the shared protection chokepoint (switch grace)
             String want = meleePrayer || distance > 3 ? "bat_swarm" : "vampyric_slash";
             if (boss.def() != null) {
                 for (AttackDef a : boss.def().attacks) {

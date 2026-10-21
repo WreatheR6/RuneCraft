@@ -268,7 +268,7 @@ final class ClassicScripts {
                     double dz = p.getZ() - at.z;
                     int max = maxHit(boss, dx * dx + dz * dz <= 1.0 ? direct : adjacent);
                     int dmg = p.getRandom().nextInt(max + 1);
-                    if (com.runecraft.player.Players.data(p).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)) {
+                    if (BossFx.protects(p, com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)) { // the shared chokepoint (switch grace)
                         dmg = ClassicBosses.corpMagicThroughPrayer(dmg);
                     }
                     CombatHooks.nameAttack("splash_orb", AttackType.MAGIC);
@@ -281,9 +281,28 @@ final class ClassicScripts {
             return (int) Math.round(base * boss.variantHitScale(null));
         }
 
+        /**
+         * A hit lands as the attack that made it: hits land in real time (round 41: projectiles fly, telegraphs wait), so by then
+         * the engine may already be making its next attack ({@link #making}), and a drain read from that would follow the wrong
+         * attack.
+         */
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type, AttackDef attack) {
+            if (attack == null) {
+                return onHitPlayer(boss, player, damage, type);
+            }
+            AttackDef started = making;
+            making = attack;
+            try {
+                return onHitPlayer(boss, player, damage, type);
+            } finally {
+                making = started;
+            }
+        }
+
         @Override
         public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
-            if (type == AttackType.MAGIC && com.runecraft.player.Players.data(player).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)) {
+            if (type == AttackType.MAGIC && BossFx.protects(player, com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)) {
                 damage = ClassicBosses.corpMagicThroughPrayer(damage);
             }
             if (making == ClassicBosses.CORP_DRAIN && damage > 0) {
@@ -656,8 +675,8 @@ final class ClassicScripts {
         /** Protection prayers cut her attacks rather than block them: spores to 2 each, the wave to 3 (OSRS Wiki). */
         @Override
         public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
-            if ((type == AttackType.RANGED || type == AttackType.MAGIC) && com.runecraft.osrs.NpcHitCalc.protectedFrom(
-                    com.runecraft.player.Players.data(player).activePrayers(), type)) {
+            if ((type == AttackType.RANGED || type == AttackType.MAGIC)
+                    && CombatHandler.isProtected(com.runecraft.player.Players.data(player), type)) {
                 AttackDef a = type == AttackType.RANGED ? ClassicBosses.HESPORI_SPORES : ClassicBosses.HESPORI_WAVE;
                 return ClassicBosses.hesporiPrayed(damage, type, maxHit(boss, a));
             }

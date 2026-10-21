@@ -3,6 +3,7 @@ package com.runecraft.content.godwars;
 import com.runecraft.action.ActionManager;
 import com.runecraft.boss.Mechanics;
 import com.runecraft.combat.Aggression;
+import com.runecraft.combat.CombatHandler;
 import com.runecraft.combat.HitCalcBridge;
 import com.runecraft.combat.SkullService;
 import com.runecraft.content.systems.SysState;
@@ -10,7 +11,6 @@ import com.runecraft.entity.OsrsMonsterEntity;
 import com.runecraft.item.ItemCharges;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.EquipmentStats;
-import com.runecraft.osrs.Prayer;
 import com.runecraft.osrs.PvpSkull;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.godwars.RevenantRewards;
@@ -166,9 +166,10 @@ final class RevenantBehaviour {
         }
         boolean reach = melee != null && mob.distanceTo(target) - mob.getBbWidth() / 2 <= melee.range();
         PlayerData data = Players.data(target);
-        AttackType protect = data.isActive(Prayer.PROTECT_FROM_MAGIC) ? AttackType.MAGIC
-                : data.isActive(Prayer.PROTECT_FROM_MISSILES) ? AttackType.RANGED
-                : data.isActive(Prayer.PROTECT_FROM_MELEE) ? AttackType.SLASH : null;
+        // read through the shared protection chokepoint, as its hits are (the prayer scope's switch grace applies)
+        AttackType protect = CombatHandler.isProtected(data, AttackType.MAGIC) ? AttackType.MAGIC
+                : CombatHandler.isProtected(data, AttackType.RANGED) ? AttackType.RANGED
+                : CombatHandler.isProtected(data, AttackType.SLASH) ? AttackType.SLASH : null;
         EquipmentStats gear = HitCalcBridge.gearStats(target);
         AttackType meleeType = melee == null ? AttackType.SLASH : melee.style();
         AttackType style = RevenantRewards.chooseStyle(meleeType, reach, gear.defence(meleeType), gear.defence(AttackType.RANGED),

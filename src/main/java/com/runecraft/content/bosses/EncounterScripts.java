@@ -8,6 +8,7 @@ import com.runecraft.content.systems.CombatAchievementService;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.bosses.BossMechanics;
+import com.runecraft.osrs.content.bosses.BossRealtime;
 import com.runecraft.osrs.content.bosses.Dt2Bosses;
 import com.runecraft.osrs.content.bosses.MinigameBosses;
 import com.runecraft.osrs.content.bosses.VarlamoreBosses;
@@ -173,7 +174,7 @@ final class EncounterScripts {
             // the prayer-disabling orb switches prayers off: that orb is a magic attack like the others (wiki), so Protect from
             // Magic still lowers it.
             boolean prayed = type != null && !type.isMelee()
-                    && com.runecraft.osrs.NpcHitCalc.protectedFrom(com.runecraft.player.Players.data(player).activePrayers(), type);
+                    && CombatHandler.isProtected(com.runecraft.player.Players.data(player), type);
             if (last == MinigameBosses.HUNLLEF_PRAYER_DISABLE || last == MinigameBosses.CORRUPTED_PRAYER_DISABLE) {
                 BossFx.disablePrayers(player, "The Hunllef's magic attack switches off your prayers!");
             }
@@ -426,7 +427,8 @@ final class EncounterScripts {
                 for (int i = 0; i < flares; i++) {
                     Vec3 at = i == 0 ? target.position() : around(boss, target.position(), 3);
                     strike(boss, at, 2 + i, 0, 1.3, ParticleTypes.SNEEZE, (hit, pos) ->
-                            com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, gas, BossMechanics.DUKE_GAS_TICKS, boss));
+                            com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, gas, BossMechanics.DUKE_GAS_TICKS, boss,
+                                    com.runecraft.boss.HazardKind.GAS));
                 }
                 cooldown = 2;
                 return null;
@@ -580,8 +582,12 @@ final class EncounterScripts {
         private boolean lastStrangle;
         /** Strangles so far this fight (each adds a spore, up to six). */
         private int strangles;
-        /** Head gazes in the air: {game tick it lands, 1 for the blue magic gaze / 0 for the green ranged one}. */
-        private final List<long[]> gazes = new ArrayList<>();
+        /** A head gaze in the air: the game tick it lands, its style, and the Minecraft ticks it left and lands on (drawn flying). */
+        private record Gaze(long landTick, boolean magic, long launchMc, long landMc, Vec3 from) {
+        }
+
+        /** Head gazes in the air. */
+        private final List<Gaze> gazes = new ArrayList<>();
         private ServerPlayer gazed;
 
         Vardorvis() {
@@ -662,24 +668,14 @@ final class EncounterScripts {
                 double ang = base + a * Math.PI / 4 * (a % 2 == 0 ? 1 : -1);
                 Vec3 dir = new Vec3(Math.cos(ang), 0, Math.sin(ang));
                 Set<UUID> struck = new HashSet<>();
-                if (awake) {
-                    // The axe hits on appearing at the start of its path (no bleed from this hit).
-                    Vec3 from = p.add(dir.scale(-4 * 1.5));
-                    for (ServerPlayer h : BossFx.players(boss, 24)) {
-                        if (h.position().distanceToSqr(from.x, h.getY(), from.z) <= 1.1 * 1.1) {
-                            int roll = boss.getRandom().nextInt(max + 1);
-                            if (BossFx.protects(h, Prayer.PROTECT_FROM_MELEE)) {
-                                roll /= 2;
-                            }
-                            CombatHooks.nameAttack("swinging_axe", null);
-                            CombatHandler.applyDamage(boss, h, roll);
-                            struck.add(h.getUUID());
-                        }
-                    }
-                    BossFx.world(boss).sendParticles(ParticleTypes.SWEEP_ATTACK, from.x, p.y + 1.0, from.z, 3, 0.4, 0.3, 0.4, 0);
-                }
                 for (int i = -4; i <= 4; i++) {
                     Vec3 at = p.add(dir.scale(i * 1.5));
+                    // Awakened, the axe hits on appearing at the start of its path, without a bleed: that tile's strike, marked
+                    // like the rest. // playability: OSRS hits on the tick the axe appears, with no marker before
+                    boolean appearing = awake && i == -4;
+                    if (appearing) {
+                        BossFx.world(boss).sendParticles(ParticleTypes.SWEEP_ATTACK, at.x, p.y + 1.0, at.z, 3, 0.4, 0.3, 0.4, 0);
+                    }
                     namedStrike("swinging_axe", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, 0, 1.1,
                             ParticleTypes.SWEEP_ATTACK, (hit, pos) -> {
                                 for (ServerPlayer h : hit) {
@@ -692,7 +688,9 @@ final class EncounterScripts {
                                     }
                                     CombatHooks.nameAttack("swinging_axe", null);
                                     CombatHandler.applyDamage(boss, h, roll);
-                                    BossDots.bleed(boss, h, bleed);
+                                    if (!appearing) {
+                                        BossDots.bleed(boss, h, bleed);
+                                    }
                                 }
                             });
                 }
@@ -787,37 +785,75 @@ final class EncounterScripts {
 
         /** Whether the next gaze to land is the blue (magic) one (awakened); else the green (ranged). */
         boolean walkGazeMagic() {
-            long[] next = null;
-            for (long[] g : gazes) {
-                if (next == null || g[0] < next[0]) {
+            Gaze next = null;
+            for (Gaze g : gazes) {
+                if (next == null || g.landTick() < next.landTick()) {
                     next = g;
                 }
             }
-            return next != null && next[1] == 1;
+            return next != null && next.magic();
+        }
+
+        /** Self-test: the Minecraft ticks the gazes in the air land on, and whether each is magic, in landing order. */
+        List<long[]> walkGazeLandings() {
+            List<long[]> out = new ArrayList<>();
+            for (Gaze g : gazes) {
+                out.add(new long[]{g.landMc(), g.magic() ? 1 : 0, g.launchMc()});
+            }
+            out.sort(java.util.Comparator.comparingLong(a -> a[0]));
+            return out;
         }
 
         /**
          * Head gaze (OSRS Wiki "Vardorvis' Head"): a projectile that deals no damage; unblocked it drains 10 Prayer and keeps
          * overhead prayers off for 3 ticks. Post-quest it's the green (ranged) gaze; awakened also the blue (magic) one, in
          * pairs below half health. He holds his melee while it flies and attacks 2 ticks after it lands.
+         * Real time (round 42, // playability): the set's order is named on screen in its colours and each gaze flies visibly in
+         * its colour; a second gaze of the other style lands 2 ticks after the first ({@link BossRealtime#gazeLandTicks}; OSRS
+         * one tick), his melee still waiting the OSRS ticks.
          */
         private void gaze(DataBossEntity boss, ServerPlayer target) {
             boolean[] magic = BossMechanics.vardorvisGazes(boss.awakened(), hpFraction(boss), boss.getRandom().nextBoolean());
-            Msg.red(target, "Vardorvis' head gazes upon you...");
+            int[] land = BossRealtime.gazeLandTicks(magic);
+            long nowMc = com.runecraft.action.ActionManager.mcTick();
+            Vec3 from = boss.position().add(0, boss.getBbHeight() + 0.4, 0);
+            net.minecraft.network.chat.MutableComponent line = net.minecraft.network.chat.Component.literal("Vardorvis' head gazes: ")
+                    .withStyle(net.minecraft.ChatFormatting.GOLD);
             for (int i = 0; i < magic.length; i++) {
-                gazes.add(new long[]{now + BossMechanics.VARDORVIS_HEAD_FLIGHT_TICKS + i, magic[i] ? 1 : 0});
+                gazes.add(new Gaze(now + land[i], magic[i], nowMc, nowMc + (long) land[i] * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK,
+                        from));
+                int rgb = com.runecraft.boss.ThreatCues.rgb(magic[i] ? AttackType.MAGIC : AttackType.RANGED);
+                line.append(net.minecraft.network.chat.Component.literal((i == 0 ? "" : ", then ") + (magic[i] ? "magic" : "ranged"))
+                        .withStyle(st -> st.withColor(rgb)));
             }
+            Msg.telegraph(target, line);
             gazed = target;
             BossFx.burst(boss, magic[0] ? ParticleTypes.WITCH : ParticleTypes.HAPPY_VILLAGER, 12, 1.0);
-            cooldown = Math.max(cooldown, BossMechanics.VARDORVIS_HEAD_FLIGHT_TICKS + magic.length - 1
-                    + BossMechanics.VARDORVIS_HEAD_AFTER_TICKS);
+            cooldown = Math.max(cooldown, BossRealtime.gazeHoldTicks(magic.length));
+        }
+
+        /** Every Minecraft tick: the gazes in the air drawn as they fly (every 2 MC), in their style's colour. */
+        @Override
+        public void tick(DataBossEntity boss) {
+            super.tick(boss);
+            long mc = com.runecraft.action.ActionManager.mcTick();
+            if (gazes.isEmpty() || mc % 2 != 0 || gazed == null || !gazed.isAlive()) {
+                return;
+            }
+            Vec3 to = gazed.position().add(0, gazed.getBbHeight() * 0.6, 0);
+            for (Gaze g : gazes) {
+                double t = Math.max(0, Math.min(1, (mc - g.launchMc()) / (double) Math.max(1, g.landMc() - g.launchMc())));
+                Vec3 at = g.from().add(to.subtract(g.from()).scale(t));
+                com.runecraft.boss.ThreatCues.head(BossFx.world(boss), at,
+                        com.runecraft.boss.ThreatCues.rgb(g.magic() ? AttackType.MAGIC : AttackType.RANGED), null);
+            }
         }
 
         private void tickGazes() {
-            Iterator<long[]> it = gazes.iterator();
+            Iterator<Gaze> it = gazes.iterator();
             while (it.hasNext()) {
-                long[] g = it.next();
-                if (g[0] > now) {
+                Gaze g = it.next();
+                if (g.landTick() > now) {
                     continue;
                 }
                 it.remove();
@@ -825,8 +861,8 @@ final class EncounterScripts {
                 if (p == null || !p.isAlive()) {
                     continue;
                 }
-                Prayer block = g[1] == 1 ? Prayer.PROTECT_FROM_MAGIC : Prayer.PROTECT_FROM_MISSILES;
-                BossFx.world(p).sendParticles(g[1] == 1 ? ParticleTypes.WITCH : ParticleTypes.HAPPY_VILLAGER,
+                Prayer block = g.magic() ? Prayer.PROTECT_FROM_MAGIC : Prayer.PROTECT_FROM_MISSILES;
+                BossFx.world(p).sendParticles(g.magic() ? ParticleTypes.WITCH : ParticleTypes.HAPPY_VILLAGER,
                         p.getX(), p.getY() + 1.2, p.getZ(), 10, 0.3, 0.4, 0.3, 0.02);
                 if (!BossFx.protects(p, block)) {
                     BossFx.drainPrayer(p, BossMechanics.VARDORVIS_HEAD_PRAYER_DRAIN);
