@@ -14,6 +14,7 @@ import com.runecraft.entity.OsrsAttackGoal;
 import com.runecraft.entity.OsrsMonsterEntity;
 import com.runecraft.entity.OsrsTargetGoal;
 import com.runecraft.entity.VanillaOsrsAi;
+import com.runecraft.osrs.AttackClock;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Experience;
 import com.runecraft.osrs.MonsterAi;
@@ -455,8 +456,9 @@ final class MonsterAiChecks {
 
     /**
      * A giant spider shot from beyond its aggression range (the player 26 blocks off its spawn point; spells reach 20) doesn't give
-     * up and heal: it walks out to the edge of its 7-tile max range and stands there, keeping its damage, while the shots come; only
-     * once they have stopped for 5 s does it walk home, and it heals there.
+     * up and heal: it walks out to the edge of its 7-tile max range and stands there, keeping its damage, while the shots come at
+     * the dark bow's 9 ticks (the slowest weapon); only once they have stopped for {@link MonsterAi#UNDER_FIRE_MC} (6 s) does it
+     * walk home, and it heals there.
      */
     private String leashUnderFire() {
         ServerPlayer p = c.player;
@@ -472,9 +474,11 @@ final class MonsterAiChecks {
         int held = 0;
         double furthest = 0;
         int shots = 0;
-        for (int i = 0; i < 200; i++) {
-            if (i % 20 == 0) {
-                CombatHandler.applyDamage(p, spider, 0); // a shot a second (a miss is still an attack)
+        int period = AttackClock.periodMc(9); // a dark bow's volley (108 MC), longer than vanilla's 100 MC hurt-by memory
+        int since = 20; // MC from the last shot to the end of the shooting
+        for (int i = 0; i < 3 * period + since; i++) {
+            if (i % period == 0) {
+                CombatHandler.applyDamage(p, spider, 0); // a miss is still an attack
                 shots++;
             }
             step(1);
@@ -491,8 +495,8 @@ final class MonsterAiChecks {
         expect(held > 0, "the giant spider never stood at the edge of its range (got " + fmt(furthest) + " blocks out)");
         expect(furthest <= MonsterAi.MAX_RANGE_BLOCKS + 2, "the giant spider walked " + fmt(furthest)
                 + " blocks from its spawn point (max range " + fmt(MonsterAi.MAX_RANGE_BLOCKS) + ")");
-        // the shots stop: 5 s later it gives up, walks home and heals there
-        int quiet = 20; // since the last shot
+        // the shots stop: UNDER_FIRE_MC later it gives up, walks home and heals there
+        int quiet = since;
         while (!goal.returning() && quiet < MonsterAi.UNDER_FIRE_MC + 40) {
             step(1);
             quiet++;

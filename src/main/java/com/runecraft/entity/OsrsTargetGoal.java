@@ -37,7 +37,7 @@ import net.minecraft.world.level.pathfinder.Path;
  * while the new attacker isn't ({@link MonsterAi#switchTarget}; // playability: vanilla switched to every new attacker).</li>
  * <li>Leash (open-world monsters, {@link MonsterHome}): past {@link MonsterAi#LEASH_BLOCKS} from its spawn point, or with its target
  * fled beyond its aggression range, it drops the fight, walks home and is back to full health there once nothing has hit it for
- * 5 s (// playability: OSRS confines a monster to 7 tiles of its spawn point and it regenerates 1 hitpoint a minute). A target that
+ * 6 s (// playability: OSRS confines a monster to 7 tiles of its spawn point and it regenerates 1 hitpoint a minute). A target that
  * keeps attacking it from beyond its range is not given up: the monster stands at the edge of its max range
  * ({@link MonsterAi#holdAtEdge}, OSRS safespotting), so a player out-ranging it can still kill it.</li>
  * <li>Single-way: a monster that may not attack its target (the player is fighting something else) drops it after
@@ -55,6 +55,11 @@ public class OsrsTargetGoal extends Goal {
     private final boolean hunts;
     private int scanIn;
     private int lastHurtStamp = Integer.MIN_VALUE;
+    /**
+     * Who (credited: a thrall's owner) landed the last hit or miss, at {@link #lastHurtStamp}. Kept here because vanilla forgets
+     * {@code getLastHurtByMob} 100 MC after the hit, shorter than the slowest player attack (the dark bow's 9 ticks).
+     */
+    private UUID lastAttacker;
     private int blockedFor;
     private UUID forgotten;
     private int forgottenUntil;
@@ -122,6 +127,7 @@ public class OsrsTargetGoal extends Goal {
         if (newHurt) {
             lastHurtStamp = mob.getLastHurtByMobTimestamp();
             lastHitAt = now;
+            lastAttacker = credited(hurtBy).getUUID();
         }
         boolean wasHolding = holding;
         holding = false;
@@ -202,10 +208,14 @@ public class OsrsTargetGoal extends Goal {
         return mob.distanceToSqr(target) <= max * max;
     }
 
-    /** Its target hit (or missed) it within {@link MonsterAi#UNDER_FIRE_MC}: the fight is still on wherever the target stands. */
+    /**
+     * Its target landed the last hit (or miss) on it within {@link MonsterAi#UNDER_FIRE_MC}: the fight is still on wherever the
+     * target stands. Read from this goal's own record, not {@code getLastHurtByMob}, which vanilla clears 100 MC after the hit: a
+     * dark bow shooting every 108 MC left the monster not under fire for the last 8 MC of every cycle, and it turned for home.
+     */
     private boolean underFire(LivingEntity target, int now) {
-        LivingEntity by = mob.getLastHurtByMob();
-        return by != null && credited(by) == target && (long) now - mob.getLastHurtByMobTimestamp() < MonsterAi.UNDER_FIRE_MC;
+        return lastAttacker != null && lastAttacker.equals(target.getUUID())
+                && (long) now - lastHurtStamp < MonsterAi.UNDER_FIRE_MC;
     }
 
     /** A summon (a thrall) answers for its owner: the monster goes for the player behind it. */
@@ -365,7 +375,7 @@ public class OsrsTargetGoal extends Goal {
 
     /**
      * Home again: the fight is over, its health back to full and its damage ledger cleared, unless something hit it in the last
-     * 5 s (it heals once the hits stop: a reset must not erase hits that are still coming).
+     * 6 s ({@link MonsterAi#UNDER_FIRE_MC}; it heals once the hits stop: a reset must not erase hits that are still coming).
      */
     private void arrive() {
         returning = false;

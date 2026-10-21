@@ -59,10 +59,13 @@ public final class MonsterAi {
     public static final int UNREACHABLE_MC = 60;
     /**
      * A monster counts as under fire from its target while that target hit (or missed) it within this long: it doesn't give up a
-     * target that keeps attacking it from beyond its range, and doesn't heal on the way home (5 s, // playability: OSRS has no
-     * reset and regenerates a monster 1 hitpoint a minute).
+     * target that keeps attacking it from beyond its range, and doesn't heal on the way home (// playability: OSRS has no reset,
+     * keeps a monster in retreat mode while the player stays in range, and regenerates it 1 hitpoint a minute). 10 game ticks
+     * (6 s): one tick more than the slowest player attack, the dark bow's 9 (108 MC; wiki: "the slowest weapon in the game"), so a
+     * player attacking at any weapon's speed keeps it under fire between landings (5 s let it turn for home before each dark bow
+     * volley).
      */
-    public static final int UNDER_FIRE_MC = 100;
+    public static final int UNDER_FIRE_MC = 10 * AttackClock.MC_PER_GAME_TICK;
     /** Drops stay the winner's alone for 60 seconds (wiki, Drops: invisible to other players for the first 100 game ticks). */
     public static final int PRIVATE_LOOT_MC = 60 * 20;
     /** Tradeable drops disappear 2 minutes after the kill (wiki, Drops: they remain on the ground for 200 game ticks). */
