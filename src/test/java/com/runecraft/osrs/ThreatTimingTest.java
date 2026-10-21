@@ -109,6 +109,41 @@ class ThreatTimingTest {
     }
 
     @Test
+    void styleChoiceUsesTheAttackGoalsMeleeReach() {
+        // Skotizo summoned 3 blocks from a player (the self-test's boss:fight:skotizo): his claws' nominal range is 3.5, but the gap
+        // between the bodies is 1.6, out of melee reach, so only his shadow bolt can be picked there (OSRS: he "does not approach
+        // to use melee attacks"); picking the claws there left him waiting for melee reach that never came, never attacking.
+        BossDef skotizo = ContentRegistry.boss("skotizo");
+        double gap = ThreatTiming.gap(3.0, 0, skotizo.width * skotizo.scale, 0.6);
+        assertEquals(1.62, gap, 0.01);
+        assertFalse(ThreatTiming.inMeleeReach(gap, 0));
+        int melee = 0;
+        for (AttackDef a : skotizo.attacks) {
+            assertTrue(a.melee() || a.range() >= gap, a.name() + " is out of range");
+            assertEquals(!a.melee(), ThreatTiming.usable(a, gap, false), a.name() + " 1.6 blocks away");
+            assertTrue(ThreatTiming.usable(a, 0.5, true), a.name() + " beside the player");
+            melee += a.melee() ? 1 : 0;
+        }
+        assertEquals(1, melee, "Skotizo's melee attack");
+        // in melee reach a melee attack is usable whatever its nominal range; out of it, never
+        AttackDef bite = AttackDef.of("bite", AttackType.STAB, 5, 1.0, 1);
+        assertTrue(ThreatTiming.usable(bite, 1.4, true));
+        assertFalse(ThreatTiming.usable(AttackDef.of("claws", AttackType.SLASH, 5, 4.0, 1), 1.6, false));
+        assertTrue(ThreatTiming.usable(AttackDef.of("bolt", AttackType.MAGIC, 5, 10, 1), 10, false));
+        assertFalse(ThreatTiming.usable(AttackDef.of("bolt", AttackType.MAGIC, 5, 10, 1), 10.1, true));
+    }
+
+    @Test
+    void aWideMeleeMonsterTheNavigationLeftShortWalksIn() {
+        // the path follower let Skotizo (2.16 wide) stop 1.62 from a player to his east: he steps the rest straight in
+        assertTrue(ThreatTiming.closeInDirectly(1.62, 0));
+        assertTrue(ThreatTiming.closeInDirectly(1.2, 0.5), "in reach, still closing to 0.8");
+        assertFalse(ThreatTiming.closeInDirectly(0.8, 0), "close enough");
+        assertFalse(ThreatTiming.closeInDirectly(4.5, 0), "a real path's job");
+        assertFalse(ThreatTiming.closeInDirectly(2.0, 2.0), "another level");
+    }
+
+    @Test
     void areaTestsAreHorizontal() {
         assertTrue(ThreatTiming.inSkyStrike(1.5, 1.9));
         assertFalse(ThreatTiming.inSkyStrike(1.51, 0));

@@ -71,15 +71,15 @@ public class OsrsAttackGoal extends Goal {
         boolean melee = style.isMelee() || mob.meleeRangeOnly;
         double gap = ThreatTiming.gap(target.getX() - mob.getX(), target.getZ() - mob.getZ(), mob.getBbWidth(), target.getBbWidth());
         double ranged = mob.rangedReach > 0 ? mob.rangedReach : 10.0;
-        boolean inRange = melee ? ThreatTiming.inMeleeReach(gap, target.getY() - mob.getY()) : distSq <= ranged * ranged;
+        boolean inRange = melee ? mob.inMeleeReach(target) : distSq <= ranged * ranged; // the reach chooseStyle picks melee by
         mob.getLookControl().setLookAt(target, 30.0f, 30.0f);
         boolean canSee = mob.getSensing().hasLineOfSight(target);
         if (!inRange || !canSee) {
-            chase(target);
+            chase(target, melee && canSee, gap);
         } else if (!melee) {
             mob.getNavigation().stop();
         } else if (ThreatTiming.keepChasing(gap)) {
-            chase(target);
+            chase(target, true, gap);
         }
         boolean inReach = melee && inRange;
         if (inReach && !wasInReach) {
@@ -90,14 +90,31 @@ public class OsrsAttackGoal extends Goal {
         tryAttack(target, style, inRange && canSee, now, speedTicks, earliest);
     }
 
-    /** Path-finds to the target, or walks straight at it for a creature with OSRS direct ("dumb") pathing. */
-    private void chase(ServerPlayer target) {
+    /**
+     * Path-finds to the target, or walks straight at it for a creature with OSRS direct ("dumb") pathing, or a melee one
+     * ({@code closeIn}: it sees its target) whose path reached the target's block but left it short ({@link #arrivedShort}).
+     */
+    private void chase(ServerPlayer target, boolean closeIn, double gap) {
         if (mob.directPathing) {
             mob.getNavigation().stop();
+            mob.getMoveControl().setWantedPosition(target.getX(), target.getY(), target.getZ(), 1.0);
+        } else if (closeIn && arrivedShort(target, gap)) {
+            // the done path stays, so the navigation leaves this straight step alone until the target moves to another block
             mob.getMoveControl().setWantedPosition(target.getX(), target.getY(), target.getZ(), 1.0);
         } else {
             mob.getNavigation().moveTo(target, 1.0);
         }
+    }
+
+    /**
+     * Whether the navigation reached {@code target}'s block (its path is done and got there) with the creature still short of
+     * it ({@link ThreatTiming#closeInDirectly}: a wide creature's path ends up to 2 blocks out of melee reach, and a new path to
+     * the same block ends there again, so Skotizo summoned east of a player stood 1.6 blocks away for good).
+     */
+    private boolean arrivedShort(ServerPlayer target, double gap) {
+        net.minecraft.world.level.pathfinder.Path path = mob.getNavigation().getPath();
+        return path != null && path.isDone() && path.canReach() && target.blockPosition().equals(path.getTarget())
+                && ThreatTiming.closeInDirectly(gap, target.getY() - mob.getY());
     }
 
     private void tryAttack(ServerPlayer target, AttackType style, boolean ready, long now, int speedTicks, long earliest) {

@@ -129,18 +129,31 @@ public class OsrsMonsterEntity extends Monster {
      * Style used for the next attack against a target at the given distance. A module creature's attack is rolled once and kept
      * until {@link #performAttack} uses it, or until it can't be used at the current distance (// playability: the goal asks every
      * tick, and a re-roll every tick made a mixed melee/magic creature stop and start walking): the choice is made on the
-     * bounding-box gap to the target.
+     * bounding-box gap to the target, a melee attack only in {@link #inMeleeReach}, the reach its attack goal starts melee at
+     * (OSRS: melee from the next tile, ranged or magic from further away; a mixed creature out of melee reach casts or shoots).
      */
     public AttackType chooseStyle(ServerPlayer target, double distanceSq) {
         java.util.List<com.runecraft.osrs.content.AttackDef> attacks = attackList();
         if (attacks != null) {
             double gap = Math.max(0, Math.sqrt(distanceSq) - getBbWidth() / 2 - target.getBbWidth() / 2);
-            if (nextAttack == null || !containsSame(attacks, nextAttack) || gap > nextAttack.range()) {
-                nextAttack = com.runecraft.boss.Mechanics.choose(attacks, gap, getRandom());
+            boolean reach = inMeleeReach(target);
+            if (nextAttack == null || !containsSame(attacks, nextAttack)
+                    || !com.runecraft.osrs.ThreatTiming.usable(nextAttack, gap, reach)) {
+                nextAttack = com.runecraft.boss.Mechanics.choose(attacks, gap, reach, getRandom());
             }
             return nextAttack.style();
         }
         return stats().style();
+    }
+
+    /**
+     * Whether this creature can start a melee attack on {@code target} from where they stand: the horizontal gap between their
+     * bounding boxes and their height difference ({@link com.runecraft.osrs.ThreatTiming#inMeleeReach}, round 41). Its attack goal
+     * starts melee only here and {@link #chooseStyle} picks melee by it, so the two never disagree.
+     */
+    public boolean inMeleeReach(net.minecraft.world.entity.LivingEntity target) {
+        return com.runecraft.osrs.ThreatTiming.inMeleeReach(com.runecraft.osrs.ThreatTiming.gap(target.getX() - getX(),
+                target.getZ() - getZ(), getBbWidth(), target.getBbWidth()), target.getY() - getY());
     }
 
     private static boolean containsSame(java.util.List<com.runecraft.osrs.content.AttackDef> attacks, com.runecraft.osrs.content.AttackDef a) {

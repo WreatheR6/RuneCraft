@@ -589,7 +589,10 @@ final class NpcDeliveryChecks {
         return "stood 24 MC: 2 hits; crossed in 4 MC: 1; left before arming: 0; 1.2 blocks beside: 0";
     }
 
-    /** A mixed melee/magic monster at mid range doesn't stop and start walking more than once per attack. */
+    /**
+     * A mixed melee/magic monster at mid range doesn't stop and start walking more than once per attack, and never picks the melee
+     * attack it can't start out of melee reach (it casts: Skotizo kept his claws 1.6 blocks out and never attacked, round 42).
+     */
     private String mixedNavigation() {
         MonsterDef def = null;
         AttackDef melee = null;
@@ -618,7 +621,8 @@ final class NpcDeliveryChecks {
         if (def == null) {
             throw new SelfTest.Skip("no module monster with one plain melee and one plain magic attack");
         }
-        // both attacks usable, but outside the goal's melee reach: the old per-tick re-roll walked and stopped every tick
+        // both attacks within their nominal range, but outside the goal's melee reach: the old per-tick re-roll walked and stopped
+        // every tick, and a melee pick kept there waited for a reach the goal never got to
         double gap = (ThreatTiming.MELEE_REACH + Math.min(melee.range(), 3.0)) / 2;
         float w = def.width * def.scale;
         OsrsMonsterEntity mob = spawn(def.id, -(gap + w / 2 + c.player.getBbWidth() / 2), 0);
@@ -633,6 +637,7 @@ final class NpcDeliveryChecks {
         };
         int transitions = 0;
         int flips = 0;
+        int meleeOutOfReach = 0;
         try {
             boolean moving = mob.getNavigation().isInProgress();
             AttackType style = null;
@@ -649,12 +654,16 @@ final class NpcDeliveryChecks {
                 if (style != null && ThreatTiming.prayerGroup(next) != ThreatTiming.prayerGroup(style)) {
                     flips++;
                 }
+                if (next.isMelee() && !mob.inMeleeReach(c.player)) {
+                    meleeOutOfReach++;
+                }
                 style = next;
             }
         } finally {
             Mechanics.attackListener = before;
         }
         expect(launched[0] > 0, "the " + def.id + " never attacked");
+        expect(meleeOutOfReach == 0, "the " + def.id + " picked its melee attack " + meleeOutOfReach + " times out of melee reach");
         expect(flips <= launched[0] + 2, "the " + def.id + "'s next style changed " + flips + " times for " + launched[0] + " attacks");
         expect(transitions <= 3 * launched[0] + 4, "the " + def.id + " started/stopped walking " + transitions + " times for "
                 + launched[0] + " attacks");

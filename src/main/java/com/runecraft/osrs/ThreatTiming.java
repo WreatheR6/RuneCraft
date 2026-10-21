@@ -56,6 +56,8 @@ public final class ThreatTiming {
     public static final double MELEE_REACH_DY = 1.5;
     /** A melee monster keeps closing in until the gap is at most this (blocks). */
     public static final double CHASE_GAP = 0.8;
+    /** A melee monster its path left short of its target walks the rest straight in from at most this gap (blocks). // approx */
+    public static final double CLOSE_IN_MAX_GAP = 4.0;
     /** Extra gap (blocks) a wound-up melee hit still lands across (the target stepped back a little). */
     public static final double MELEE_LAND_SLACK = 1.0;
     /** Largest height difference (blocks) a wound-up melee hit still lands across. */
@@ -173,6 +175,27 @@ public final class ThreatTiming {
     /** Whether a melee monster should keep walking at its target. */
     public static boolean keepChasing(double gap) {
         return gap > CHASE_GAP;
+    }
+
+    /**
+     * Whether a monster's attack goal may pick {@code attack} now, {@code gap} blocks from its target: a melee attack only in melee
+     * reach ({@code inMeleeReach}: {@link #inMeleeReach} on the horizontal gap and height difference, where the goal can start it),
+     * whatever its nominal range; any other attack within its range. OSRS: an NPC uses its melee attack only from a tile next to its
+     * target and attacks from further away only with ranged or magic (Skotizo "does not approach to use melee attacks").
+     */
+    public static boolean usable(AttackDef attack, double gap, boolean inMeleeReach) {
+        return attack.melee() ? inMeleeReach : gap <= attack.range();
+    }
+
+    /**
+     * Whether a melee monster whose path has reached its target's block should walk the rest straight at it: still farther than
+     * {@value #CHASE_GAP} (it keeps closing in), at most {@value #CLOSE_IN_MAX_GAP} and on its level. // playability: Minecraft's path
+     * follower counts a node reached within half the mob's width of it, and a mob two or more blocks wide stands on the corner of
+     * its node, so a 2-3 block wide boss coming from the east or south "arrived" 1.6-2 blocks from its target, out of melee reach,
+     * and every new path ended there again (OSRS: it walks onto the tile next to its target).
+     */
+    public static boolean closeInDirectly(double gap, double dy) {
+        return keepChasing(gap) && gap <= CLOSE_IN_MAX_GAP && Math.abs(dy) <= MELEE_REACH_DY;
     }
 
     /** Whether a wound-up melee hit of reach {@code reach} (a gap) lands on a target that is now this far away. */

@@ -986,32 +986,55 @@ public final class Mechanics {
         hits.forEach(Runnable::run);
     }
 
-    /** Picks a weighted attack usable at this distance (falls back to the closest-range attack). */
+    /** Picks a weighted attack usable at this distance (falls back to the longest-range attack). */
     public static AttackDef choose(List<AttackDef> attacks, double distance, net.minecraft.util.RandomSource random) {
+        AttackDef picked = pick(attacks, a -> distance <= a.range(), random);
+        if (picked != null) {
+            return picked;
+        }
+        AttackDef best = null;
+        for (AttackDef a : attacks) {
+            if (best == null || a.range() > best.range()) {
+                best = a;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * A monster attack goal's pick ({@code OsrsMonsterEntity.chooseStyle}): a weighted attack it can start from here, a melee one
+     * only in melee reach ({@link ThreatTiming#usable}, the reach the goal starts melee at), whatever its nominal range. When none
+     * can start here (a melee-only creature out of reach, every attack out of range) it is the plain pick above, walked in with.
+     * Before, a melee attack counted from its nominal range (Skotizo's claws: 3.5 blocks): picked 1.6 blocks out, it was kept
+     * while the goal waited for melee reach, and Skotizo never cast his shadow bolt.
+     */
+    public static AttackDef choose(List<AttackDef> attacks, double distance, boolean inMeleeReach,
+            net.minecraft.util.RandomSource random) {
+        AttackDef picked = pick(attacks, a -> ThreatTiming.usable(a, distance, inMeleeReach), random);
+        return picked != null ? picked : choose(attacks, distance, random);
+    }
+
+    /** A weighted pick among the attacks {@code usable} accepts; null when it accepts none with any weight. */
+    private static AttackDef pick(List<AttackDef> attacks, java.util.function.Predicate<AttackDef> usable,
+            net.minecraft.util.RandomSource random) {
         int total = 0;
         for (AttackDef a : attacks) {
-            if (distance <= a.range()) {
+            if (usable.test(a)) {
                 total += a.weight();
             }
         }
         if (total <= 0) {
-            AttackDef best = null;
-            for (AttackDef a : attacks) {
-                if (best == null || a.range() > best.range()) {
-                    best = a;
-                }
-            }
-            return best;
+            return null;
         }
         int r = random.nextInt(total);
         for (AttackDef a : attacks) {
-            if (distance <= a.range()) {
+            if (usable.test(a)) {
                 r -= a.weight();
                 if (r < 0) {
                     return a;
                 }
             }
         }
-        return attacks.get(0);
+        return null;
     }
 }
