@@ -135,6 +135,24 @@ public final class AttackTimer {
         send(player, periodMc, periodMc, kind, false);
     }
 
+    /**
+     * Adds {@code mc} to a weapon delay that is still running (OSRS food, wiki Food/Fast foods: "Foods only add to an existing
+     * attack delay between weapon attacks"); nothing when the weapon is ready. The client's timer bar is told the new wait.
+     * Returns the delay added.
+     */
+    public static int addDelay(ServerPlayer player, int mc) {
+        if (mc <= 0 || ready(player)) {
+            return 0;
+        }
+        Players.data(player).lastAttackTick += mc;
+        State s = STATES.get(player.getUUID());
+        int period = s == null ? fallbackPeriod(player) : s.buffer.periodMc(fallbackPeriod(player));
+        long left = remaining(player);
+        boolean queued = s != null && s.buffer.hasPending();
+        send(player, left, (int) Math.max(period, left), queued ? s.buffer.pendingKind() : kindFor(player), queued);
+        return mc;
+    }
+
     /** A click on {@code target} resolved with the kind's own resolver. Returns true when it resolved now. */
     public static boolean click(ServerPlayer player, LivingEntity target, AttackClock.Kind kind) {
         return click(player, target, kind, resolver(kind));

@@ -8,6 +8,13 @@ import java.util.Set;
  * Combo foods (cooked karambwan, halibut, the gnome cooking dishes) ignore the eat delay of other food but start it
  * themselves and can't follow each other ("food, brew, karambwan" in one tick). Barbarian mixes and drinks (ales, kegs,
  * cocktails, wine) share the food timer. Pies and pizzas have shorter eat delays.
+ *
+ * <p>Eating also adds to the weapon's delay when the weapon is still recovering (wiki Food/Fast foods, "Attack delay"): 3
+ * game ticks for most food (pies and pizzas too), 2 for combo food; potions add nothing ({@link #attackDelayMc}). Raid and
+ * minigame supplies use the same timers (round 42): the Tombs of Amascut's, the Chambers of Xeric's and the Nightmare
+ * Zone's potions, the egniol potion and the blighted super restore the potion timer; the Theatre of Blood's bandages, the
+ * honey locust, the Chambers' fish and the Gauntlet's paddlefish the food timer; crystal and corrupted paddlefish are combo
+ * food.
  */
 public final class ConsumeRules {
     /** Consumption timers; the ordinal indexes per-player state (append new values last). */
@@ -26,7 +33,23 @@ public final class ConsumeRules {
     public static final Set<String> COMBO_FOODS = Set.of("cooked_karambwan", "blighted_karambwan", "halibut",
             "toad_crunchies", "spicy_crunchies", "worm_crunchies", "chocchip_crunchies",
             "fruit_batta", "toad_batta", "worm_batta", "vegetable_batta", "cheese_and_tomato_batta",
-            "worm_hole", "veg_ball", "tangled_toads_legs", "chocolate_bomb");
+            "worm_hole", "veg_ball", "tangled_toads_legs", "chocolate_bomb",
+            // The Gauntlet's upgraded paddlefish (wiki: "Like cooked karambwan, they can be eaten instantly with no delay
+            // after eating a paddlefish").
+            "crystal_paddlefish", "corrupted_paddlefish");
+
+    /**
+     * Consumables whose catalog kind doesn't say which timer they use. Sq'irkjuice (Sorceress's Garden) is a drink, and drinks
+     * share the food timer like ales // approx: the wiki gives it no delay.
+     */
+    private static final java.util.Map<String, Group> BY_ID = java.util.Map.of(
+            "winter_sqirkjuice", Group.FOOD, "spring_sqirkjuice", Group.FOOD,
+            "autumn_sqirkjuice", Group.FOOD, "summer_sqirkjuice", Group.FOOD);
+
+    /** Attack delay eating standard food adds to a recovering weapon: 3 game ticks (wiki Food/Fast foods). */
+    public static final int FOOD_ATTACK_MC = 3 * TICK_MC;
+    /** Attack delay of combo food (karambwan, halibut, gnome cooking): 2 game ticks. */
+    public static final int COMBO_ATTACK_MC = 2 * TICK_MC;
 
     /** Members' pies: 1-tick eat delay for both halves (an F2P pie's second half takes 2 ticks). */
     private static final Set<String> MEMBERS_PIES = Set.of("garden", "fish", "mushroom", "admiral", "dragonfruit", "wild",
@@ -42,6 +65,10 @@ public final class ConsumeRules {
         }
         if (COMBO_FOODS.contains(id)) {
             return Group.COMBO;
+        }
+        Group fixed = BY_ID.get(id);
+        if (fixed != null) {
+            return fixed;
         }
         // Barbarian mixes and drinks (ales, cocktails, the Wizard's mind bomb) use the food timer, whatever their kind.
         if (com.runecraft.osrs.content.skilling.HerbloreData.mix(id) != null
@@ -85,5 +112,18 @@ public final class ConsumeRules {
             return POTION_MC;
         }
         return group == Group.COMBO ? COMBO_MC : eatDelayMc(id);
+    }
+
+    /**
+     * The delay one consumption adds to a weapon that is still recovering from its last attack (wiki Food/Fast foods: "If your
+     * weapon is ready to attack again then eating does not add any new delay"): 3 game ticks for food (a pie or pizza bite too,
+     * whatever its eat delay; barbarian mixes and drinks on the food timer // approx), 2 for combo food (eaten after other food
+     * the two add up, "3 + 2 = 5"), nothing for a potion (brews: "Will not increase the delay before your next attack").
+     */
+    public static int attackDelayMc(String id, Group group) {
+        if (group == null || group == Group.POTION) {
+            return 0;
+        }
+        return group == Group.COMBO ? COMBO_ATTACK_MC : FOOD_ATTACK_MC;
     }
 }

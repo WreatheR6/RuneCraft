@@ -189,10 +189,8 @@ public final class MinigameCombat {
         long defenceRoll = com.runecraft.combat.HitCalcBridge.defenceRoll(target, in);
         int maxHit = com.runecraft.combat.HitCalcBridge.maxHit(attacker, target, in);
         int damage = com.runecraft.combat.HitCalcBridge.roll(new java.util.Random(attacker.getRandom().nextLong()), in, attackRoll, defenceRoll, maxHit);
-        PlayerData td = Players.data(target);
-        if (td.isActive(Prayer.PROTECT_FROM_MELEE)) {
-            damage = (int) Math.floor(damage * 0.6);
-        }
+        // Protect from Melee blocks 40% of a player's hit, read through the protection chokepoint (its switch grace)
+        damage = CombatHandler.protectionAgainstPlayer(target, type, damage);
         attacker.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
         int dealt = CombatHandler.applyDamage(attacker, target, damage);
         CombatHandler.awardXp(attacker, style, dealt, false);

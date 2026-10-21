@@ -502,6 +502,12 @@ public final class CombatAchievementService {
         return p.serverLevel().getPlayers(o -> o.isAlive() && !o.isSpectator() && o.distanceToSqr(p) < GROUP_RANGE * GROUP_RANGE).size();
     }
 
+    /**
+     * Whether the player was praying against the hit, strictly (the prayer active now, no switch grace): deliberately not
+     * CombatHandler.isProtected. The grace and the late window (round 41/42 playability) decide damage, and a hit they block
+     * already reaches the tasks as 0 damage; what a task judges is the player's own prayer play as OSRS records it (perfect
+     * fights, "without praying" tasks), which a prayer switched off a moment ago must not count as.
+     */
     private static boolean protectedFrom(ServerPlayer p, AttackType style) {
         PlayerData d = Players.data(p);
         if (style == null) {

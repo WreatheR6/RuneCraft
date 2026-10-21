@@ -21,6 +21,13 @@ public final class PrayerGrace {
     public static final int MIN_ON_MC = 12;
     /** "Never" for the stamps: far enough in the past that neither condition can hold. */
     public static final long NEVER = -1_000_000L;
+    /**
+     * Late side of the grace (round 42): Minecraft ticks a monster hit that lands while its protection is off is held and
+     * judged again (0.2 s), so a switch pressed a hair late (key press, network, server tick) still blocks it.
+     */
+    public static final int LATE_MC = 4;
+    /** A voluntary overhead switch at most this many Minecraft ticks ago marks the player as switching (two game ticks). */
+    public static final int SWITCHING_MC = 24;
 
     /** The three protection overheads, in the order of {@link #index(Prayer)}. */
     public static final Prayer[] PROTECTIONS = {Prayer.PROTECT_FROM_MAGIC, Prayer.PROTECT_FROM_MISSILES, Prayer.PROTECT_FROM_MELEE};
@@ -34,6 +41,38 @@ public final class PrayerGrace {
      */
     public static boolean protectedWithGrace(boolean activeNow, long onAt, long offAt, long now) {
         return activeNow || (now - offAt <= GRACE_MC && now >= offAt && offAt - onAt >= MIN_ON_MC);
+    }
+
+    /**
+     * Whether a monster hit landing at {@code now} is held for the late window ({@link #LATE_MC}) instead of resolving at once.
+     * // playability: OSRS reads the overhead on the exact tick a hit resolves; a real-time player who presses the right
+     * protection a moment after the impact would lose the hit. Only a hit its protection doesn't cover yet, on a player who could
+     * switch that protection on ({@code canSwitch}: the level, points and rules allow it) and is switching protections (one is
+     * on now, or one was switched voluntarily at {@code lastSwitchMc}, at most {@link #SWITCHING_MC} ago), is held: a player
+     * who prays nothing takes every hit on its tick. The roll, max hit and block amount are those of an on-time hit.
+     */
+    public static boolean holdLate(boolean protectedNow, boolean canSwitch, boolean anyProtectionOn, long lastSwitchMc, long now) {
+        if (protectedNow || !canSwitch) {
+            return false;
+        }
+        return anyProtectionOn || (now >= lastSwitchMc && now - lastSwitchMc <= SWITCHING_MC);
+    }
+
+    /**
+     * Whether a hit held since {@code heldAt} resolves at {@code now}: the moment its protection counts (it is then blocked as
+     * an on-time hit would be), or {@link #LATE_MC} ticks after the impact (it then lands unchanged).
+     */
+    public static boolean lateDue(boolean protectedNow, long heldAt, long now) {
+        return protectedNow || now - heldAt >= LATE_MC;
+    }
+
+    /** The latest voluntary switch of any protection overhead in the stamps ({@link #NEVER} when none). */
+    public static long lastSwitch(long[] onAt, long[] offAt) {
+        long last = NEVER;
+        for (int i = 0; i < PROTECTIONS.length; i++) {
+            last = Math.max(last, Math.max(onAt[i], offAt[i]));
+        }
+        return last;
     }
 
     /** Index into the per-overhead stamps: 0 magic, 1 missiles, 2 melee; -1 for any other prayer. */

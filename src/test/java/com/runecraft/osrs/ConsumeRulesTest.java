@@ -106,4 +106,63 @@ class ConsumeRulesTest {
             assertTrue(ConsumeRules.eatDelayMc(b.full()) > 0, b.full());
         }
     }
+
+    @Test
+    void raidAndMinigameSuppliesShareTheTimers() {
+        // Round 42: these used per-item cooldowns. Potions on the potion timer, food on the food timer (wiki: ToB bandages "act
+        // as a food item ... can be combo eaten with potions and/or cooked karambwan").
+        for (String id : com.runecraft.osrs.content.raids.ToaSupplies.ITEMS) {
+            ConsumeRules.Group want = id.equals(com.runecraft.osrs.content.raids.ToaSupplies.HONEY_LOCUST)
+                    ? ConsumeRules.Group.FOOD : ConsumeRules.Group.POTION;
+            assertEquals(want, group(id), id);
+        }
+        for (com.runecraft.osrs.content.raids.CoxSupplies.Potion p : com.runecraft.osrs.content.raids.CoxSupplies.Potion.values()) {
+            for (com.runecraft.osrs.content.raids.CoxSupplies.Strength s : com.runecraft.osrs.content.raids.CoxSupplies.Strength.values()) {
+                assertEquals(ConsumeRules.Group.POTION, group(p.id(s)), p.id(s));
+            }
+        }
+        for (com.runecraft.osrs.content.raids.CoxSupplies.Food f : com.runecraft.osrs.content.raids.CoxSupplies.FOODS) {
+            assertEquals(ConsumeRules.Group.FOOD, group(f.cooked()), f.cooked());
+        }
+        assertEquals(ConsumeRules.Group.FOOD, group(com.runecraft.osrs.content.raids.TobRules.BANDAGES));
+        for (String id : com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.POTIONS) {
+            assertEquals(ConsumeRules.Group.POTION, group(id), id);
+        }
+        assertEquals(ConsumeRules.Group.POTION, group(com.runecraft.osrs.content.minigames.Gauntlet.EGNIOL));
+        assertEquals(ConsumeRules.Group.FOOD, group(com.runecraft.osrs.content.minigames.Gauntlet.PADDLEFISH));
+        assertEquals(ConsumeRules.Group.POTION, group("blighted_super_restore"));
+        assertEquals(ConsumeRules.Group.COMBO, group("blighted_karambwan"));
+        assertEquals(ConsumeRules.Group.FOOD, group("castle_wars_bandage"));
+        for (String season : new String[]{"winter", "spring", "autumn", "summer"}) {
+            assertEquals(ConsumeRules.Group.FOOD, group(season + "_sqirkjuice"), season);
+        }
+    }
+
+    @Test
+    void upgradedPaddlefishAreComboFood() {
+        // Wiki Crystal/Corrupted paddlefish: "Like cooked karambwan, they can be eaten instantly with no delay after eating a
+        // paddlefish."
+        assertEquals(ConsumeRules.Group.COMBO, group("crystal_paddlefish"));
+        assertEquals(ConsumeRules.Group.COMBO, group("corrupted_paddlefish"));
+        assertEquals(ConsumeRules.Group.FOOD, group("paddlefish"));
+    }
+
+    @Test
+    void eatingDelaysTheNextAttackPotionsDoNot() {
+        // Wiki Food/Fast foods: standard food adds 3 ticks to a running weapon delay, combo food 2, potions nothing; a pie bite
+        // keeps the 3-tick attack delay whatever its eat delay.
+        assertEquals(36, ConsumeRules.attackDelayMc("shark", group("shark")));
+        assertEquals(36, ConsumeRules.attackDelayMc("summer_pie", group("summer_pie")));
+        assertEquals(36, ConsumeRules.attackDelayMc("anchovy_pizza", group("anchovy_pizza")));
+        assertEquals(24, ConsumeRules.attackDelayMc("cooked_karambwan", group("cooked_karambwan")));
+        assertEquals(24, ConsumeRules.attackDelayMc("halibut", group("halibut")));
+        assertEquals(0, ConsumeRules.attackDelayMc("saradomin_brew", group("saradomin_brew")));
+        assertEquals(0, ConsumeRules.attackDelayMc("nectar", group("nectar")));
+        assertEquals(36, ConsumeRules.attackDelayMc(com.runecraft.osrs.content.raids.TobRules.BANDAGES,
+                group(com.runecraft.osrs.content.raids.TobRules.BANDAGES)));
+        assertEquals(0, ConsumeRules.attackDelayMc("coins", null));
+        // Shark then karambwan in one tick: 3 + 2 = 5 ticks (wiki: "combo eating stacks the attack delay").
+        assertEquals(60, ConsumeRules.attackDelayMc("shark", ConsumeRules.Group.FOOD)
+                + ConsumeRules.attackDelayMc("cooked_karambwan", ConsumeRules.Group.COMBO));
+    }
 }

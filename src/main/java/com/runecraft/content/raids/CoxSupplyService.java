@@ -402,7 +402,7 @@ public final class CoxSupplyService {
         } else {
             stack.setDamageValue(used);
         }
-        p.getCooldowns().addCooldown(stack.getItem(), 3 * ActionManager.MC_TICKS_PER_GAME_TICK);
+        com.runecraft.skill.ConsumeCooldowns.consume(p, brew.id()); // OSRS's shared potion delay
         p.level().playSound(null, p.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
         ServerNetworking.sync(p);
     }

@@ -155,6 +155,20 @@ public final class PrayerService {
         ServerNetworking.sync(player);
     }
 
+    /**
+     * Whether a click could switch {@code prayer} on now, without doing it or telling the player anything: the Prayer level,
+     * the minigame's rules and Prayer points allow it (quest and scroll unlocks aren't checked: the protection prayers have none).
+     * The late protection window ({@link LateProtection}) only waits for a switch the player can make.
+     */
+    public static boolean canSwitchOn(ServerPlayer player, Prayer prayer) {
+        PlayerData data = Players.data(player);
+        if (data.prayerPoints() <= 0 || data.skills().level(Skill.PRAYER) < prayer.level()) {
+            return false;
+        }
+        String rule = minigameRule.apply(player, prayer);
+        return rule == null || rule.isEmpty();
+    }
+
     /** Stamps a voluntary switch of a protection overhead for the switch grace (others are ignored). */
     private static void stamp(PlayerData data, Prayer prayer, boolean on) {
         int i = com.runecraft.osrs.PrayerGrace.index(prayer);

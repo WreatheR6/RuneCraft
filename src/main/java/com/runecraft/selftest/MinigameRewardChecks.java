@@ -409,6 +409,9 @@ final class MinigameRewardChecks {
                     continue;
                 }
                 p().setHealth(p().getMaxHealth());
+                for (int t = 0; t < com.runecraft.skill.ConsumeCooldowns.POTION_MC; t++) {
+                    com.runecraft.action.ActionManager.advanceForSelfTest(); // the shared 3-tick potion delay (round 42)
+                }
                 ItemStack held = hold(id);
                 use();
                 if (held.getDamageValue() != 1) {

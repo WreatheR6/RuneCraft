@@ -210,7 +210,7 @@ public final class GauntletService {
         sp.runEnergy = Math.min(RunEnergy.MAX, sp.runEnergy + RunEnergy.MAX * 40 / 100);
         sp.staminaUntil = com.runecraft.action.ActionManager.gameTick() + 200;
         p.level().playSound(null, p.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
-        p.getCooldowns().addCooldown(stack.getItem(), 3 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
+        com.runecraft.skill.ConsumeCooldowns.consume(p, Gauntlet.EGNIOL); // OSRS's shared potion delay
         int used = stack.getDamageValue() + 1;
         if (used >= 4) {
             p.setItemInHand(hand, Inv.stack(Gauntlet.VIAL, 1));

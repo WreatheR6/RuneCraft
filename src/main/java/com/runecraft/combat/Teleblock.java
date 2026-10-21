@@ -2,7 +2,7 @@ package com.runecraft.combat;
 
 import com.runecraft.action.ActionManager;
 import com.runecraft.osrs.CombatEffects;
-import com.runecraft.osrs.Prayer;
+import com.runecraft.osrs.AttackType;
 import com.runecraft.player.Players;
 import com.runecraft.util.Msg;
 import java.util.Map;
@@ -19,7 +19,8 @@ public final class Teleblock {
 
     /** Tele blocks a player; returns false (with a message to the caster) if it can't be applied now. */
     public static boolean apply(ServerPlayer caster, ServerPlayer victim) {
-        boolean prayer = Players.data(victim).isActive(Prayer.PROTECT_FROM_MAGIC);
+        // Protect from Magic halves it, read through the protection chokepoint (its switch grace)
+        boolean prayer = CombatHandler.isProtected(Players.data(victim), AttackType.MAGIC);
         CombatEffects.Teleblock tb = STATES.computeIfAbsent(victim.getUUID(), u -> new CombatEffects.Teleblock());
         if (!tb.apply(ActionManager.gameTick(), prayer)) {
             Msg.game(caster, "That player is already affected by this spell.");

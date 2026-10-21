@@ -409,7 +409,7 @@ final class QuestBossScripts {
         public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
             com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(player);
             for (com.runecraft.osrs.Prayer prayer : OVERHEADS) {
-                if (data.isActive(prayer)) {
+                if (data.isActive(prayer)) { // strict on purpose: he punishes the prayer he sees, not one just switched off
                     announce(boss, "Head Menaphite Guard: Your false gods will not protect you!", ChatFormatting.RED);
                     return Math.max(damage, data.skills().level(com.runecraft.osrs.Skill.HITPOINTS) / 3);
                 }
@@ -1160,6 +1160,7 @@ final class QuestBossScripts {
 
         @Override
         public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            // strict on purpose: his choice answers the overhead he sees (the switch grace only decides damage)
             boolean meleePrayer = com.runecraft.player.Players.data(target).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE);
             String want = meleePrayer || distance > 3 ? "bat_swarm" : "vampyric_slash";
             if (boss.def() != null) {

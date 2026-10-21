@@ -25,8 +25,12 @@ import net.minecraft.world.item.ItemStack;
  * items picked up later are covered too) and puts the vanilla item cooldown on every inventory item of the group, so the
  * hotbar shows one shared sweep.
  *
- * <p>// playability: OSRS food also delays the next attack by 3 ticks (2 for combo food); RuneCraft's eating does not
- * touch the attack timer.
+ * <p>Round 42: eating also adds to a weapon delay that is still running, as in OSRS (wiki Food/Fast foods): 3 game ticks
+ * for food, 2 for combo food, nothing for potions ({@link ConsumeRules#attackDelayMc}); the attack timer bar shows the new
+ * wait. Round 41 had left this out (// playability); it is kept because it is a rate, not a tick-precise input: it costs
+ * the attacks eating costs in OSRS, so boss max hits and food stay balanced against each other, and eating before the next
+ * attack (with the weapon ready) costs nothing, as in OSRS. Raid and minigame supplies (ToA, CoX, ToB, NMZ, the Gauntlet,
+ * blighted supplies, sq'irkjuice) go through {@link #consume(ServerPlayer, String)} too, instead of per-item cooldowns.
  */
 public final class ConsumeCooldowns {
     public static final int FOOD_MC = ConsumeRules.FOOD_MC;
@@ -75,6 +79,8 @@ public final class ConsumeCooldowns {
             group = ConsumeRules.Group.FOOD;
         }
         consume(player, group, ConsumeRules.delayMc(id, group));
+        // OSRS: food adds to a weapon delay that is still running (3 ticks, 2 for combo food); potions don't.
+        com.runecraft.combat.AttackTimer.addDelay(player, ConsumeRules.attackDelayMc(id, group));
     }
 
     /**
