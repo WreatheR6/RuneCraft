@@ -963,7 +963,8 @@ public final class SpellService {
         Vec3 look = p.getLookAngle();
         ItemEntity best = null;
         double bestScore = 0.97;
-        for (ItemEntity e : p.level().getEntitiesOfClass(ItemEntity.class, new AABB(eye, eye).inflate(RANGE), x -> true)) {
+        for (ItemEntity e : p.level().getEntitiesOfClass(ItemEntity.class, new AABB(eye, eye).inflate(RANGE),
+                x -> x.getTarget() == null || x.getTarget().equals(p.getUUID()))) { // not someone else's private drop
             Vec3 to = e.position().subtract(eye);
             double dist = to.length();
             if (dist > RANGE || dist < 0.1) {
