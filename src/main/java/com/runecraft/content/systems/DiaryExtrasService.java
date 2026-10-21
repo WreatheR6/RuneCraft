@@ -39,6 +39,8 @@ final class DiaryExtrasService {
         BlockHooks.register(DiaryExtras.CRYSTAL_CHEST, (p, pos, state) -> chest(p, "crystal_key", "crystal_chest",
                 DiaryExtras.crystalChest(p.getRandom()::nextDouble)));
         DiaryObjectsService.register();
+        DiaryTransportService.register();
+        DiarySpawnsService.register();
     }
 
     private static boolean questDone(ServerPlayer p, String questId) {

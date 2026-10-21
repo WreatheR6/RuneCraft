@@ -221,6 +221,7 @@ final class GameplayChecks {
         checks.addAll(ItemCombatChecks.all(context));
         checks.addAll(CannonChecks.all(context));
         checks.addAll(com.runecraft.content.systems.CombatAchievementSelfTest.checks(context)); // round 39 CA sweep
+        checks.addAll(com.runecraft.content.systems.DiarySelfTest.checks(context)); // round 40 achievement diaries
         checks.addAll(DungeonWorldChecks.all(context));
         checks.addAll(SlayerChecks.all(context));
         checks.addAll(SeaChecks.all(context));

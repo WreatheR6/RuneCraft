@@ -81,7 +81,10 @@ public final class DiaryService {
         return Diaries.restrictContains(restrict, Gielinor.region(p).name(), at[0], at[1]);
     }
 
-    /** The task's skill (boosts count, as in OSRS) and quest requirements. */
+    /**
+     * The task's skill (boosts count, as in OSRS) and quest requirements, and the conditions it is performed under: gear
+     * worn, a prayer active, an item wielded ({@link Diaries#wornReq}, {@link Diaries#prayerReq}, {@link Diaries#wieldReq}).
+     */
     static boolean meets(ServerPlayer p, Task task) {
         PlayerData d = Players.data(p);
         for (Map.Entry<Skill, Integer> e : task.reqs().entrySet()) {
@@ -96,7 +99,16 @@ public final class DiaryService {
                 return false;
             }
         }
-        return true;
+        java.util.List<String> worn = Diaries.wornReq(task);
+        if (!worn.isEmpty() && worn.stream().noneMatch(w -> wearingAll(p, w))) {
+            return false;
+        }
+        String prayer = Diaries.prayerReq(task);
+        if (prayer != null && d.activePrayers().stream().noneMatch(pr -> pr.name().equals(prayer))) {
+            return false;
+        }
+        String wield = Diaries.wieldReq(task);
+        return wield == null || Diaries.itemMatches(wield, Inv.idOf(p.getMainHandItem()));
     }
 
     // ---------------- Completion ----------------
@@ -193,10 +205,31 @@ public final class DiaryService {
         }
     }
 
-    /** A named activity (NPC talk, minigame start/win, spellbook switch, jewellery teleport, food eaten...). */
+    /**
+     * A named activity (NPC talk, minigame start/win, spellbook switch, jewellery teleport, food eaten...). A target with
+     * '&' parts ("teleport to all five cities") remembers each part seen in the task's counter until every part is done.
+     */
     public static void onActivity(ServerPlayer p, String key) {
         for (Task t : Diaries.tasks()) {
-            if (t.type() == Type.EVENT && Diaries.eventMatches(t.target(), key) && inArea(p, t.restrict())) {
+            if (t.type() != Type.EVENT || !inArea(p, t.restrict())) {
+                continue;
+            }
+            int mask = Diaries.eventPartsMatched(t.target(), key);
+            if (mask == 0) {
+                continue;
+            }
+            int all = Diaries.eventAllParts(t.target());
+            if (all == 1) {
+                complete(p, t);
+                continue;
+            }
+            SysState.SysPlayer sp = SysState.of(p);
+            if (sp.diaryDone.contains(t.id()) || !meets(p, t)) {
+                continue;
+            }
+            int seen = sp.diaryCounters.merge(t.id(), mask, (a, b) -> a | b);
+            if ((seen & all) == all) {
+                sp.diaryCounters.remove(t.id());
                 complete(p, t);
             }
         }
@@ -396,22 +429,44 @@ public final class DiaryService {
         }
         sp.diaryClaimed.add(key);
         Inv.give(p, reward, 1);
-        Inv.give(p, "antique_lamp_" + t.id(), 1);
+        Inv.give(p, DiaryRewards.lampFor(a.id(), t), 1);
         Msg.action(p, "You receive the " + ItemCatalog.get(reward).name() + " and an antique lamp.");
     }
 
-    /** Antique lamp: XP in a chosen skill. */
-    public static void rubLamp(ServerPlayer p, Tier tier, Skill skill) {
-        if (!Inv.has(p, "antique_lamp_" + tier.id(), 1)) {
+    /**
+     * Whether the player stands by someone who hands out this area's diary rewards: its taskmaster (OSRS: Two-pints, Jarr, Sir
+     * Rebral...; {@code DiaryExtras.TASKMASTERS}) or the Grand Exchange's diary master, who serves every area.
+     */
+    static boolean nearTaskmaster(ServerPlayer p, Area a) {
+        String master = com.runecraft.osrs.content.systems.DiaryExtras.taskmaster(a.id());
+        return !p.level().getEntitiesOfClass(com.runecraft.entity.QuestNpcEntity.class, p.getBoundingBox().inflate(12),
+                e -> e.npcId() != null && (e.npcId().equals(master) || e.npcId().equals("achievement_diary_master"))).isEmpty();
+    }
+
+    /** Claims a tier's reward from its taskmaster (or the Grand Exchange's diary master), who must be nearby. */
+    public static void claimFromTaskmaster(ServerPlayer p, Area a, Tier t) {
+        if (!nearTaskmaster(p, a)) {
+            Msg.game(p, "Speak to " + com.runecraft.osrs.content.systems.DiaryExtras.taskmasterName(a.id())
+                    + " to claim your " + a.name() + " diary rewards.");
             return;
         }
-        if (Players.data(p).skills().level(skill) < tier.lampMinLevel) {
-            Msg.game(p, "You need at least level " + tier.lampMinLevel + " " + skill.displayName() + " to use this lamp on it.");
+        claim(p, a, t);
+    }
+
+    /** Antique lamp ({@code antique_lamp_<key>}, see {@link DiaryRewards#lamp}): XP in a chosen skill. */
+    public static void rubLamp(ServerPlayer p, String key, Skill skill) {
+        int[] lamp = DiaryRewards.lamp(key);
+        String id = DiaryRewards.LAMP_PREFIX + key;
+        if (lamp == null || !Inv.has(p, id, 1)) {
             return;
         }
-        Inv.remove(p, "antique_lamp_" + tier.id(), 1);
-        com.runecraft.skill.XpService.add(p, skill, tier.lampXp);
-        Msg.action(p, "The lamp grants you " + String.format(Locale.ROOT, "%,d", tier.lampXp) + " " + skill.displayName() + " experience.");
+        if (Players.data(p).skills().level(skill) < lamp[1]) {
+            Msg.game(p, "You need at least level " + lamp[1] + " " + skill.displayName() + " to use this lamp on it.");
+            return;
+        }
+        Inv.remove(p, id, 1);
+        com.runecraft.skill.XpService.add(p, skill, lamp[0]);
+        Msg.action(p, "The lamp grants you " + String.format(Locale.ROOT, "%,d", lamp[0]) + " " + skill.displayName() + " experience.");
     }
 
     public static int done(SysState.SysPlayer sp, Area a, Tier t) {

@@ -152,7 +152,8 @@ final class AgilityHooks {
             return;
         }
         // Indoor shortcuts (dungeons, the Slayer Tower) by exact block position.
-        for (List<AgilityShortcuts.BlockEnds> list : List.of(Dungeons.shortcutEnds(), AgilityShortcuts.TOWER_ENDS)) {
+        for (List<AgilityShortcuts.BlockEnds> list : List.of(Dungeons.shortcutEnds(), AgilityShortcuts.TOWER_ENDS,
+                AgilityShortcuts.DUNGEON_ENDS)) {
             for (AgilityShortcuts.BlockEnds e : list) {
                 int end = e.endAt(pos.getX(), pos.getY(), pos.getZ());
                 if (end < 0) {

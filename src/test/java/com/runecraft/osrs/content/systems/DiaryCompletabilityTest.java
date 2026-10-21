@@ -146,7 +146,7 @@ class DiaryCompletabilityTest {
                     yield null;
                 }
                 case EVENT -> {
-                    for (String key : t.target().split("\\|")) {
+                    for (String key : t.target().split("[|&]")) {
                         String prefix = key.contains(":") ? key.substring(0, key.indexOf(':')) : key;
                         if (!Diaries.ACTIVITIES.contains(prefix)) {
                             yield "unknown activity " + key;

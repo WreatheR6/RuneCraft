@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/rellekka_well_side",
+    "top": "runecraft:block/module/rellekka_well_top",
+    "bottom": "runecraft:block/module/rellekka_well_bottom"
+  }
+}

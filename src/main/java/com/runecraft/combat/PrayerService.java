@@ -175,11 +175,17 @@ public final class PrayerService {
         }
         // Altars restore Prayer points to the base level (a boosted or drained level doesn't change the cap).
         int max = data.skills().level(Skill.PRAYER);
+        // Achievement diaries: praying at an altar ("altar_pray"), restoring 85+ points at once ("altar_restore_85").
+        com.runecraft.content.GameEvents.fireActivity(player, "altar_pray");
         if (data.prayerPoints() >= max) {
             Msg.game(player, "You already have full Prayer points.");
             return;
         }
+        int restored = max - data.prayerPoints();
         data.setPrayerPoints(max);
+        if (restored >= 85) {
+            com.runecraft.content.GameEvents.fireActivity(player, "altar_restore_85");
+        }
         player.level().playSound(null, player.blockPosition(), SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 0.6f, 1.0f);
         Msg.game(player, "You recharge your Prayer points.");
         ServerNetworking.sync(player);

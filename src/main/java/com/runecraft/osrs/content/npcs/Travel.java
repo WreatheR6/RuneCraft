@@ -475,5 +475,28 @@ public final class Travel {
                 "minecart_ice_mountain", "dwarf", "Back to Keldagrim? That'll be 150 coins."));
         AGENTS.add(new Agent("npc_cart_conductor_white_wolf_mountain", "Cart conductor", "White Wolf Mountain", 2877, 3468,
                 "minecart_white_wolf_mountain", "dwarf", "Back to Keldagrim? That'll be 100 coins."));
+
+        // Round 40 (achievement diary tasks). The Shilo Village cart system after Shilo Village: Hajedy's cart south of the
+        // Brimhaven dock and Vigroy west of the Shilo Village bank. OSRS's fare scales with the coins carried (10-200 coins);
+        // this is the "Pay-fare" price, which is always 200. // approx
+        route("cart_brimhaven_shilo", "cart", Dest.of("Shilo Village", 2832, 2954, 200, "shilo_village"));
+        route("cart_shilo_brimhaven", "cart", Dest.of("Brimhaven", 2777, 3212, 200, "shilo_village"));
+        AGENTS.add(new Agent("npc_cart_hajedy", "Hajedy's cart", "Brimhaven", 2780, 3213, "cart_brimhaven_shilo", "canoe",
+                "Hajedy's cart to Shilo Village. A ride costs 200 coins."));
+        AGENTS.add(new Agent("npc_cart_vigroy", "Vigroy", "Shilo Village", 2834, 2955, "cart_shilo_brimhaven", "sailor",
+                "My cart can take you to Brimhaven. 200 coins."));
+        // The Lady of the Waves: Captain Shanks's ship from south of Cairn Isle to Port Khazard or Port Sarim (shortest-path tiles;
+        // OSRS needs one of his ship tickets, not modelled). // approx
+        route("boat_lady_of_the_waves", "sail", Dest.of("Port Khazard", 2680, 3150, 0, "shilo_village"),
+                Dest.of("Port Sarim", 3050, 3192, 0, "shilo_village"));
+        AGENTS.add(new Agent("npc_captain_shanks", "Captain Shanks", "Cairn Isle", 2763, 2960, "boat_lady_of_the_waves", "sailor",
+                "The Lady of the Waves sails to Port Khazard and Port Sarim."));
+        // The Hollows' swamp boat to Mort'ton (free after Nature Spirit) and back (10 coins; shortest-path tiles).
+        route("boat_swamp_hollows", "sail", Dest.of("Mort'ton", 3522, 3285, 0, "nature_spirit"));
+        route("boat_swamp_mortton", "sail", Dest.of("The Hollows", 3498, 3380, 10, "nature_spirit"));
+        AGENTS.add(new Agent("npc_swamp_boat_hollows", "Swamp boat", "The Hollows", 3500, 3379, "boat_swamp_hollows", "canoe",
+                "A swamp boat. It can carry you through the Mort Myre Swamp to Mort'ton."));
+        AGENTS.add(new Agent("npc_swamp_boat_mortton", "Swamp boat", "Mort'ton", 3523, 3283, "boat_swamp_mortton", "canoe",
+                "A swamp boat back to the Hollows. 10 coins."));
     }
 }

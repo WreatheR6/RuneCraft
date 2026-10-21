@@ -215,4 +215,119 @@ public final class DiaryExtras {
     public static int entLogsPerChop(boolean wilderness) {
         return wilderness ? 2 : 1;
     }
+
+    // ---------------- Round 40: taskmasters, water sources ----------------
+
+    /** An area's diary taskmaster (OSRS wiki "Achievement Diary"): NPC id, name and the tile mejrs' NPC list gives. */
+    public record Taskmaster(String area, String npcId, String name, int x, int y) {
+    }
+
+    /**
+     * The twelve taskmasters who hand out each area's rewards. Karamja's, Pirate Jackie the Fruit, is the minigames module's
+     * Brimhaven Agility Arena NPC (talking to him offers the Karamja Diary); the others are added by this module.
+     */
+    public static final List<Taskmaster> TASKMASTERS = List.of(
+            new Taskmaster("ardougne", "diary_two_pints", "Two-pints", 2574, 3325),
+            new Taskmaster("desert", "diary_jarr", "Jarr", 3299, 3121),
+            new Taskmaster("falador", "diary_sir_rebral", "Sir Rebral", 2977, 3346),
+            new Taskmaster("fremennik", "diary_thorodin", "Thorodin", 2659, 3627),
+            new Taskmaster("kandarin", "diary_the_wedge", "The 'Wedge'", 2760, 3476),
+            new Taskmaster("karamja", "mg_pirate_jackie", "Pirate Jackie the Fruit", 2811, 3192),
+            new Taskmaster("kourend", "diary_elise", "Elise", 1648, 3665),
+            new Taskmaster("lumbridge", "diary_hatius_cosaintus", "Hatius Cosaintus", 3234, 3214),
+            new Taskmaster("morytania", "diary_le_sabre", "Le-sabrè", 3465, 3478),
+            new Taskmaster("varrock", "diary_toby", "Toby", 3225, 3415),
+            new Taskmaster("western", "diary_elder_gnome_child", "Elder Gnome child", 2466, 3459),
+            new Taskmaster("wilderness", "diary_lesser_fanatic", "Lesser Fanatic", 3121, 3517));
+
+    /** The NPC id of an area's taskmaster, or null. */
+    public static String taskmaster(String area) {
+        for (Taskmaster t : TASKMASTERS) {
+            if (t.area().equals(area)) {
+                return t.npcId();
+            }
+        }
+        return null;
+    }
+
+    /** The name of an area's taskmaster ("the diary master" if none). */
+    public static String taskmasterName(String area) {
+        for (Taskmaster t : TASKMASTERS) {
+            if (t.area().equals(area)) {
+                return t.name();
+            }
+        }
+        return "the diary master";
+    }
+
+    /** The area whose taskmaster this NPC is, or null. */
+    public static String taskmasterArea(String npcId) {
+        for (Taskmaster t : TASKMASTERS) {
+            if (t.npcId().equals(npcId)) {
+                return t.area();
+            }
+        }
+        return null;
+    }
+
+    /** The water pump north of Falador's west bank (data_osrs object "Waterpump", 2947, 3382). */
+    public static final String WATER_PUMP = "falador_water_pump";
+    public static final int FALADOR_PUMP_X = 2947;
+    public static final int FALADOR_PUMP_Y = 3382;
+    /** The well in Rellekka (data_osrs object "Well", 2668, 3660). */
+    public static final String WELL = "rellekka_well";
+    public static final int RELLEKKA_WELL_X = 2668;
+    public static final int RELLEKKA_WELL_Y = 3660;
+
+    /** Containers a pump or well fills: {empty, full} (OSRS: buckets, jugs, bowls and vials). */
+    public static final List<String[]> WATER_FILLS = List.of(new String[]{"minecraft:bucket", "minecraft:water_bucket"},
+            new String[]{"jug", "jug_of_water"}, new String[]{"bowl", "bowl_of_water"}, new String[]{"vial", "vial_of_water"});
+
+    /**
+     * An item spawn picked up by hand (OSRS ground item spawns): the block that stands for it, the item, its respawn in game
+     * ticks and its spots: OSRS tiles on the surface ({@code tiles}) and absolute block positions inside carved dungeons
+     * ({@code blocks}, feet level). Taking it gives one item; the block comes back after the respawn time.
+     */
+    public record GroundSpawn(String block, String item, String name, int respawnTicks, List<int[]> tiles, List<int[]> blocks) {
+    }
+
+    /** Seaweed all around Karamja's coasts (wiki "Seaweed" spawn table, 100-tick respawn; spots in this world's sea are skipped). */
+    public static final GroundSpawn SEAWEED = new GroundSpawn("seaweed_spawn", "seaweed", "Seaweed", 100, List.of(
+            new int[]{2753, 3119}, new int[]{2755, 2952}, new int[]{2755, 3017}, new int[]{2755, 3049}, new int[]{2755, 3071},
+            new int[]{2756, 3008}, new int[]{2756, 3075}, new int[]{2756, 3125}, new int[]{2757, 2947}, new int[]{2757, 3109},
+            new int[]{2762, 3001}, new int[]{2771, 2995}, new int[]{2782, 2987}, new int[]{2786, 2960}, new int[]{2807, 3129},
+            new int[]{2840, 2974}, new int[]{2854, 2977}, new int[]{2864, 3195}, new int[]{2866, 2976}, new int[]{2896, 3119},
+            new int[]{2913, 3111}, new int[]{2926, 3110}, new int[]{2939, 3073}, new int[]{2940, 3102}, new int[]{2947, 3067},
+            new int[]{2952, 2951}, new int[]{2955, 3010}, new int[]{2960, 2959}, new int[]{2975, 3013}), List.of());
+
+    /**
+     * Potato cacti in the Kalphite Lair (wiki "Potato cactus": three in the soldiers' south-west room, the rest along the west
+     * wall of the Queen's chamber; 100-tick respawn). The lair is carved more compactly than OSRS's (the dungeons module's
+     * Kalphite Lair, floor block y 18), so the spots are those rooms' corners as built. // approx
+     */
+    public static final GroundSpawn POTATO_CACTUS = new GroundSpawn("potato_cactus_spawn", "potato_cactus", "Potato cactus", 100,
+            List.of(), List.of(new int[]{29, 19, 263}, new int[]{31, 19, 264}, new int[]{33, 19, 262}, new int[]{73, 19, 196},
+            new int[]{73, 19, 200}, new int[]{73, 19, 204}, new int[]{73, 19, 208}, new int[]{73, 19, 211}));
+
+    public static final List<GroundSpawn> GROUND_SPAWNS = List.of(SEAWEED, POTATO_CACTUS);
+
+    /** The ground spawn a block id stands for, or null. */
+    public static GroundSpawn groundSpawn(String block) {
+        for (GroundSpawn g : GROUND_SPAWNS) {
+            if (g.block().equals(block)) {
+                return g;
+            }
+        }
+        return null;
+    }
+
+    /** What a pump or well turns this held item into, or null. */
+    public static String waterFill(String held) {
+        for (String[] f : WATER_FILLS) {
+            if (f[0].equals(held)) {
+                return f[1];
+            }
+        }
+        return null;
+    }
 }

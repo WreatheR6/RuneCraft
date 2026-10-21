@@ -78,7 +78,8 @@ final class AgilityPlacer {
                     SURFACE, s, 1));
         }
         // Indoor shortcut ends inside surface buildings (the Slayer Tower's chains), at their storey's height.
-        for (AgilityShortcuts.BlockEnds e : AgilityShortcuts.TOWER_ENDS) {
+        for (AgilityShortcuts.BlockEnds e : java.util.stream.Stream.concat(AgilityShortcuts.TOWER_ENDS.stream(),
+                AgilityShortcuts.DUNGEON_ENDS.stream()).toList()) {
             Supplier<BlockState> block = () -> BuiltInRegistries.BLOCK.get(RuneCraft.resolve(AgilityShortcuts.BLOCK)).defaultBlockState();
             add(new Tile("shortcut:" + e.id() + ":a", e.x1(), e.z1(), block, e.y1()));
             add(new Tile("shortcut:" + e.id() + ":b", e.x2(), e.z2(), block, e.y2()));

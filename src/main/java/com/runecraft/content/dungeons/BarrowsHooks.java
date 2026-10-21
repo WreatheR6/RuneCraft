@@ -484,6 +484,7 @@ public final class BarrowsHooks {
         PlayerData data = Players.data(p);
         int kc = data.incrementKillCount("barrows_chests");
         Msg.game(p, "Your Barrows chest count is: " + kc + ".");
+        com.runecraft.content.GameEvents.fireActivity(p, "chest_open:barrows_chest"); // the elite Morytania diary task
         run.reset(new Random(p.getRandom().nextLong()));
         PUZZLES.remove(p.getUUID());
         state.setDirty();
