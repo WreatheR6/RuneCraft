@@ -479,7 +479,8 @@ final class MonsterAiChecks {
             }
             step(1);
             expect(!goal.returning(), "the giant spider gave up " + i + " MC in while the player kept shooting it from "
-                    + fmt(playerFromHome) + " blocks off its spawn point");
+                    + fmt(playerFromHome) + " blocks off its spawn point (it stood " + fmt(fromHome(spider)) + " blocks out; max range "
+                    + fmt(MonsterAi.MAX_RANGE_BLOCKS) + ", leash " + fmt(MonsterAi.LEASH_BLOCKS) + ")");
             expect(spider.getTarget() == p, "the giant spider dropped the player shooting it");
             expect(spider.getHealth() <= half, "the giant spider healed to " + spider.getHealth() + " while being shot");
             furthest = Math.max(furthest, fromHome(spider));
