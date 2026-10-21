@@ -38,7 +38,13 @@ public abstract class CombatProfile<T extends CombatProfile<T>> {
     public float scale = 1.0f;
     public float width = 0.6f;
     public float height = 1.95f;
-    public double moveSpeed = 0.25;
+    /**
+     * Movement speed attribute. Default 0.31 (// playability, round 41: OSRS NPCs walk one tile a tick like the player, so a
+     * chasing monster walks at about a walking player's pace: 0.31 on stone is 0.98 x 0.31^2 / (1 - 0.6 x 0.91) = 0.207 blocks a
+     * tick, 4.15 blocks a second, inside the 3.8-4.6 target, against a walking player's 4.3; 0.25 left every chaser trailing at
+     * 2.7). Explicit per-monster speeds are unchanged.
+     */
+    public double moveSpeed = 0.31;
     public int slayerLevel = 1;
     public String slayerCategory;
     /** Item that must be wielded to damage it (e.g. "leaf_bladed_sword"), or null. */

@@ -49,6 +49,13 @@ public final class ModEntities {
         };
     }
 
+    /**
+     * Movement speed of the built-in monsters (// playability, round 41: 0.31 walks a chase at 4.15 blocks a second on stone, about
+     * a walking player's 4.3, as OSRS NPCs walk a tile a tick; it was 0.25, 2.7 blocks a second). The same default as module
+     * monsters ({@code CombatProfile.moveSpeed}, which shows the arithmetic).
+     */
+    public static final double DEFAULT_MOVE_SPEED = 0.31;
+
     private static AttributeSupplier.Builder attributes(int hp, double speed) {
         return net.minecraft.world.entity.monster.Monster.createMonsterAttributes()
                 .add(Attributes.MAX_HEALTH, hp)
@@ -65,7 +72,7 @@ public final class ModEntities {
             float s = scale(m.entity());
             EntityType<OsrsMonsterEntity> type = MobTypeBuilder.<OsrsMonsterEntity>create(OsrsMonsterEntity::new, MobCategory.MONSTER)
                     .size(0.6f * s, 1.95f * s)
-                    .defaultAttributes(() -> attributes(m.hitpoints(), 0.25))
+                    .defaultAttributes(() -> attributes(m.hitpoints(), DEFAULT_MOVE_SPEED))
                     .groundSpawns()
                     .trackRangeBlocks(64)
                     .register(RuneCraft.id(m.entity()));

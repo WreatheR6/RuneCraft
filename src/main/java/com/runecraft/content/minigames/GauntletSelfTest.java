@@ -445,7 +445,7 @@ public final class GauntletSelfTest {
         for (int i = 0; i < 10; i++) {
             heal();
             d.activePrayers().add(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
-            int landed = BossSelfTests.hunllefPrayerDisable(boss, p, -1);
+            int landed = prayerOrb(boss);
             expect(landed >= 0, "the Hunllef's prayer-disabling orb never landed");
             expect(landed <= prayedMax, "a prayer-disabling orb through Protect from Magic hit " + landed + " (prayed max " + prayedMax + ")");
             expect(!d.isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC), "the prayer-disabling orb left Protect from Magic on");
@@ -453,6 +453,39 @@ public final class GauntletSelfTest {
         }
         heal();
         note("prayer-disabling orb through the right prayer: at most " + worst);
+    }
+
+    /** The player the prayer-disabling orb is watched landing on, and the damage it landed for (-1 while in flight). */
+    private static ServerPlayer orbWatched;
+    private static int orbDamage = -1;
+    private static boolean orbHooked;
+
+    /**
+     * The Hunllef's prayer-disabling orb through the real attack path (accuracy roll and all): launched, then flown to the player
+     * (it lands after its flight since round 41: the clock and the pending hits are advanced to its landing), and the damage it
+     * came through for read off the damage hook. -1 when it never landed.
+     */
+    private int prayerOrb(DataBossEntity boss) {
+        if (!orbHooked) {
+            orbHooked = true;
+            com.runecraft.combat.CombatHooks.addDamageListener((player, attacker, attack, style, damage) -> {
+                if (player == orbWatched && attacker == g.hunllef() && "prayer_disable".equals(attack)) {
+                    orbDamage = damage;
+                }
+            });
+        }
+        orbWatched = p;
+        orbDamage = -1;
+        try {
+            int now = BossSelfTests.hunllefPrayerDisable(boss, p, -1);
+            for (int i = 0; i < 60 && orbDamage < 0 && now < 0; i++) {
+                ActionManager.advanceForSelfTest();
+                Mechanics.tickForSelfTest();
+            }
+            return now >= 0 ? now : orbDamage;
+        } finally {
+            orbWatched = null;
+        }
     }
 
     private static boolean sameStyle(AttackType a, AttackType b) {

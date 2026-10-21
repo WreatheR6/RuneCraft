@@ -2,15 +2,28 @@ package com.runecraft.entity;
 
 import com.runecraft.action.ActionManager;
 import com.runecraft.osrs.AttackType;
+import com.runecraft.osrs.ThreatTiming;
 import java.util.EnumSet;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 
-/** Chases (melee) or keeps range (ranged/magic) and attacks at the OSRS attack speed. */
+/**
+ * Chases (melee) or keeps range (ranged/magic) and attacks at the OSRS attack speed, stamped when each attack starts (the hit
+ * itself is delivered later: a wind-up, a projectile or a telegraph, see {@code Mechanics}).
+ *
+ * <p>Real-time adaptations (// playability, round 41): melee reach is the horizontal gap between the two bounding boxes (at most
+ * 1.5 blocks, 1.5 in height; OSRS: an adjacent tile) instead of a 3D centre distance that grew with the monster's width, and a
+ * melee monster closes in until the gap is 0.8. A newly engaged target, or one that just came into melee reach, is never hit
+ * sooner than 10 MC later (OSRS can hit on the tick a monster arrives).
+ */
 public class OsrsAttackGoal extends Goal {
     private final OsrsMonsterEntity mob;
     private long lastAttack = -1000;
+    /** The target the cadence was last set up for. */
+    private LivingEntity engaged;
+    private boolean wasInReach;
+    private long arrivedAt = Long.MIN_VALUE / 4;
 
     public OsrsAttackGoal(OsrsMonsterEntity mob) {
         this.mob = mob;
@@ -45,23 +58,36 @@ public class OsrsAttackGoal extends Goal {
         if (!(mob.getTarget() instanceof ServerPlayer target)) {
             return;
         }
+        long now = ActionManager.mcTick();
+        int speedTicks = mob.stats().attackSpeed();
+        int windup = ThreatTiming.meleeWindupMc(mob.getBbWidth());
+        if (target != engaged) {
+            engaged = target;
+            lastAttack = ThreatTiming.engageLastAttack(now, speedTicks, windup);
+            wasInReach = false;
+        }
         double distSq = mob.distanceToSqr(target);
         AttackType style = mob.chooseStyle(target, distSq);
         boolean melee = style.isMelee() || mob.meleeRangeOnly;
-        double reach = mob.getBbWidth() * 1.4 + target.getBbWidth() + 0.6;
+        double gap = ThreatTiming.gap(target.getX() - mob.getX(), target.getZ() - mob.getZ(), mob.getBbWidth(), target.getBbWidth());
         double ranged = mob.rangedReach > 0 ? mob.rangedReach : 10.0;
-        double range = melee ? reach * reach : ranged * ranged;
+        boolean inRange = melee ? ThreatTiming.inMeleeReach(gap, target.getY() - mob.getY()) : distSq <= ranged * ranged;
         mob.getLookControl().setLookAt(target, 30.0f, 30.0f);
         boolean canSee = mob.getSensing().hasLineOfSight(target);
-        if (distSq > range || !canSee) {
+        if (!inRange || !canSee) {
             chase(target);
         } else if (!melee) {
             mob.getNavigation().stop();
-        } else if (distSq > reach * reach * 0.6) {
+        } else if (ThreatTiming.keepChasing(gap)) {
             chase(target);
         }
-        long now = ActionManager.mcTick();
-        tryAttack(target, style, distSq, range, canSee, now);
+        boolean inReach = melee && inRange;
+        if (inReach && !wasInReach) {
+            arrivedAt = now;
+        }
+        wasInReach = inReach;
+        long earliest = melee ? ThreatTiming.arrivalReadyMc(arrivedAt, windup) : Long.MIN_VALUE;
+        tryAttack(target, style, inRange && canSee, now, speedTicks, earliest);
     }
 
     /** Path-finds to the target, or walks straight at it for a creature with OSRS direct ("dumb") pathing. */
@@ -74,11 +100,10 @@ public class OsrsAttackGoal extends Goal {
         }
     }
 
-    private void tryAttack(ServerPlayer target, AttackType style, double distSq, double range, boolean canSee, long now) {
-        long speed = (long) mob.stats().attackSpeed() * ActionManager.MC_TICKS_PER_GAME_TICK;
-        if (distSq <= range && canSee && now - lastAttack >= speed
+    private void tryAttack(ServerPlayer target, AttackType style, boolean ready, long now, int speedTicks, long earliest) {
+        if (ready && ThreatTiming.cadenceReady(now, lastAttack, speedTicks) && now >= earliest
                 && com.runecraft.combat.CombatZones.npcMayAttack(mob, target)) {
-            lastAttack = now;
+            lastAttack = now; // cadence stamped at launch: a later landing never adds or removes an attack
             mob.performAttack(target, style);
         }
     }

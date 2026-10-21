@@ -125,6 +125,17 @@ final class ClassicBossWalks {
         return now + 1;
     }
 
+    /**
+     * Lets the monster hits already on their way to the player land (a projectile's flight, a wind-up, a telegraph: round 41's
+     * real-time delivery), moving only the clock and the pending hits on, not the boss's script.
+     */
+    private static void landPending(ServerPlayer p) {
+        for (int i = 0; i < 80 && Mechanics.pendingOn(p) > 0; i++) {
+            ActionManager.advanceForSelfTest();
+            Mechanics.tickForSelfTest();
+        }
+    }
+
     private static List<DataBossEntity> around(ServerPlayer p, String bossId) {
         EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(bossId);
         return type == null ? List.of() : p.serverLevel().getEntities(type, new AABB(p.blockPosition()).inflate(64),
@@ -293,8 +304,9 @@ final class ClassicBossWalks {
             p.setHealth(p.getMaxHealth());
             int full = boss.modifyIncoming(p, 40, AttackType.RANGED);
             expect(full == 40, "Vorkath still took " + full + " of a 40 after the acid phase");
-            // Frozen phase: the spawn killed.
+            // Frozen phase: the spawn killed (the icy breath flies to the player first: round 41's projectile delivery).
             v.startSpawn(boss, p);
+            landPending(p);
             Mob spawn = v.spawn();
             expect(spawn != null && spawn.isAlive(), "no zombified spawn");
             expect(!boss.script().isVulnerable(boss), "Vorkath could be hurt while its spawn lived");
@@ -308,6 +320,7 @@ final class ClassicBossWalks {
             out.append("; spawn landed ").append(String.format(Locale.ROOT, "%.0f", away)).append(" blocks away, killed: freed");
             // Frozen phase: the spawn reaches the player and explodes.
             v.startSpawn(boss, p);
+            landPending(p);
             spawn = v.spawn();
             expect(spawn != null, "no second zombified spawn");
             spawn.teleportTo(p.getX() + 0.5, p.getY(), p.getZ());

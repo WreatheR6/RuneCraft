@@ -88,6 +88,11 @@ public class BossEntity extends OsrsMonsterEntity {
     private Script script;
     private boolean scriptMade;
     private AttackType attackStyle;
+    /** The style rolled for the next attack, kept until the attack is made or the target's reach changes (see baseStyle). */
+    private AttackType rolledStyle;
+    private boolean rolledAdjacent;
+    /** The script's after-attack hook of a melee attack being delivered, run once its swing resolves (takeMeleeAfter). */
+    private Runnable meleeAfter;
 
     /** This boss's module script, or null. */
     public Script script() {
@@ -208,9 +213,31 @@ public class BossEntity extends OsrsMonsterEntity {
         if (script() != null && tickCount % ActionManager.MC_TICKS_PER_GAME_TICK == 0 && isAlive()) {
             script.gameTick(this);
         }
+        landTelegraph();
+    }
+
+    /**
+     * Self-test hook ({@code com.runecraft.selftest}): lands a due telegraphed hit (Jad's) now, as the boss's AI step does every
+     * Minecraft tick, without ticking its goals.
+     */
+    public void tickTelegraphForSelfTest() {
+        if (isAlive()) {
+            landTelegraph();
+        }
+    }
+
+    private void landTelegraph() {
         if (pendingStyle != null && ActionManager.mcTick() >= pendingAt) {
-            if (pendingTarget != null && pendingTarget.isAlive()) {
-                CombatHandler.npcAttack(this, pendingTarget, pendingStyle);
+            // playability: the telegraphed hit lands only on a target still there (alive, same level, in range + 4), rolled
+            // through npcAttack without its per-monster cooldown: the goal stamped Jad's cadence at launch, so his claw 8 ticks
+            // after a magic attack is no longer dropped by the double cooldown.
+            ServerPlayer t = pendingTarget;
+            double range = rangedReach > 0 ? rangedReach : 10.0;
+            if (t != null && t.isAlive() && !t.isRemoved() && t.level() == level()
+                    && com.runecraft.osrs.ThreatTiming.inRange(Math.max(0, distanceTo(t) - getBbWidth() / 2 - t.getBbWidth() / 2), range)) {
+                CombatHandler.npcAttack(this, t, pendingStyle, true);
+            } else if (t != null && t.isAlive() && t.level() == level()) {
+                ServerNetworking.hitsplat(t, 0, com.runecraft.network.Net.SPLAT_MISS);
             }
             pendingStyle = null;
             pendingTarget = null;
@@ -233,14 +260,30 @@ public class BossEntity extends OsrsMonsterEntity {
         return slamNext;
     }
 
-    /** Whether a target at this squared distance is in melee reach. */
+    /**
+     * Whether a target at this squared (centre) distance is in melee reach: the bounding-box gap rule (// playability: was
+     * {@code width * 1.4 + 1.2} from the centre, which let a big boss hit from well outside its body), for a player-sized target.
+     */
     public boolean adjacent(double distanceSq) {
-        return distanceSq < Math.pow(getBbWidth() * 1.4 + 1.2, 2);
+        return Math.sqrt(distanceSq) - getBbWidth() / 2 - 0.3 <= com.runecraft.osrs.ThreatTiming.MELEE_REACH;
     }
 
+    /**
+     * The boss's own style choice. It is rolled once and kept until the attack is made, or until the target moves in or out of
+     * melee reach (the choice depends on it): the goal asks every tick, and a re-roll every tick made a mixed-style boss stutter
+     * between walking up and standing to cast (// playability; the odds per attack are unchanged).
+     */
     private AttackType baseStyle(ServerPlayer target, double distanceSq) {
-        Boss boss = boss();
         boolean adjacent = adjacent(distanceSq);
+        if (rolledStyle == null || rolledAdjacent != adjacent) {
+            rolledStyle = rollStyle(adjacent);
+            rolledAdjacent = adjacent;
+        }
+        return rolledStyle;
+    }
+
+    private AttackType rollStyle(boolean adjacent) {
+        Boss boss = boss();
         return switch (boss.mechanic()) {
             case MIXED_MAGIC -> adjacent && random.nextBoolean() ? AttackType.CRUSH : AttackType.MAGIC;
             // OSRS Wiki: 2/3 melee, 1/3 the ranged slam at everyone in the room, which he only uses within melee range of
@@ -257,13 +300,26 @@ public class BossEntity extends OsrsMonsterEntity {
     @Override
     public void performAttack(ServerPlayer target, AttackType type) {
         attackStyle = type;
+        rolledStyle = null; // the next attack's style is rolled afresh
         if (script() != null && script.performAttack(this, target, type)) {
             return;
         }
+        // A melee swing now lands after its wind-up: the script's after-attack hook (Obor's knockback slam, Bryophyta's
+        // growthlings) runs once it has resolved, so the slam pushes the player after the hit instead of out of its reach.
+        meleeAfter = script != null && type.isMelee() ? () -> script.afterAttack(this, target, type) : null;
         bossAttack(target, type);
-        if (script != null) {
-            script.afterAttack(this, target, type);
+        Runnable after = meleeAfter;
+        meleeAfter = null;
+        if (script != null && (after != null || !type.isMelee())) {
+            script.afterAttack(this, target, type); // not delivered later (a telegraph, a slam, a ranged or magic attack)
         }
+    }
+
+    @Override
+    protected Runnable takeMeleeAfter() {
+        Runnable after = meleeAfter;
+        meleeAfter = null;
+        return after;
     }
 
     private void bossAttack(ServerPlayer target, AttackType type) {
@@ -283,11 +339,11 @@ public class BossEntity extends OsrsMonsterEntity {
                 if (type == AttackType.MAGIC) {
                     world.sendParticles(ParticleTypes.FLAME, getX(), getY() + getBbHeight(), getZ(), 40, 0.6, 0.6, 0.6, 0.05);
                     world.playSound(null, blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.HOSTILE, 2f, 0.5f);
-                    Msg.action(target, "TzTok-Jad rears up!");
+                    com.runecraft.boss.ThreatCues.announce(this, target, "TzTok-Jad rears up!", AttackType.MAGIC);
                 } else {
                     world.sendParticles(ParticleTypes.LAVA, getX(), getY() + 0.2, getZ(), 30, 1.0, 0.1, 1.0, 0.1);
                     world.playSound(null, blockPosition(), SoundEvents.RAVAGER_STUNNED, SoundSource.HOSTILE, 2f, 0.5f);
-                    Msg.action(target, "TzTok-Jad stomps the ground!");
+                    com.runecraft.boss.ThreatCues.announce(this, target, "TzTok-Jad stomps the ground!", AttackType.RANGED);
                 }
                 return;
             }
@@ -298,8 +354,7 @@ public class BossEntity extends OsrsMonsterEntity {
                     var room = com.runecraft.osrs.content.godwars.GwdDungeon.areaAt(getBlockX(), getBlockY(), getBlockZ());
                     for (ServerPlayer p : world.getPlayers(pl -> pl.distanceToSqr(this) < 12 * 12 && pl.isAlive()
                             && com.runecraft.osrs.content.godwars.GwdDungeon.inRoom(room, pl.getBlockX(), pl.getBlockY(), pl.getBlockZ()))) {
-                        CombatHandler.npcAttack(this, p, AttackType.RANGED);
-                        resetCooldownHack();
+                        CombatHandler.npcAttack(this, p, AttackType.RANGED, true); // one slam, everyone in the room
                     }
                     return;
                 }
@@ -312,13 +367,16 @@ public class BossEntity extends OsrsMonsterEntity {
                             .forEach(p -> p.displayClientMessage(Component.literal("K'ril Tsutsaroth: YARRRRRRR!").withStyle(ChatFormatting.RED), false));
                     com.runecraft.content.systems.CombatAchievementService.countNear(this,
                             com.runecraft.osrs.content.systems.CombatAchievements.COUNT_KRIL_YARR);
-                    PlayerData data = Players.data(target);
-                    boolean spectral = "spectral_spirit_shield".equals(Inv.idOf(target.getOffhandItem()));
-                    data.setPrayerPoints(data.prayerPoints() - data.prayerPoints() / (spectral ? 4 : 2));
-                    int dmg = 35 + random.nextInt(15);
                     swing(net.minecraft.world.InteractionHand.MAIN_HAND);
-                    CombatHandler.applyDamage(this, target, dmg);
-                    ServerNetworking.sync(target);
+                    // playability: lands after the swing's wind-up, on a target still in reach (OSRS: on the swing tick)
+                    com.runecraft.boss.Mechanics.deliverMelee(this, target, com.runecraft.osrs.ThreatTiming.MELEE_REACH, () -> {
+                        PlayerData data = Players.data(target);
+                        boolean spectral = "spectral_spirit_shield".equals(Inv.idOf(target.getOffhandItem()));
+                        data.setPrayerPoints(data.prayerPoints() - data.prayerPoints() / (spectral ? 4 : 2));
+                        int dmg = 35 + random.nextInt(15);
+                        CombatHandler.applyDamage(this, target, dmg);
+                        ServerNetworking.sync(target);
+                    }, takeMeleeAfter());
                     return;
                 }
             }
@@ -326,11 +384,6 @@ public class BossEntity extends OsrsMonsterEntity {
             }
         }
         super.performAttack(target, type);
-    }
-
-    private void resetCooldownHack() {
-        // AoE hits several players with one swing; npcAttack's per-mob cooldown would block the rest.
-        CombatHandlerAccess.clearCooldown(this);
     }
 
     @Override

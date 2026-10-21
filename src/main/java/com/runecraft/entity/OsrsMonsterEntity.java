@@ -125,14 +125,31 @@ public class OsrsMonsterEntity extends Monster {
         return 1.0;
     }
 
-    /** Style used for the next attack against a target at the given distance. */
+    /**
+     * Style used for the next attack against a target at the given distance. A module creature's attack is rolled once and kept
+     * until {@link #performAttack} uses it, or until it can't be used at the current distance (// playability: the goal asks every
+     * tick, and a re-roll every tick made a mixed melee/magic creature stop and start walking): the choice is made on the
+     * bounding-box gap to the target.
+     */
     public AttackType chooseStyle(ServerPlayer target, double distanceSq) {
         java.util.List<com.runecraft.osrs.content.AttackDef> attacks = attackList();
         if (attacks != null) {
-            nextAttack = com.runecraft.boss.Mechanics.choose(attacks, Math.sqrt(distanceSq) - getBbWidth() / 2, getRandom());
+            double gap = Math.max(0, Math.sqrt(distanceSq) - getBbWidth() / 2 - target.getBbWidth() / 2);
+            if (nextAttack == null || !containsSame(attacks, nextAttack) || gap > nextAttack.range()) {
+                nextAttack = com.runecraft.boss.Mechanics.choose(attacks, gap, getRandom());
+            }
             return nextAttack.style();
         }
         return stats().style();
+    }
+
+    private static boolean containsSame(java.util.List<com.runecraft.osrs.content.AttackDef> attacks, com.runecraft.osrs.content.AttackDef a) {
+        for (com.runecraft.osrs.content.AttackDef x : attacks) {
+            if (x == a) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Hook: adjust damage a player is about to deal to this monster. Applies slayer/immunity/weapon rules. */
@@ -176,21 +193,39 @@ public class OsrsMonsterEntity extends Monster {
     public void onKilledBy(ServerPlayer player) {
     }
 
-    /** Performs an attack now (called by the attack goal when the attack speed allows). */
+    /**
+     * Performs an attack now (called by the attack goal when the attack speed allows; the goal stamps the cadence). The hit is
+     * delivered in real time (// playability, round 41): a module creature's attack through {@code Mechanics.perform}, a built-in
+     * ranged or magic attack as a projectile ({@code Mechanics.deliverProjectile}), a built-in melee attack after its swing's
+     * wind-up ({@code Mechanics.deliverMelee}); each rolls when it lands, without the per-monster cooldown (the goal owns it).
+     */
     public void performAttack(ServerPlayer target, AttackType type) {
-        if (attackInterceptor != null && attackInterceptor.intercept(this, target, attackList() != null ? nextAttack : null)) {
+        com.runecraft.osrs.content.AttackDef planned = attackList() != null ? nextAttack : null;
+        if (attackInterceptor != null && attackInterceptor.intercept(this, target, planned)) {
+            nextAttack = null; // used: the next attack is rolled afresh
             return;
         }
         if (nextAttack != null && attackList() != null) {
-            com.runecraft.boss.Mechanics.perform(this, target, nextAttack, damageMultiplier());
+            double multiplier = damageMultiplier(); // read before the attack is used (data bosses scale by it)
+            com.runecraft.osrs.content.AttackDef attack = nextAttack;
+            nextAttack = null;
+            com.runecraft.boss.Mechanics.perform(this, target, attack, multiplier);
             return;
         }
-        if (type == AttackType.MAGIC) {
-            com.runecraft.combat.MagicService.npcCast(this, target);
+        boolean boss = this instanceof BossEntity || this instanceof com.runecraft.boss.DataBossEntity;
+        if (type == AttackType.MAGIC || type == AttackType.RANGED) {
+            com.runecraft.boss.Mechanics.deliverProjectile(this, target, type, boss,
+                    () -> CombatHandler.npcAttack(this, target, type, true));
         } else {
             this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
-            CombatHandler.npcAttack(this, target, type);
+            com.runecraft.boss.Mechanics.deliverMelee(this, target, com.runecraft.osrs.ThreatTiming.MELEE_REACH,
+                    () -> CombatHandler.npcAttack(this, target, type, true), takeMeleeAfter());
         }
+    }
+
+    /** What must run once a built-in melee swing has resolved (a boss script's after-attack hook), or null. */
+    protected Runnable takeMeleeAfter() {
+        return null;
     }
 
     @Override
