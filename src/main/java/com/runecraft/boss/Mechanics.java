@@ -248,6 +248,8 @@ public final class Mechanics {
     }
 
     private static void tick() {
+        // hits held for a protection switched on a hair late (round 42), judged before this tick's new landings
+        com.runecraft.combat.LateProtection.tick();
         long now = ActionManager.mcTick();
         if (!LANDED.isEmpty()) {
             LANDED.removeIf(l -> now - l.mc() >= ThreatTiming.STYLE_SPACING_MC || l.target().isRemoved());
@@ -621,6 +623,30 @@ public final class Mechanics {
         }
     }
 
+    /**
+     * {@code hit} wrapped to run later with the resolving context of now (the monster whose hit is resolving and its attack), so
+     * the attacks a held hit's on-hit hook starts still land with it ({@link com.runecraft.combat.LateProtection}).
+     */
+    public static Runnable inResolvingContext(Runnable hit) {
+        LivingEntity mob = resolvingMob;
+        AttackDef attack = resolvingAttack;
+        if (mob == null) {
+            return hit;
+        }
+        return () -> {
+            LivingEntity prevMob = resolvingMob;
+            AttackDef prevAttack = resolvingAttack;
+            resolvingMob = mob;
+            resolvingAttack = attack;
+            try {
+                hit.run();
+            } finally {
+                resolvingMob = prevMob;
+                resolvingAttack = prevAttack;
+            }
+        };
+    }
+
     /** Runs a landing hit with the resolving context set (nested attacks of the same monster land with it). */
     private static void resolveWith(Pending p, Runnable hit) {
         LivingEntity prevMob = resolvingMob;
@@ -792,8 +818,21 @@ public final class Mechanics {
         hit(mob, target, a, multiplier);
     }
 
-    /** One accuracy-rolled hit with all on-hit effects. */
+    /**
+     * One accuracy-rolled hit with all on-hit effects. A hit its protection prayer doesn't cover yet, on a player switching
+     * prayers, waits up to {@link com.runecraft.osrs.PrayerGrace#LATE_MC} MC for the switch ({@link com.runecraft.combat.LateProtection},
+     * // playability: OSRS reads the prayer on the exact tick); the roll, max hit and prayer rules are applied when it resolves,
+     * exactly as on time. Prayer-piercing attacks never wait; dragonfire waits for Protect from Magic (it lowers its max hit).
+     */
     private static void hit(OsrsMonsterEntity mob, ServerPlayer target, AttackDef a, double multiplier) {
+        if (a.special() != AttackDef.Special.PRAYER_PIERCING && com.runecraft.combat.LateProtection.hold(mob, target,
+                a.special() == AttackDef.Special.DRAGONFIRE ? AttackType.MAGIC : a.style(), () -> resolveHit(mob, target, a, multiplier))) {
+            return;
+        }
+        resolveHit(mob, target, a, multiplier);
+    }
+
+    private static void resolveHit(OsrsMonsterEntity mob, ServerPlayer target, AttackDef a, double multiplier) {
         MonsterStats stats = mob.stats();
         PlayerData data = Players.data(target);
         int attackLevel = switch (a.style()) {
@@ -807,7 +846,8 @@ public final class Mechanics {
             boolean shield = off.equals("anti_dragon_shield") || off.startsWith("dragonfire_")
                     || off.equals("elemental_shield") || off.equals("mind_shield") || off.equals("ancient_wyvern_shield");
             boolean antifire = target.hasEffect(MobEffects.FIRE_RESISTANCE);
-            boolean prayer = data.isActive(Prayer.PROTECT_FROM_MAGIC);
+            // Protect from Magic through the one protection chokepoint (its switch grace; round 42)
+            boolean prayer = CombatHandler.isProtected(data, AttackType.MAGIC);
             if (shield && antifire) {
                 maxHit = 0;
             } else if (shield || antifire) {
@@ -871,7 +911,10 @@ public final class Mechanics {
                 target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, Math.max(1, a.param()) * 12, 10, false, true));
                 Msg.action(target, "You have been frozen!");
             }
-            case PULL -> pullNextTo(mob, target);
+            case PULL -> {
+                pullNextTo(mob, target);
+                com.runecraft.combat.FreezeRules.moved(target); // a frozen player stays where the pull put them
+            }
             case HAZARD -> addHazard((ServerLevel) mob.level(), target.position(), Math.max(1, a.param()), 10, mob);
             case DRAIN_STAT -> {
                 Skill skill = Skill.byIndex(Math.max(0, Math.min(Skill.count() - 1, a.param())));

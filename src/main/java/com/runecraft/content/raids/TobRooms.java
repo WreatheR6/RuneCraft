@@ -106,7 +106,7 @@ final class TobRooms {
             }
             useBandage(sp);
             stack.shrink(1);
-            sp.getCooldowns().addCooldown(stack.getItem(), 3 * ActionManager.MC_TICKS_PER_GAME_TICK);
+            com.runecraft.skill.ConsumeCooldowns.consume(sp, TobRules.BANDAGES); // food: the shared eat delay and attack delay
             return net.minecraft.world.InteractionResultHolder.success(stack);
         });
     }

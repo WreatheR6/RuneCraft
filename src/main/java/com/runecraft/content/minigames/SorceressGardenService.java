@@ -112,7 +112,7 @@ public final class SorceressGardenService {
         if (p.getCooldowns().isOnCooldown(stack.getItem())) {
             return;
         }
-        p.getCooldowns().addCooldown(stack.getItem(), 3 * ActionManager.MC_TICKS_PER_GAME_TICK);
+        com.runecraft.skill.ConsumeCooldowns.consume(p, s.juice()); // a drink: the shared food delay // approx
         stack.shrink(1);
         if (s.boost() > 0) {
             Players.data(p).skills().applyBoost(Skill.THIEVING, s.boost(), 0);

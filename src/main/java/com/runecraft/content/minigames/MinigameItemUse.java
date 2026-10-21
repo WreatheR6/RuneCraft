@@ -297,7 +297,7 @@ public final class MinigameItemUse {
             data.setPrayerPoints(Math.max(data.prayerPoints(), Math.min(cap, data.prayerPoints() + prayer)));
         }
         int used = stack.getDamageValue() + 1;
-        p.getCooldowns().addCooldown(stack.getItem(), 3 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
+        com.runecraft.skill.ConsumeCooldowns.consume(p, id); // OSRS's shared potion delay
         p.level().playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.GENERIC_DRINK,
                 net.minecraft.sounds.SoundSource.PLAYERS, 0.5f, 1.0f);
         Msg.action(p, "You drink some of your blighted super restore.");

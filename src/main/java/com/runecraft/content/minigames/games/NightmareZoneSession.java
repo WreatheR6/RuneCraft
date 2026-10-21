@@ -663,7 +663,7 @@ public class NightmareZoneSession extends MinigameSession {
         if (nmz.drink(player, id)) {
             int used = stack.getDamageValue() + 1;
             int left = 4 - used;
-            player.getCooldowns().addCooldown(stack.getItem(), 3 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
+            com.runecraft.skill.ConsumeCooldowns.consume(player, id); // OSRS's shared potion delay
             player.level().playSound(null, player.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
             if (left <= 0) {
                 // The empty Nightmare Zone vial is discarded (OSRS: no empty vials are needed or kept).

@@ -372,17 +372,25 @@ public final class CombatHandler {
         long attackRoll = CombatHooks.versusAttackRoll(mob, player, type, npcAttackRoll(mob, stats, type, attackLevel));
         long defenceRoll = defenceRoll(player, type);
         int maxHit = CombatHooks.versusMaxHit(mob, player, type, mob instanceof OsrsMonsterEntity m ? m.maxHitAgainst(player, type) : stats.maxHit());
-        int damage = CombatFormulas.roll(new java.util.Random(mob.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
-        if (isProtected(data, type)) {
-            damage = mob instanceof OsrsMonsterEntity m ? m.damageThroughPrayer(damage) : 0;
-        }
-        if (mob instanceof OsrsMonsterEntity m) {
-            damage = m.onHitPlayer(player, damage, type);
-        }
-        CombatHooks.nameAttack(type.name().toLowerCase(java.util.Locale.ROOT), type);
-        int dealtToPlayer = applyDamage(mob, player, damage);
-        if (dealtToPlayer > 0) {
-            CombatHooks.hurt(player, mob, dealtToPlayer);
+        int rolled = CombatFormulas.roll(new java.util.Random(mob.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
+        Runnable land = () -> {
+            int damage = rolled;
+            if (isProtected(data, type)) {
+                damage = mob instanceof OsrsMonsterEntity m ? m.damageThroughPrayer(damage) : 0;
+            }
+            if (mob instanceof OsrsMonsterEntity m) {
+                damage = m.onHitPlayer(player, damage, type);
+            }
+            CombatHooks.nameAttack(type.name().toLowerCase(java.util.Locale.ROOT), type);
+            int dealtToPlayer = applyDamage(mob, player, damage);
+            if (dealtToPlayer > 0) {
+                CombatHooks.hurt(player, mob, dealtToPlayer);
+            }
+        };
+        // A delivered hit (ownCadence: after its wind-up, flight or telegraph) the protection doesn't cover yet waits up to 4 MC
+        // for a switch pressed a hair late, rolled already (LateProtection, // playability). Vanilla-AI hits land at once.
+        if (!ownCadence || !LateProtection.hold(mob, player, type, land)) {
+            land.run();
         }
     }
 

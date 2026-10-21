@@ -535,16 +535,17 @@ public final class SpellService {
                     ServerNetworking.sync(victim);
                 }
             }
-            // Protect from Magic halves freezes as well as binds (wiki: Freeze).
+            // Protect from Magic halves freezes as well as binds (wiki: Freeze), read through the protection chokepoint (its
+            // switch grace).
             case FREEZE -> SysCombat.freeze(t, com.runecraft.osrs.CombatEffects.bindTicks(s.param(),
-                    t instanceof ServerPlayer fp && Players.data(fp).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)));
+                    t instanceof ServerPlayer fp && com.runecraft.combat.CombatHandler.isProtected(Players.data(fp), AttackType.MAGIC)));
             case BIND -> {
                 // Ward of Arceuus cuts any bind on the warded player to a single tick.
                 if (t instanceof ServerPlayer victim && SysState.of(victim).wardUntil > SysTicks.now()) {
                     SysCombat.freeze(t, Spellbooks.WARDED_BIND_TICKS);
                 } else {
                     SysCombat.freeze(t, com.runecraft.osrs.CombatEffects.bindTicks(s.param(),
-                            t instanceof ServerPlayer vp && Players.data(vp).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)));
+                            t instanceof ServerPlayer vp && com.runecraft.combat.CombatHandler.isProtected(Players.data(vp), AttackType.MAGIC)));
                 }
             }
             default -> {

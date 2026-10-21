@@ -360,7 +360,8 @@ public class BossEntity extends OsrsMonsterEntity {
                 }
             }
             case KRIL -> {
-                if (type.isMelee() && Players.data(target).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE) && random.nextInt(9) == 0) {
+                // Protect from Melee read through the protection chokepoint (its switch grace), as the hit it replaces would be
+                if (type.isMelee() && CombatHandler.isProtected(Players.data(target), type) && random.nextInt(9) == 0) {
                     // "YARRRRRRR!" prayer smash (OSRS Wiki): 1 in 9 melee hits against Protect from Melee; always 35-49
                     // through prayer, and drains half the target's prayer points (a quarter with a spectral spirit shield).
                     world.getServer().getPlayerList().getPlayers().stream().filter(p -> p.distanceToSqr(this) < 32 * 32)
