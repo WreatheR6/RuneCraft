@@ -388,6 +388,60 @@ public final class SysCombat {
         return null;
     }
 
+    /** Half-angle of the spell aim-assist cone. */
+    private static final double AIM_CONE_DEGREES = 6.0;
+    /** How much the aim-assist grows each candidate's hitbox (blocks). */
+    private static final double AIM_INFLATE = 0.75;
+
+    /**
+     * The spell target the player aims at. {@code // playability}: OSRS casts at the clicked NPC; a pixel-exact look ray
+     * misses small or moving monsters in real time, so this picks the living entity inside a 6 degree cone around the
+     * look direction, or whose hitbox grown by 0.75 the look ray crosses, smallest angle first, that the player can see
+     * (a block clip from the eyes to its middle). Without one it falls back to the last target hit within 20 game ticks
+     * (still in range and in sight). Quest NPCs, armour stands and players who can't be attacked here are skipped.
+     */
+    public static LivingEntity aimTarget(ServerPlayer player, double range) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle();
+        Vec3 end = eye.add(look.scale(range));
+        AABB search = player.getBoundingBox().expandTowards(look.scale(range)).inflate(range * Math.tan(Math.toRadians(AIM_CONE_DEGREES)) + 2.0);
+        double minCos = Math.cos(Math.toRadians(AIM_CONE_DEGREES));
+        LivingEntity best = null;
+        double bestCos = -2;
+        for (LivingEntity e : player.level().getEntitiesOfClass(LivingEntity.class, search, e -> aimable(player, e))) {
+            Vec3 centre = e.getBoundingBox().getCenter();
+            Vec3 to = centre.subtract(eye);
+            double dist = to.length();
+            if (dist < 1e-6 || dist > range + e.getBbWidth() / 2) {
+                continue;
+            }
+            double cos = to.dot(look) / dist;
+            AABB grown = e.getBoundingBox().inflate(AIM_INFLATE);
+            boolean onRay = grown.contains(eye) || grown.clip(eye, end).isPresent();
+            if ((cos < minCos && !onRay) || cos <= bestCos || !com.runecraft.combat.AttackTimer.clearShot(player, e)) {
+                continue;
+            }
+            best = e;
+            bestCos = cos;
+        }
+        if (best != null) {
+            return best;
+        }
+        SysState.SysPlayer sp = SysState.of(player);
+        if (sp.lastTargetId >= 0 && ActionManager.gameTick() - sp.lastCombatTick < 20
+                && player.level().getEntity(sp.lastTargetId) instanceof LivingEntity last && aimable(player, last)
+                && last.distanceTo(player) <= range && com.runecraft.combat.AttackTimer.clearShot(player, last)) {
+            return last;
+        }
+        return null;
+    }
+
+    private static boolean aimable(ServerPlayer player, Entity e) {
+        return e instanceof LivingEntity && e != player && e.isAlive() && !e.isSpectator()
+                && !(e instanceof com.runecraft.entity.QuestNpcEntity) && !(e instanceof net.minecraft.world.entity.decoration.ArmorStand)
+                && (!(e instanceof ServerPlayer other) || CombatHandler.canAttackPlayer(player, other));
+    }
+
     /** Whether a target can be attacked by this player (Wilderness rules for players, single-way combat). */
     public static boolean canAttack(ServerPlayer p, LivingEntity target) {
         if (target instanceof ServerPlayer other && !CombatHandler.canAttackPlayer(p, other)) {

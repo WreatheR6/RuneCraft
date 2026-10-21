@@ -550,12 +550,13 @@ public final class BankService {
                 String[] k = Notes.upgradeKey(registries, item, tag);
                 item = k[0];
                 tag = k[1];
-                // Old keys that now name the same item share the first one's slot.
-                BankModel.Entry same = bank.find(item, tag);
-                if (same != null) {
-                    same.count = Math.min(BankQuantity.MAX, same.count + Math.max(0, c.getLong("Count")));
-                    continue;
-                }
+            }
+            tag = Notes.currentTag(item, tag); // bows banked while they took damage: {Damage:0}
+            // Keys that now name the same item share the first one's slot (load would drop the later one).
+            BankModel.Entry same = bank.find(item, tag);
+            if (same != null) {
+                same.count = Math.min(BankQuantity.MAX, same.count + Math.max(0, c.getLong("Count")));
+                continue;
             }
             bank.load(item, tag, c.getLong("Count"), c.getByte("Tab"));
         }

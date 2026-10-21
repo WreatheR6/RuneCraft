@@ -64,7 +64,7 @@ public final class ModItems {
                 EquipmentDef eq = def.equipment();
                 int damage = Math.max(1, eq.stats().meleeStrength() / 12);
                 // OSRS attack speed in game ticks (0.6s) -> vanilla attacks per second.
-                float speed = -4.0f + 1.0f / (eq.attackSpeed() * 0.6f);
+                float speed = com.runecraft.osrs.AttackClock.vanillaAttackSpeedModifier(eq.attackSpeed());
                 yield new OsrsEquipmentItems.Weapon(def, TOOL_MATERIALS.get(metal), damage, speed, new Item.Properties());
             }
             case ARMOUR -> {
@@ -73,7 +73,8 @@ public final class ModItems {
                 yield new OsrsEquipmentItems.Armour(def, armorMaterialHolder(material), type,
                         new Item.Properties().durability(material.getDurabilityForType(type)));
             }
-            case BOW -> new OsrsEquipmentItems.Bow(def, new Item.Properties().durability(384));
+            // OSRS bows never wear out (crystal bows keep their charges in ItemCharges): no durability (was vanilla's 384).
+            case BOW -> new OsrsEquipmentItems.Bow(def, new Item.Properties().stacksTo(1));
             case ARROW -> new OsrsEquipmentItems.Arrow(def, new Item.Properties());
             case STAFF -> new OsrsEquipmentItems.Staff(def, new Item.Properties().stacksTo(1));
             case POTION -> new OsrsItem(def, new Item.Properties().durability(4));

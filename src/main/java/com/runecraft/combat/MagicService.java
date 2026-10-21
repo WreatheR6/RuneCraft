@@ -4,6 +4,7 @@ import com.runecraft.action.Action;
 import com.runecraft.action.ActionManager;
 import com.runecraft.entity.OsrsMonsterEntity;
 import com.runecraft.network.ServerNetworking;
+import com.runecraft.osrs.AttackClock;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.CombatBonuses;
 import com.runecraft.osrs.CombatFormulas;
@@ -35,15 +36,14 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 
 /** The standard spellbook: combat autocasting, teleports, alchemy and superheat. */
 public final class MagicService {
-    private static final double SPELL_RANGE = 20.0;
+    private static final double SPELL_RANGE = AttackTimer.SPELL_RANGE;
+    /** Attack speed of a standard-spellbook combat spell in game ticks (OSRS 5; powered staves use their own). */
+    private static final int SPELL_SPEED = 5;
 
     private MagicService() {
     }
@@ -133,15 +133,20 @@ public final class MagicService {
         autocastAttack(player, null);
     }
 
-    /** The living entity the player is looking at within spell range, or null. */
+    /**
+     * The living entity the player aims at within spell range, or null. {@code // playability}: aim assist (a 6 degree
+     * cone or the hitbox grown by 0.75, in line of sight, then the last target) instead of a pixel-exact ray; OSRS casts
+     * at the clicked NPC.
+     */
     private static LivingEntity lookTarget(ServerPlayer player) {
-        Vec3 eye = player.getEyePosition();
-        Vec3 look = player.getLookAngle();
-        Vec3 end = eye.add(look.scale(SPELL_RANGE));
-        AABB box = player.getBoundingBox().expandTowards(look.scale(SPELL_RANGE)).inflate(1.0);
-        EntityHitResult hit = ProjectileUtil.getEntityHitResult(player, eye, end, box,
-                e -> e instanceof LivingEntity && e.isAlive() && e != player && !e.isSpectator(), SPELL_RANGE * SPELL_RANGE);
-        return hit != null && hit.getEntity() instanceof LivingEntity l ? l : null;
+        return com.runecraft.content.systems.SysCombat.aimTarget(player, SPELL_RANGE);
+    }
+
+    /** Remembers the spell's target for the aim-assist fallback (the last target within 20 game ticks). */
+    private static void rememberTarget(ServerPlayer player, LivingEntity target) {
+        com.runecraft.content.systems.SysState.SysPlayer sp = com.runecraft.content.systems.SysState.of(player);
+        sp.lastTargetId = target.getId();
+        sp.lastCombatTick = ActionManager.gameTick();
     }
 
     /**
@@ -160,14 +165,14 @@ public final class MagicService {
             Msg.action(player, "Choose a combat spell to autocast in your spellbook (press K).");
             return;
         }
-        long now = ActionManager.mcTick();
-        if (now - data.lastAttackTick < 5L * ActionManager.MC_TICKS_PER_GAME_TICK) {
-            return;
-        }
         Vec3 eye = player.getEyePosition();
         LivingEntity target = forced != null ? forced : lookTarget(player);
         if (target == null) {
-            Msg.action(player, "No target.");
+            AttackTimer.noTarget(player);
+            return;
+        }
+        // playability: an early cast is buffered on the attack clock and goes off on the exact ready tick (was dropped)
+        if (!AttackTimer.gate(player, target, AttackClock.Kind.SPELL, MagicService::autocastAttack)) {
             return;
         }
         if (!(target instanceof ServerPlayer) && target.isInvulnerable()) {
@@ -184,7 +189,8 @@ public final class MagicService {
         if (!canCast(player, spell)) {
             return;
         }
-        data.lastAttackTick = now;
+        AttackTimer.accept(player, AttackClock.Kind.SPELL, AttackClock.periodMc(SPELL_SPEED));
+        rememberTarget(player, target);
         consumeRunes(player, spell);
         player.swing(InteractionHand.MAIN_HAND, true);
         trail((ServerLevel) player.level(), eye, target.position().add(0, target.getBbHeight() / 2, 0), spell);
@@ -227,14 +233,14 @@ public final class MagicService {
         PlayerData data = Players.data(player);
         SkillSet skills = data.skills();
         int speed = Equipment.weaponSpeed(player, skills);
-        long now = ActionManager.mcTick();
-        if (now - data.lastAttackTick < (long) speed * ActionManager.MC_TICKS_PER_GAME_TICK) {
-            return;
-        }
         Vec3 eye = player.getEyePosition();
         LivingEntity target = forced != null ? forced : lookTarget(player);
         if (target == null) {
-            Msg.action(player, "No target.");
+            AttackTimer.noTarget(player);
+            return;
+        }
+        // playability: buffered on the attack clock like every other attack
+        if (!AttackTimer.gate(player, target, AttackClock.Kind.SPELL, MagicService::autocastAttack)) {
             return;
         }
         if (!(target instanceof ServerPlayer) && target.isInvulnerable()) {
@@ -254,11 +260,12 @@ public final class MagicService {
         }
         String denied = CombatHooks.deniedAttack(player, AttackType.MAGIC);
         if (denied != null) {
-            data.lastAttackTick = now;
+            AttackTimer.accept(player, AttackClock.Kind.SPELL, AttackClock.periodMc(speed));
             Msg.game(player, denied);
             return;
         }
-        data.lastAttackTick = now;
+        AttackTimer.accept(player, AttackClock.Kind.SPELL, AttackClock.periodMc(speed));
+        rememberTarget(player, target);
         player.swing(InteractionHand.MAIN_HAND, true);
         trail((ServerLevel) player.level(), eye, target.position().add(0, target.getBbHeight() / 2, 0), Spell.WATER_SURGE);
         // Built-in spell max hit, Tumeken's shadow's x3, accurate +2 and gear effects: PlayerHitCalc.

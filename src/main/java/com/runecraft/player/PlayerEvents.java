@@ -47,6 +47,7 @@ public final class PlayerEvents {
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             com.runecraft.combat.AutoRetaliate.forget(handler.player.getUUID());
+            com.runecraft.combat.AttackTimer.forget(handler.player.getUUID());
         });
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> {
             XpService.updateMaxHealth(player);
@@ -95,6 +96,10 @@ public final class PlayerEvents {
     /** Every Minecraft tick. */
     public static void everyMcTick(MinecraftServer server, long tick) {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            // The attack clock resolves a buffered click on its exact ready tick, then auto-retaliate swings on the same
+            // clock (round 41; auto-retaliate used to swing on game ticks).
+            com.runecraft.combat.AttackTimer.tick(player);
+            com.runecraft.combat.AutoRetaliate.mcTick(player);
             if (!Gielinor.is(player)) {
                 continue;
             }

@@ -314,8 +314,14 @@ public final class SysState extends SavedData {
                 if (oldKeys && !noted) { // a noted entry's tag is the note's own NotedTag, which never changed
                     key = com.runecraft.bank.Notes.upgradeKey(registries, key[0], key[1]);
                 }
-                lootingBag.restore(new com.runecraft.osrs.content.systems.LootingBag.Stack(key[0], key[1],
-                        noted, entry.getBoolean("Stackable"), entry.getLong("Count")));
+                key[1] = com.runecraft.bank.Notes.currentTag(key[0], key[1]); // bows bagged while they took damage
+                boolean stackable = entry.getBoolean("Stackable");
+                if (noted || stackable) { // joins a stack whose key is now the same
+                    lootingBag.store(key[0], key[1], noted, true, (int) Math.min(Integer.MAX_VALUE, entry.getLong("Count")));
+                } else {
+                    lootingBag.restore(new com.runecraft.osrs.content.systems.LootingBag.Stack(key[0], key[1],
+                            false, false, entry.getLong("Count")));
+                }
             }
             lootingBagOpen = n.getBoolean("LootingBagOpen");
         }

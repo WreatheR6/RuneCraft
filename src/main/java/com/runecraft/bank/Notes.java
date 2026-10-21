@@ -49,8 +49,9 @@ public final class Notes {
         if (damageable) {
             n.putInt(DAMAGE, stack.getDamageValue());
         }
+        // A Damage component on an item that no longer takes damage (bows before round 41) means nothing: dropped.
         DataComponentPatch rest = stack.getComponentsPatch()
-                .forget(t -> t == DataComponents.CUSTOM_DATA || (damageable && t == DataComponents.DAMAGE));
+                .forget(t -> t == DataComponents.CUSTOM_DATA || t == DataComponents.DAMAGE);
         if (!rest.isEmpty()) {
             DataComponentPatch.CODEC.encodeStart(registries.createSerializationContext(NbtOps.INSTANCE), rest)
                     .resultOrPartial(e -> RuneCraft.LOGGER.warn("Bank key of {} drops data: {}", stack, e))
@@ -80,9 +81,11 @@ public final class Notes {
                             .resultOrPartial(e -> RuneCraft.LOGGER.warn("Bad bank item components for {}: {}", item, e))
                             .ifPresent(s::applyComponents);
                 }
-                if (damageable && n.contains(DAMAGE, Tag.TAG_ANY_NUMERIC)) {
-                    s.setDamageValue(n.getInt(DAMAGE));
-                    n.remove(DAMAGE);
+                if (n.contains(DAMAGE, Tag.TAG_ANY_NUMERIC)) {
+                    if (damageable) {
+                        s.setDamageValue(n.getInt(DAMAGE));
+                    }
+                    n.remove(DAMAGE); // a bow banked while bows still took damage
                 }
                 StackData.set(s, n);
             } catch (CommandSyntaxException e) {
@@ -90,6 +93,31 @@ public final class Notes {
             }
         }
         return s;
+    }
+
+    /**
+     * A stored key tag as {@link #tagOf} gives it today: Damage dropped when the item no longer takes damage. Bows had
+     * durability before round 41, so every banked, bagged or noted bow is keyed {@code {Damage:0}}, while a bow deposited
+     * now is keyed "" and would land in a second bank row. Every other tag comes back unchanged.
+     */
+    public static String currentTag(String item, String tag) {
+        if (tag == null || tag.isEmpty() || !tag.contains(DAMAGE)) {
+            return tag == null ? "" : tag;
+        }
+        Item it = BuiltInRegistries.ITEM.get(RuneCraft.resolve(item));
+        if (it == Items.AIR || new ItemStack(it).isDamageableItem()) {
+            return tag;
+        }
+        try {
+            CompoundTag n = TagParser.parseTag(tag);
+            if (!n.contains(DAMAGE, Tag.TAG_ANY_NUMERIC)) {
+                return tag;
+            }
+            n.remove(DAMAGE);
+            return n.isEmpty() ? "" : n.getAsString();
+        } catch (CommandSyntaxException e) {
+            return tag;
+        }
     }
 
     /**
@@ -129,9 +157,13 @@ public final class Notes {
         return isNote(stack) ? StackData.get(stack).getString(NOTED) : "";
     }
 
-    /** The noted item's own stack data ("" for none). */
+    /** The noted item's own stack data ("" for none; a bow noted while bows took damage reads as today's key). */
     public static String notedTag(ItemStack stack) {
-        return isNote(stack) ? StackData.get(stack).getString(NOTED_TAG) : "";
+        if (!isNote(stack)) {
+            return "";
+        }
+        CompoundTag n = StackData.get(stack);
+        return currentTag(n.getString(NOTED), n.getString(NOTED_TAG));
     }
 
     /** A single unnoted item for a note (EMPTY if the note is invalid). */

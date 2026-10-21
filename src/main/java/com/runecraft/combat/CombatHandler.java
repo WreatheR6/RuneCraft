@@ -58,6 +58,7 @@ public final class CombatHandler {
 
     public static void register() {
         ServerLivingEntityEvents.ALLOW_DAMAGE.register(CombatHandler::allowDamage);
+        com.runecraft.platform.AttackEntityCallback.EVENT.register(CombatHandler::attackEntity);
         ServerLivingEntityEvents.AFTER_DEATH.register(CombatHandler::afterDeath);
         CombatHooks.addModifier(new GearEffects());
         PrayerEffectsService.register();
@@ -80,6 +81,9 @@ public final class CombatHandler {
                 return true;
             }
             if (target instanceof ServerPlayer other && !canAttackPlayer(player, other)) {
+                if (direct == player || direct instanceof AbstractArrow) {
+                    Msg.game(player, "You can't attack that player."); // playability: say why the hit did nothing
+                }
                 return false;
             }
             if ((direct instanceof AbstractArrow || direct == player) && !singleWayAllows(player, target)) {
@@ -123,21 +127,58 @@ public final class CombatHandler {
 
     // ---------------- Players attacking ----------------
 
+    /**
+     * A melee click (vanilla hurt with the player as the direct source: a fallback behind {@link #attackEntity}, and the
+     * self-tests' hits). {@code // playability}: goes through the attack clock, so a click before the weapon is ready is
+     * buffered and resolves on the exact ready tick instead of being dropped; a ready click still resolves right here.
+     */
     private static void playerMelee(ServerPlayer player, LivingEntity target) {
+        AttackTimer.click(player, target, com.runecraft.osrs.AttackClock.Kind.MELEE);
+    }
+
+    /**
+     * Left-click on a Gielinor monster (NeoForge's AttackEntityEvent, cancelled by any non-PASS result).
+     * {@code // playability}: SUCCESS cancels vanilla's Player.attack before its whoosh, sweep, crit, durability loss and
+     * knockback (OSRS hits never push), and the click goes on the attack clock as melee, the autocast spell (a staff with
+     * a spell set, a powered staff) or a bow shot at the clicked monster. Players and anything outside Gielinor: PASS
+     * (the PvP minigames' own callback and the vanilla path behind allowDamage stay as they are).
+     */
+    private static net.minecraft.world.InteractionResult attackEntity(Player player, net.minecraft.world.level.Level world,
+            net.minecraft.world.InteractionHand hand, Entity entity, net.minecraft.world.phys.EntityHitResult hit) {
+        if (!(entity instanceof LivingEntity target) || entity instanceof Player
+                || entity instanceof net.minecraft.world.entity.decoration.ArmorStand
+                || entity instanceof com.runecraft.entity.QuestNpcEntity || player.isSpectator()
+                || !Gielinor.is(player) || !Gielinor.is(entity)) {
+            return net.minecraft.world.InteractionResult.PASS;
+        }
+        if (world.isClientSide()) {
+            return net.minecraft.world.InteractionResult.SUCCESS; // no local crit particles or sweep for an OSRS hit
+        }
+        if (!(player instanceof ServerPlayer attacker) || target.isInvulnerableTo(source(attacker))) {
+            return net.minecraft.world.InteractionResult.PASS;
+        }
+        if (singleWayAllows(attacker, target)) {
+            AttackTimer.click(attacker, target, AttackTimer.kindFor(attacker));
+        }
+        return net.minecraft.world.InteractionResult.SUCCESS;
+    }
+
+    /** One melee attack that the attack clock allows now: today's OSRS roll, stamped on the clock first. */
+    static void resolveMelee(ServerPlayer player, LivingEntity target) {
+        if (target == null) {
+            return;
+        }
         PlayerData data = Players.data(player);
         SkillSet skills = data.skills();
         int speed = Equipment.weaponSpeed(player, skills);
-        long now = ActionManager.mcTick();
-        if (now - data.lastAttackTick < (long) speed * ActionManager.MC_TICKS_PER_GAME_TICK) {
-            return;
-        }
+        int period = speed * ActionManager.MC_TICKS_PER_GAME_TICK;
         String denied = CombatHooks.deniedAttack(player, Equipment.meleeType(player, skills));
         if (denied != null) {
-            data.lastAttackTick = now;
+            AttackTimer.accept(player, com.runecraft.osrs.AttackClock.Kind.MELEE, period);
             Msg.game(player, denied);
             return;
         }
-        data.lastAttackTick = now;
+        AttackTimer.accept(player, com.runecraft.osrs.AttackClock.Kind.MELEE, period);
         ItemStack held = player.getMainHandItem();
         com.runecraft.osrs.ItemDef heldDef = com.runecraft.registry.ModItems.def(held);
         if (heldDef != null && heldDef.equipment() != null) {
@@ -165,6 +206,27 @@ public final class CombatHandler {
         int dealt = applyDamage(player, target, damage);
         CombatHooks.afterHit(player, target, type, dealt);
         awardXp(player, style, dealt, false);
+        meleeFeedback(target, dealt, maxHit);
+    }
+
+    /**
+     * {@code // playability}: a sound for every resolved swing so a real-time player knows it landed (OSRS: the hitsplat
+     * alone). A hit plays the strong-attack sound (the crit sound from 90% of the max hit); a miss the weak one and a puff.
+     */
+    private static void meleeFeedback(LivingEntity target, int dealt, int maxHit) {
+        if (!(target.level() instanceof net.minecraft.server.level.ServerLevel level)) {
+            return;
+        }
+        double chest = target.getY() + target.getBbHeight() * 0.6;
+        if (dealt > 0) {
+            boolean big = maxHit > 0 && dealt * 10 >= maxHit * 9;
+            level.playSound(null, target.getX(), chest, target.getZ(), big ? net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_CRIT
+                    : net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_STRONG, net.minecraft.sounds.SoundSource.PLAYERS, 0.9f, 1.0f);
+        } else {
+            level.playSound(null, target.getX(), chest, target.getZ(), net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_WEAK,
+                    net.minecraft.sounds.SoundSource.PLAYERS, 0.9f, 1.0f);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.POOF, target.getX(), chest, target.getZ(), 4, 0.2, 0.2, 0.2, 0.01);
+        }
     }
 
     private static void playerRanged(ServerPlayer player, LivingEntity target, AbstractArrow arrow) {
