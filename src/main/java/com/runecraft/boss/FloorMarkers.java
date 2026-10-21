@@ -83,6 +83,12 @@ public final class FloorMarkers {
         }
     }
 
+    /**
+     * How a mark swaps a block: sent to the clients, with no neighbour or shape updates (round 43: a flower or tall grass on a
+     * marked block would otherwise pop off the concrete, and is never put back).
+     */
+    private static final int FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
+
     private static final Map<Key, Entry> LIVE = new HashMap<>();
     /** Released while their chunk was unloaded: put back when it loads. */
     private static final Map<Key, Entry> WAITING = new HashMap<>();
@@ -186,7 +192,7 @@ public final class FloorMarkers {
             }
             e = new Entry(world, pos, original, placed);
             State.get(world.getServer()).record(key, original, placed); // in the save before the world changes
-            world.setBlock(pos, placed, Block.UPDATE_CLIENTS);
+            world.setBlock(pos, placed, FLAGS);
             LIVE.put(key, e);
         }
         e.refs++;
@@ -398,7 +404,7 @@ public final class FloorMarkers {
             return;
         }
         if (e.world.getBlockState(e.pos) == e.placed) {
-            e.world.setBlock(e.pos, e.original, Block.UPDATE_CLIENTS);
+            e.world.setBlock(e.pos, e.original, FLAGS);
         }
         State.get(e.world.getServer()).forget(key);
     }
@@ -465,7 +471,7 @@ public final class FloorMarkers {
                 BlockState original = NbtUtils.readBlockState(blocks, e.getValue().getCompound("Original"));
                 BlockState placed = NbtUtils.readBlockState(blocks, e.getValue().getCompound("Placed"));
                 if (world.getBlockState(pos) == placed) {
-                    world.setBlock(pos, original, Block.UPDATE_CLIENTS);
+                    world.setBlock(pos, original, FLAGS);
                 }
             }
             state.marks.remove(e.getKey());
