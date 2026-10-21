@@ -98,4 +98,43 @@ class CastBarTest {
         assertEquals(0, CastBar.keyFor(1, curse));
         assertEquals(1, CastBar.keyFor(2, curse));
     }
+
+    /**
+     * Round 43: ground strikes and hazards feed the bar. The landing a row counts down to is the strike's real landing, the
+     * same game tick ArenaTiming.strikeDue gives (the 3-tick floor unchanged), and only players who could walk into it get it.
+     */
+    @Test
+    void groundStrikeRows() {
+        // a strike made 5 MC into game tick 100 with a 1-tick OSRS delay lands on the floored tick 104
+        long due = ArenaTiming.strikeDue(100, 1, true, 5);
+        assertEquals(104, due);
+        assertEquals(4 * 12 - 5, CastBar.landInMc(due, 100, 5));
+        assertTrue(CastBar.landInMc(due, 100, 5) >= ArenaTiming.MIN_LEAD_MC, "a row never counts down less than the floor");
+        // made on its game tick: the full 3-tick floor (36 MC)
+        assertEquals(ArenaTiming.MIN_LEAD_MC, CastBar.landInMc(ArenaTiming.strikeDue(200, 0, true, 0), 200, 0));
+        // a strike already landing (or a clock past it) never counts down below 0
+        assertEquals(0, CastBar.landInMc(10, 12, 0));
+        // near: inside the ring, or within the walking margin of its edge, at about its height
+        assertTrue(CastBar.nearStrike(0, 0, 0, 1.5));
+        assertTrue(CastBar.nearStrike(1.5 + CastBar.NEAR_MARGIN - 0.01, 0.5, 0, 1.5));
+        assertFalse(CastBar.nearStrike(1.5 + CastBar.NEAR_MARGIN + 0.01, 0, 0, 1.5));
+        assertFalse(CastBar.nearStrike(0, CastBar.NEAR_DY, 0, 1.5), "a strike on another floor isn't shown");
+        assertTrue(CastBar.nearStrike(2, -1, 2, 1.5));
+        // labels: the strike's attack name, readable; none leaves the boss's name
+        assertEquals("Fire wall", CastBar.strikeLabel("fire_wall"));
+        assertEquals("Acid", CastBar.strikeLabel("ACID"));
+        assertNull(CastBar.strikeLabel(null));
+        assertNull(CastBar.strikeLabel(" "));
+        // a ground row is a spot to step off: no prayer frame, whatever its style colour
+        CastBar.Cast ground = new CastBar.Cast(1, CastBar.styleOf(AttackType.MAGIC), CastBar.FLAG_DODGE, 0, 36, "Lightning");
+        assertFalse(ground.prayable());
+        assertNull(CastBar.rightOverhead(ground, 0));
+        assertEquals(CastBar.MAGIC_RGB, ground.rgb());
+        // a volley landing together is one row on the client too (same source, style and landing tick)
+        List<CastBar.Cast> casts = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            CastBar.add(casts, 7, CastBar.TYPELESS, CastBar.FLAG_DODGE, 50, 36, null);
+        }
+        assertEquals(1, casts.size());
+    }
 }

@@ -48,6 +48,13 @@ public final class CastBar {
     public static final int LINGER_MC = 6;
     /** A telegraph never shows longer than this (a lost packet or a cancelled attack can't leave a bar forever). */
     public static final int MAX_LEAD_MC = 20 * 20;
+    /**
+     * Blocks past a ground strike's or hazard's edge within which a player still gets its row (round 43): near enough to
+     * walk into it before it lands at a run's 4.3 blocks a second.
+     */
+    public static final double NEAR_MARGIN = 2.5;
+    /** Blocks above or below a ground strike within which a player gets its row (its hit test's 2-block tolerance and a step). */
+    public static final double NEAR_DY = 3.0;
 
     private CastBar() {
     }
@@ -102,6 +109,37 @@ public final class CastBar {
             case DRAGONFIRE, PRAYER_PIERCING -> FLAG_REDUCED;
             default -> 0;
         };
+    }
+
+    /**
+     * Whether a player at ({@code dx}, {@code dy}, {@code dz}) from a ground strike's centre gets its cast-bar row (round 43):
+     * horizontally within its radius plus {@link #NEAR_MARGIN}, and within {@link #NEAR_DY} of its height. Players further off
+     * can't be hit by it, so a boss's volley elsewhere in the arena doesn't fill their bar.
+     */
+    public static boolean nearStrike(double dx, double dy, double dz, double radius) {
+        double r = Math.max(0, radius) + NEAR_MARGIN;
+        return dx * dx + dz * dz <= r * r && Math.abs(dy) < NEAR_DY;
+    }
+
+    /**
+     * The row label of a named ground strike or hazard ("fire_wall" to "Fire wall", "acid" to "Acid"), or null for no name
+     * (the row then names its source, the boss).
+     */
+    public static String strikeLabel(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        String s = name.replace('_', ' ').trim().toLowerCase(Locale.ROOT);
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
+    /**
+     * MC ticks from now until a strike lands: its landing game tick {@code dueGameTick} (x 12) less the clock now in MC
+     * ({@code nowGameTick} x 12 plus the MC ticks into it). Never negative.
+     */
+    public static int landInMc(long dueGameTick, long nowGameTick, int mcIntoTick) {
+        return (int) Math.max(0, Math.min(Integer.MAX_VALUE, dueGameTick * ThreatTiming.MC_PER_GAME_TICK
+                - (nowGameTick * ThreatTiming.MC_PER_GAME_TICK + mcIntoTick)));
     }
 
     /** The cast-bar style of an attack style (null: typeless). */

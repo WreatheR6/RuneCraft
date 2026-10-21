@@ -90,8 +90,11 @@ public final class CastBarHud {
      * the hit), MOVE, or "no prayer".
      */
     private static String key(CastBar.Cast c) {
-        if ((c.flags() & CastBar.FLAG_DODGE) != 0 || c.style() == CastBar.TYPELESS) {
+        if ((c.flags() & CastBar.FLAG_DODGE) != 0) {
             return "MOVE";
+        }
+        if (c.style() == CastBar.TYPELESS) {
+            return (c.flags() & CastBar.FLAG_UNPRAYABLE) != 0 ? "no prayer" : "MOVE"; // a typeless homing hit can't be stepped out of
         }
         if (!c.prayable()) {
             return "no prayer";

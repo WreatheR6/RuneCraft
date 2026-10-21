@@ -30,6 +30,13 @@ public final class RaidScript implements BossScript {
         }
     }
 
+    /** The boss bar's status line: the room's ({@link RoomLogic#bossBarStatus}, round 43). */
+    @Override
+    public com.runecraft.osrs.BossBarStatus.Status bossBarStatus(DataBossEntity boss) {
+        RoomLogic r = room(boss);
+        return r == null ? boss.defaultBossBarStatus() : r.bossBarStatus(boss);
+    }
+
     @Override
     public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
         RoomLogic r = room(boss);

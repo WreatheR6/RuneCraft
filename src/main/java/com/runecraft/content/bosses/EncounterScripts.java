@@ -89,6 +89,23 @@ final class EncounterScripts {
                     !floor.isEmpty() && now >= floorOrangeAt, attackCount);
         }
 
+        /**
+         * The boss bar (round 43, {@code // playability}): the colour of its next attack's style, "switches in N" (attacks of
+         * this style still to come; 0: "switching!") and the style it protects from with the off-prayer hits still needed to
+         * change it. OSRS players count the 4 attacks a style and the 6 hits themselves.
+         */
+        @Override
+        public com.runecraft.osrs.BossBarStatus.Status bossBarStatus(DataBossEntity boss) {
+            boolean magic = com.runecraft.osrs.BossSwitches.hunllefNextMagic(cycle);
+            return boss.defaultBossBarStatus().colour(magic ? com.runecraft.osrs.BossBarStatus.Colour.BLUE
+                            : com.runecraft.osrs.BossBarStatus.Colour.GREEN)
+                    .with(com.runecraft.osrs.BossBarStatus.switchText(com.runecraft.osrs.BossSwitches.hunllefLeft(cycle)))
+                    .with("protects " + STYLE_TAGS[cycle.prays().ordinal()] + " (" + com.runecraft.osrs.BossSwitches.hunllefPrayerLeft(cycle)
+                            + " hits)");
+        }
+
+        private static final String[] STYLE_TAGS = {"MEL", "RNG", "MAG"};
+
         @Override
         public void onSpawn(DataBossEntity boss) {
             com.runecraft.osrs.content.minigames.HunllefCycle.Style[] styles = com.runecraft.osrs.content.minigames.HunllefCycle.Style.values();

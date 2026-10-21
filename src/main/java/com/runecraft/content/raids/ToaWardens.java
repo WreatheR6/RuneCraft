@@ -130,6 +130,39 @@ final class ToaWardens extends RoomLogic {
         return false;
     }
 
+    /**
+     * The Wardens' boss bars (round 43, {@code // playability}): the phase of three and what the players must see coming,
+     * from the room's own counters: in phase 2 the attacks to the Warden's special (every fifth: the divine projectile above
+     * 55%, the imprisonment below) and the styles it prays against; in phase 3 the side of its next floor slam (right, left,
+     * both, in turn) and when it rises, or the siphons. OSRS players read these from its animations and count them.
+     */
+    @Override
+    public com.runecraft.osrs.BossBarStatus.Status bossBarStatus(DataBossEntity boss) {
+        com.runecraft.osrs.BossBarStatus.Status s = super.bossBarStatus(boss);
+        if (boss != warden && boss != obelisk) {
+            return s;
+        }
+        s = s.with(com.runecraft.osrs.BossBarStatus.phaseText(phase - 2, 2));
+        if (phase == 2 && boss == warden) {
+            boolean high = raid.healthFraction(warden) * 100 > ToaBossRules.WARDEN_P2_SPECIAL_SPLIT;
+            return s.with(core != null ? "core exposed!" : com.runecraft.osrs.BossSwitches.nextText(
+                            high ? "divine projectile" : "imprisonment", 5 - Math.floorMod(p2Attacks, 5))) // as wardenAttack's every fifth
+                    .with("prays MEL+" + (prayed == AttackType.MAGIC ? "MAG" : "RNG"));
+        }
+        if (phase == 3 && boss == warden) {
+            if (siphonsUp) {
+                return s.with("siphons: reverse them!");
+            }
+            if (enraged) {
+                return s.with("enraged");
+            }
+            int kind = Math.floorMod(slam, 3);
+            String side = kind == 0 ? "its right" : kind == 1 ? "its left" : "both sides";
+            return s.with(com.runecraft.osrs.BossSwitches.inSeconds("slam " + side, Math.max(0, nextSlam - RaidEffects.now())));
+        }
+        return s;
+    }
+
     /** Whether the fight is in its final phase (Warden damage worth 2.5 points, OSRS). */
     boolean phaseThree() {
         return phase == 3;

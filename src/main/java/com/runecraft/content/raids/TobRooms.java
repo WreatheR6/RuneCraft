@@ -2789,6 +2789,28 @@ final class TobRooms {
             return boss != verzik || invulnerable <= 0;
         }
 
+        /**
+         * Verzik's boss bar (round 43, {@code // playability}): her phase of three and what comes next, counted from the room's
+         * own counters: phase 1 the seconds to her next charged blast (hide behind a pillar), phase 2 the attacks to her lightning
+         * (every fifth), phase 3 the attacks to her next special and which one (crabs, webs, yellows, green ball, in order). OSRS
+         * players count these themselves.
+         */
+        @Override
+        public com.runecraft.osrs.BossBarStatus.Status bossBarStatus(DataBossEntity boss) {
+            com.runecraft.osrs.BossBarStatus.Status s = super.bossBarStatus(boss);
+            if (boss != verzik) {
+                return s;
+            }
+            s = s.with(com.runecraft.osrs.BossBarStatus.phaseText(form - 2, 2));
+            return switch (form) {
+                case 1 -> s.with(com.runecraft.osrs.BossSwitches.inSeconds("blast", com.runecraft.osrs.BossSwitches.verzikBlastIn(t)));
+                case 2 -> s.with(com.runecraft.osrs.BossSwitches.nextText("lightning", com.runecraft.osrs.BossSwitches.verzikLightningIn(attacks)));
+                default -> s.with(com.runecraft.osrs.BossSwitches.nextText(com.runecraft.osrs.BossSwitches.verzikSpecialName(
+                        com.runecraft.osrs.BossSwitches.verzikNextSpecial(specials)), com.runecraft.osrs.BossSwitches.verzikSpecialIn(attacks)))
+                        .with(enraged ? "enraged" : "");
+            };
+        }
+
         @Override
         public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (boss != verzik) {

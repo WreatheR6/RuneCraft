@@ -1011,6 +1011,9 @@ public final class Mechanics {
                                  String name, HazardHit onHit, Map<UUID, Long> sharedLastHit) {
         HAZARDS.add(new Hazard(world, pos, damage, ActionManager.gameTick() + gameTicks, owner, ActionManager.mcTick(), kind, name, onHit,
                 sharedLastHit));
+        // round 43: on the cast bar of the players near it, counting down to its arming (a typeless spot to step off)
+        com.runecraft.network.HudNet.groundCast(world, pos, ThreatTiming.HAZARD_RADIUS, owner, null, ThreatTiming.HAZARD_ARM_MC,
+                com.runecraft.osrs.CastBar.strikeLabel(kind != null ? kind.name() : name == null ? "hazard" : name));
     }
 
     /** Removes every ground hazard inside a box (raid rooms and instances being cleared). */

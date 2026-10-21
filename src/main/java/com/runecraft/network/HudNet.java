@@ -88,6 +88,7 @@ public final class HudNet {
     public static void forget(UUID player) {
         SENT.remove(player);
         ATTACKERS.remove(player);
+        GROUND_SENT.remove(player);
         com.runecraft.util.Msg.forget(player);
     }
 
@@ -125,6 +126,57 @@ public final class HudNet {
         buf.writeVarInt(Math.max(0, landInMc));
         buf.writeUtf(text, LABEL_MAX * 4);
         ServerPlayNetworking.send(player, CAST, buf);
+    }
+
+    /** A ground cast already sent to a player: its source, style and the server MC tick it lands on. */
+    private record GroundKey(int source, int style, long landMc) {
+    }
+
+    /** Self-test hook: a player outside the level's player list (the fake player) that ground casts reach too, or null. */
+    public static volatile ServerPlayer selfTestPlayer;
+
+    /** Ground casts sent per player whose landing hasn't passed yet: a volley landing together is one row. */
+    private static final Map<UUID, java.util.Set<GroundKey>> GROUND_SENT = new ConcurrentHashMap<>();
+
+    /**
+     * A ground strike or hazard on the cast bar of every player near it (round 43, {@code // playability}): every player
+     * horizontally within its radius plus {@link CastBar#NEAR_MARGIN} of {@code centre} ({@link CastBar#nearStrike}) gets a
+     * row in the strike's style colour ({@code style} null: typeless orange) marked MOVE ({@link CastBar#FLAG_DODGE}), counting
+     * down to its real landing {@code landInMc}. {@code label} (nullable) names it; null shows the source's name. One row per
+     * source, style and landing tick: a boss's volley of twenty strikes landing together is one row. OSRS shows the marked
+     * tiles only.
+     */
+    public static void groundCast(net.minecraft.server.level.ServerLevel world, net.minecraft.world.phys.Vec3 centre, double radius,
+            Entity source, AttackType style, int landInMc, String label) {
+        groundCast(world, p -> CastBar.nearStrike(p.getX() - centre.x, p.getY() - centre.y, p.getZ() - centre.z, radius),
+                source, style, landInMc, label);
+    }
+
+    /** {@link #groundCast} for any area shape: {@code near} says which players are close enough to get the row. */
+    public static void groundCast(net.minecraft.server.level.ServerLevel world, java.util.function.Predicate<ServerPlayer> near,
+            Entity source, AttackType style, int landInMc, String label) {
+        if (world == null || landInMc < 0) {
+            return;
+        }
+        int barStyle = CastBar.styleOf(style);
+        long land = com.runecraft.action.ActionManager.mcTick() + landInMc;
+        int id = source == null ? -1 : source.getId();
+        java.util.List<ServerPlayer> players = new java.util.ArrayList<>(world.players());
+        ServerPlayer extra = selfTestPlayer;
+        if (extra != null && extra.level() == world && !players.contains(extra)) {
+            players.add(extra); // the self-test's fake player isn't in the level's player list
+        }
+        for (ServerPlayer p : players) {
+            if (!p.isAlive() || p.isSpectator() || !near.test(p)) {
+                continue;
+            }
+            java.util.Set<GroundKey> sent = GROUND_SENT.computeIfAbsent(p.getUUID(), u -> new java.util.HashSet<>());
+            long now = com.runecraft.action.ActionManager.mcTick();
+            sent.removeIf(k -> k.landMc() < now);
+            if (sent.add(new GroundKey(id, barStyle, land))) {
+                cast(p, source, barStyle, CastBar.FLAG_DODGE, landInMc, label);
+            }
+        }
     }
 
     // ------------------------------------------------------------------ hitpoints

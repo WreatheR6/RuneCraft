@@ -331,6 +331,10 @@ public abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScale
         owner = boss;
         s.firstDrawnMc = s.createdMc; // drawn right here, as it is made
         drawStrike(s, false);
+        if (damaging) { // round 43: on the cast bar of the players near it, counting down to its real landing
+            com.runecraft.network.HudNet.groundCast(s.world, pos, radius, boss, null,
+                    com.runecraft.osrs.CastBar.landInMc(due, base, into), com.runecraft.osrs.CastBar.strikeLabel(name));
+        }
     }
 
     /** Minecraft ticks since this script's game tick began (0 for strikes made in it). */

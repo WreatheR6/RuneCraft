@@ -276,6 +276,10 @@ public abstract class GwdScript implements BossScript {
                 base * ArenaTiming.MC_PER_GAME_TICK + into);
         strikes.add(s);
         drawStrike(s, false); // drawn right here, as it is made
+        if (maxHit > 0 || onHit != null) { // round 43: on the cast bar of the players near it, counting down to its landing
+            com.runecraft.network.HudNet.groundCast(s.world, pos, radius, boss, null,
+                    com.runecraft.osrs.CastBar.landInMc(due, base, into), com.runecraft.osrs.CastBar.strikeLabel(name));
+        }
         return due;
     }
 

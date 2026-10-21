@@ -295,6 +295,14 @@ public class RoomLogic {
         return null;
     }
 
+    /**
+     * The boss bar's status line and colour of a boss this room drives (round 43, via {@link RaidScript}): the default; a
+     * room whose boss counts down to something the players must predict adds to it.
+     */
+    public com.runecraft.osrs.BossBarStatus.Status bossBarStatus(DataBossEntity boss) {
+        return boss.defaultBossBarStatus();
+    }
+
     public boolean bossVulnerable(DataBossEntity boss) {
         return true;
     }

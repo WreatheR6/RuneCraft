@@ -109,6 +109,24 @@ public final class BossBarStatus {
         return sb.toString();
     }
 
+    /**
+     * The attacks a built-in boss ({@code entity.BossEntity}, round 43) chooses between, weighted as its own style roll: Graardor
+     * 2/3 melee and 1/3 his ranged slam, K'ril 2/3 melee and 1/3 magic, TzTok-Jad magic or ranged (half each) and a third of
+     * the time melee in reach, Bryophyta magic at range and half melee in reach; the others their one style. So the bar is red
+     * for Graardor and K'ril, white for Jad (blue or green while a telegraph of his is on its way) and blue for Bryophyta.
+     */
+    public static List<Attack> attacksOf(com.runecraft.osrs.data.Boss boss) {
+        return switch (boss.mechanic()) {
+            case GRAARDOR -> List.of(new Attack(AttackType.CRUSH, 2), new Attack(AttackType.RANGED, 1));
+            case KRIL -> List.of(new Attack(AttackType.SLASH, 2), new Attack(AttackType.MAGIC, 1));
+            case JAD -> boss.meleeWhenAdjacent()
+                    ? List.of(new Attack(AttackType.MAGIC, 2), new Attack(AttackType.RANGED, 2), new Attack(AttackType.CRUSH, 1))
+                    : List.of(new Attack(AttackType.MAGIC, 1), new Attack(AttackType.RANGED, 1));
+            case MIXED_MAGIC -> List.of(new Attack(AttackType.MAGIC, 3), new Attack(AttackType.CRUSH, 1));
+            default -> List.of(new Attack(boss.style(), 1));
+        };
+    }
+
     /** The default status: the phase, the curse on the boss's target, the style colour. */
     public static Status of(int phase, int thresholds, List<Attack> attacks, int[] targetCurse) {
         return new Status(List.of(), styleColour(attacks)).with(phaseText(phase, thresholds)).with(curseText(targetCurse));
