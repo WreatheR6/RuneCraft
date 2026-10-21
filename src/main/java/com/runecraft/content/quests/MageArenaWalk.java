@@ -231,10 +231,20 @@ public final class MageArenaWalk {
     /** One real cast of the autocast spell at a target through the spellbook (the attack timer skipped). */
     private void cast(LivingEntity target) {
         Players.data(player).lastAttackTick = -1_000_000;
-        Inv.give(player, "blood_rune", 4);
-        Inv.give(player, "fire_rune", 8);
-        Inv.give(player, "air_rune", 8);
+        // Enough runes for any god spell (at most 2 blood, 4 fire and 4 air), topped up rather than added on every cast: the
+        // 300 casts of Mage Arena II would otherwise pile up some 60 stacks of runes, and a full pack drops what Kolodion then
+        // hands over (the enchanted symbol) at the player's feet.
+        topUp("blood_rune", 4);
+        topUp("fire_rune", 8);
+        topUp("air_rune", 8);
         expect(SpellService.retaliate(player, target), "no autocast spell to cast");
+    }
+
+    private void topUp(String item, int want) {
+        int have = Inv.count(player, item);
+        if (have < want) {
+            Inv.give(player, item, want - have);
+        }
     }
 
     /**
@@ -432,10 +442,11 @@ public final class MageArenaWalk {
             StructurePlacer.applyAround(world, GielinorMap.toBlockX(spot[0]), GielinorMap.toBlockZ(spot[1]), 24);
             BlockPos at = Gielinor.safeSpot(world, GielinorMap.toBlockX(spot[0]), GielinorMap.toBlockZ(spot[1]));
             player.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
+            settle(at, 16);
             heal();
             useSymbol(false);
             DataBossEntity boss = find(follower.id());
-            expect(boss != null, follower.name() + " didn't appear at the symbol's spot " + spot[0] + "," + spot[1]);
+            expect(boss != null, follower.name() + " didn't appear at the symbol's spot " + spot[0] + "," + spot[1] + loading);
             // Only its own god spell harms it.
             expect(hit(boss, 50, AttackType.MAGIC) == 0, follower.name() + " was hurt by magic that wasn't " + follower.spell());
             expect(hit(boss, 50, AttackType.SLASH) == 0, follower.name() + " was hurt by melee");
@@ -460,7 +471,7 @@ public final class MageArenaWalk {
                 casts++;
             }
             expect(!boss.isAlive(), follower.name() + " survived " + casts + " casts of " + follower.spell());
-            expect(pickUp(boss, follower.remains()), follower.name() + " dropped no " + follower.remains());
+            expect(pickUp(boss, follower.remains()), follower.name() + " dropped no " + follower.remains() + loading);
             // Kolodion keeps the remains.
             talk(MageArena.KOLODION_NPC);
             expect(MageArenaService.flag(player, MageArena.handedFlag(follower)), "Kolodion didn't take the " + follower.remains());
