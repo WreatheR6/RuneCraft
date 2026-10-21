@@ -57,7 +57,7 @@ public class OsrsAttackGoal extends Goal {
 
     @Override
     public void stop() {
-        mob.getNavigation().stop();
+        standStill(mob); // its target is gone: a spider doesn't walk on to the target's last block
     }
 
     @Override
@@ -92,7 +92,7 @@ public class OsrsAttackGoal extends Goal {
         if (!inRange || !canSee) {
             chase(target, melee && canSee, gap);
         } else if (!closing) {
-            mob.getNavigation().stop();
+            standStill(mob);
         } else if (ThreatTiming.keepChasing(gap)) {
             chase(target, true, gap);
         }
@@ -115,7 +115,7 @@ public class OsrsAttackGoal extends Goal {
             targets = OsrsTargetGoal.of(mob);
         }
         if (targets != null && targets.holding()) {
-            standStill();
+            standStill(mob);
             return;
         }
         if (c.directPathing()) {
@@ -134,9 +134,10 @@ public class OsrsAttackGoal extends Goal {
      * {@link WallClimberNavigation} remembers the block it last pathed to and, once the path is gone, steers straight at it every
      * tick, so a giant spider held at the edge of its max range walked on at the player shooting it until the 20-block leash sent
      * it home. Aimed at the block it stands on, it lets go on its next tick (a path to its own block: cheap). Called every tick of
-     * the hold, after the target goal (which may probe a path to a new attacker, re-aiming it) and before the navigation ticks.
+     * the hold and of a ranged stand-off, after the target goal and before the navigation ticks, and when the goal stops (its
+     * target gone, dropped or given up: it doesn't walk on to the target's last block).
      */
-    private void standStill() {
+    static void standStill(Mob mob) {
         mob.getNavigation().stop();
         if (mob.getNavigation() instanceof WallClimberNavigation climber) {
             climber.createPath(mob.blockPosition(), 0);

@@ -13,11 +13,15 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
+import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.pathfinder.Path;
 
@@ -233,8 +237,52 @@ public class OsrsTargetGoal extends Goal {
                 return true;
             }
         }
-        Path path = mob.getNavigation().createPath(e, 1);
+        Path path = probe(e, 1);
         return path != null && path.canReach();
+    }
+
+    /**
+     * A path to {@code e} for a reachability test that doesn't steer the monster. A spider's {@link WallClimberNavigation} remembers
+     * the block of every path it is asked for ({@code createPath} of a block or an entity) and, once its own path is done or gone,
+     * steers straight at it: probing a second attacker sent a giant spider standing in melee reach of its target drifting toward
+     * the attacker's block (its close-in step overridden too) until the gap reopened. Its {@code Set} form, which the climber doesn't
+     * override, finds the same path once the target block is put where {@link GroundPathNavigation#createPath(BlockPos, int)} puts
+     * it (an airborne target onto the ground below it, a solid block's up to the first non-solid one above).
+     */
+    private Path probe(LivingEntity e, int accuracy) {
+        PathNavigation nav = mob.getNavigation();
+        if (!(nav instanceof WallClimberNavigation)) {
+            return nav.createPath(e, accuracy);
+        }
+        BlockPos pos = e.blockPosition();
+        net.minecraft.world.level.chunk.LevelChunk chunk = mob.level().getChunkSource().getChunkNow(
+                SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getZ()));
+        if (chunk == null) {
+            return null;
+        }
+        int min = mob.level().getMinBuildHeight();
+        int max = mob.level().getMaxBuildHeight();
+        if (chunk.getBlockState(pos).isAir()) {
+            BlockPos below = pos.below();
+            while (below.getY() > min && chunk.getBlockState(below).isAir()) {
+                below = below.below();
+            }
+            if (below.getY() > min) {
+                return nav.createPath(java.util.Collections.singleton(below.above()), accuracy);
+            }
+            while (below.getY() < max && chunk.getBlockState(below).isAir()) {
+                below = below.above();
+            }
+            pos = below;
+        }
+        if (chunk.getBlockState(pos).isSolid()) {
+            BlockPos above = pos.above();
+            while (above.getY() < max && chunk.getBlockState(above).isSolid()) {
+                above = above.above();
+            }
+            pos = above;
+        }
+        return nav.createPath(java.util.Collections.singleton(pos), accuracy);
     }
 
     private ServerPlayer findPrey(ServerLevel level, BlockPos home, int now) {
