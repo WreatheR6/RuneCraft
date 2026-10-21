@@ -614,7 +614,7 @@ public final class JewelleryService {
         String cid = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getPath();
         if (!com.runecraft.osrs.content.systems.LootingBag.excluded(cid) && !Inv.has(p, com.runecraft.osrs.content.systems.LootingBag.ID, 1)
                 && p.getRandom().nextDouble() < com.runecraft.osrs.content.systems.LootingBag.chance(stats.combatLevel())) {
-            mob.spawnAtLocation(Inv.stack(com.runecraft.osrs.content.systems.LootingBag.ID, 1));
+            com.runecraft.combat.LootDrops.spawn(mob, Inv.stack(com.runecraft.osrs.content.systems.LootingBag.ID, 1), p);
         }
         ItemStack hands = SysState.of(p).worn(Jewellery.Slot.HANDS);
         if (cid.startsWith("revenant_") && !hands.isEmpty() && Inv.idOf(hands).equals("bracelet_of_ethereum")

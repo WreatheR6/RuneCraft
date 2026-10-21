@@ -32,12 +32,18 @@ import net.minecraft.world.level.pathfinder.Path;
  * <li>Retaliation stickiness: hit by someone else, it switches only when its target is gone, dead, out of range or out of reach
  * while the new attacker isn't ({@link MonsterAi#switchTarget}; // playability: vanilla switched to every new attacker).</li>
  * <li>Leash (open-world monsters, {@link MonsterHome}): past {@link MonsterAi#LEASH_BLOCKS} from its spawn point, or with its target
- * fled beyond its aggression range, it drops the fight, walks home and is back to full health there once nothing has hit it for
- * 5 s (// playability: OSRS confines a monster to 7 tiles of its spawn point and it regenerates 1 hitpoint a minute). A target that
- * keeps attacking it from beyond its range is not given up: the monster stands at the edge of its max range
+ * fled beyond its aggression range, it drops the fight and walks home, keeping its damage (round 43: OSRS confines a monster to 7
+ * tiles of its spawn point and it regenerates 1 hitpoint a minute, {@link MonsterAi#REGEN_TICKS}; round 42's full heal at home is
+ * gone). A target that keeps attacking it from beyond its range is not given up: the monster stands at the edge of its max range
  * ({@link MonsterAi#holdAtEdge}, OSRS safespotting), so a player out-ranging it can still kill it.</li>
+ * <li>Encounter arena (a boss's or quest's summon, a clue guardian, a superior, a Barrows tunnel monster: no spawn point; not a
+ * boss, raid or minigame creature, whose rooms keep them): it drops a target further than {@link MonsterAi#ENCOUNTER_LEASH_BLOCKS}
+ * from where it appeared (its boss's lair for a lair minion), picks none there and walks back when it strayed out with nobody to
+ * fight (// playability: round 42 chased 48 blocks).</li>
  * <li>Single-way: a monster that may not attack its target (the player is fighting something else) drops it after
- * {@link MonsterAi#BLOCKED_DROP_MC} instead of hovering at the player's side (// playability).</li>
+ * {@link MonsterAi#BLOCKED_DROP_MC} instead of hovering at the player's side (// playability). Every
+ * {@link MonsterAi#REACH_CHECK_MC} it checks it can still get at its target ({@link #pathBlocked}): one walled off for
+ * {@link MonsterAi#PATH_BLOCKED_MC} lets the single-way lock go even in sight (round 43).</li>
  * </ul>
  */
 public class OsrsTargetGoal extends Goal {
@@ -56,12 +62,17 @@ public class OsrsTargetGoal extends Goal {
     private int forgottenUntil;
     private boolean returning;
     private int returningSince;
-    /** When something last hit (or missed) the monster, in its own ticks. */
-    private int lastHitAt = Integer.MIN_VALUE;
     /** Standing at the edge of its max range while its target attacks it from further out. */
     private boolean holding;
-    /** Came home while still being hit: it heals once the hits have stopped. */
-    private boolean healPending;
+    /** Since when (MC, {@link ActionManager#mcTick}) it has had no way to {@link #reachTarget}; -1: it has one. */
+    private long blockedSince = -1;
+    /** The target {@link #blockedSince} is about. */
+    private LivingEntity reachTarget;
+    /** An encounter monster's arena centre (see {@link #anchor}), once looked up. */
+    private BlockPos anchor;
+    private boolean anchorKnown;
+    /** Persistent-data key of an encounter monster's arena centre (where it first stood; a packed block position). */
+    public static final String ANCHOR_KEY = "RcAnchor";
 
     /** {@code hunts}: looks for players to attack unprovoked (a rock crab wakes by proximity instead). */
     public OsrsTargetGoal(OsrsCombatant c, boolean hunts) {
@@ -84,6 +95,20 @@ public class OsrsTargetGoal extends Goal {
     /** True while the monster stands at the edge of its max range, its target attacking it from beyond (the attack goal stays put). */
     public boolean holding() {
         return holding;
+    }
+
+    /**
+     * Whether this monster has had no way to {@code fighter} for {@link MonsterAi#PATH_BLOCKED_MC}: out of its attack range (or
+     * sight, for one that attacks from range) and no path reaches them (a wall, a fence or water between them, even with a clear
+     * line of sight). The single-way lock lets go then ({@code CombatZones}).
+     */
+    public boolean pathBlocked(LivingEntity fighter) {
+        return fighter != null && fighter == reachTarget && MonsterAi.pathBlocked(blockedSince, ActionManager.mcTick());
+    }
+
+    /** An encounter monster's arena centre (where it first stood, or its boss's lair), or null for one without an arena. */
+    public BlockPos arenaAnchor() {
+        return anchor();
     }
 
     @Override
@@ -117,7 +142,6 @@ public class OsrsTargetGoal extends Goal {
         boolean newHurt = hurtBy != null && mob.getLastHurtByMobTimestamp() != lastHurtStamp;
         if (newHurt) {
             lastHurtStamp = mob.getLastHurtByMobTimestamp();
-            lastHitAt = now;
         }
         boolean wasHolding = holding;
         holding = false;
@@ -156,12 +180,10 @@ public class OsrsTargetGoal extends Goal {
                 startReturn(now);
                 return;
             }
-            if (target != null) {
-                healPending = false; // fighting again: the next give-up decides
-            } else if (healPending && MonsterAi.healsAtHome((long) now - lastHitAt)) {
-                heal();
-            }
+        } else if (target == null) {
+            walkBackToArena(level);
         }
+        trackReach(target);
         if (target instanceof ServerPlayer p) {
             // the single-way test every few ticks (it walks the multicombat areas)
             if (now % BLOCK_CHECK_MC == 0) {
@@ -195,7 +217,89 @@ public class OsrsTargetGoal extends Goal {
             return false;
         }
         double max = home != null ? 64 : 48;
-        return mob.distanceToSqr(target) <= max * max;
+        if (mob.distanceToSqr(target) > max * max) {
+            return false;
+        }
+        BlockPos arena = home == null ? anchor() : null;
+        return arena == null || !MonsterAi.outsideArena(MonsterHome.fromHome(arena, target.getX(), target.getZ()));
+    }
+
+    /**
+     * An encounter monster's arena centre ({@link MonsterAi#ENCOUNTER_LEASH_BLOCKS}): its boss's lair for a lair minion, else where
+     * it first stood (kept in its persistent data). Null for open-world monsters (they have a spawn point and its leash), bosses
+     * (their lair rules), raid and minigame creatures (their rooms and sessions keep them).
+     */
+    private BlockPos anchor() {
+        if (anchorKnown) {
+            return anchor;
+        }
+        anchorKnown = true;
+        if (MonsterHome.get(mob) != null || mob instanceof BossEntity || mob instanceof com.runecraft.boss.DataBossEntity
+                || ownedElsewhere(mob)) {
+            anchor = null;
+            return null;
+        }
+        String lair = com.runecraft.osrs.content.bosses.BossLair.MINION_TAG;
+        for (String tag : mob.getTags()) {
+            if (tag.startsWith(lair)) {
+                try {
+                    anchor = BlockPos.of(Long.parseLong(tag.substring(lair.length())));
+                    return anchor;
+                } catch (NumberFormatException ignored) {
+                    break;
+                }
+            }
+        }
+        if (!mob.getPersistentData().contains(ANCHOR_KEY)) {
+            mob.getPersistentData().putLong(ANCHOR_KEY, mob.blockPosition().asLong());
+        }
+        anchor = BlockPos.of(mob.getPersistentData().getLong(ANCHOR_KEY));
+        return anchor;
+    }
+
+    /** A raid or minigame creature: its room or session keeps it in and picks its targets. */
+    private static boolean ownedElsewhere(Mob mob) {
+        return mob.getTags().contains(com.runecraft.content.minigames.MinigameSession.TAG)
+                || com.runecraft.content.raids.RaidBuilder.slotAt(mob.getX(), mob.getZ()) >= 0;
+    }
+
+    /** An encounter monster out of its arena with nobody to fight walks back in (no heal: it keeps its damage). */
+    private void walkBackToArena(ServerLevel level) {
+        BlockPos arena = anchor();
+        if (arena == null || mob.tickCount % 20 != 0
+                || !MonsterAi.outsideArena(MonsterHome.fromHome(arena, mob.getX(), mob.getZ()) + MonsterAi.HOME_BLOCKS)
+                || !level.hasChunkAt(arena)) {
+            return;
+        }
+        mob.getNavigation().moveTo(arena.getX() + 0.5, arena.getY(), arena.getZ() + 0.5, 1.0);
+    }
+
+    /**
+     * Every {@link MonsterAi#REACH_CHECK_MC}: whether this monster can still get at its player target (it can hit them from where it
+     * stands, or a path reaches them); {@link #pathBlocked} reads the result. Only where single-way combat can lock a player: not
+     * for bosses, raid or minigame creatures (exempt or multi) nor in a multicombat area.
+     */
+    private void trackReach(LivingEntity target) {
+        if (!(target instanceof ServerPlayer) || mob instanceof BossEntity || mob instanceof com.runecraft.boss.DataBossEntity
+                || ownedElsewhere(mob)) {
+            reachTarget = null;
+            blockedSince = -1;
+            return;
+        }
+        if (target != reachTarget) {
+            reachTarget = target;
+            blockedSince = -1;
+        }
+        if (mob.tickCount % MonsterAi.REACH_CHECK_MC != 0) {
+            return;
+        }
+        if (CombatZones.isMulti(target)) {
+            blockedSince = -1; // no lock to release
+        } else if (reachable(target)) {
+            blockedSince = -1;
+        } else if (blockedSince < 0) {
+            blockedSince = ActionManager.mcTick();
+        }
     }
 
     /** Its target hit (or missed) it within {@link MonsterAi#UNDER_FIRE_MC}: the fight is still on wherever the target stands. */
@@ -264,6 +368,10 @@ public class OsrsTargetGoal extends Goal {
             if (home != null && !MonsterAi.inAggressionRange(MonsterHome.fromHome(home, p.getX(), p.getZ()), reach)) {
                 continue;
             }
+            BlockPos arena = home == null ? anchor() : null;
+            if (arena != null && MonsterAi.outsideArena(MonsterHome.fromHome(arena, p.getX(), p.getZ()))) {
+                continue; // an encounter monster hunts only in its arena
+            }
             if (!mob.getSensing().hasLineOfSight(p) || !c.wantsToAttack(p)) {
                 continue;
             }
@@ -316,23 +424,28 @@ public class OsrsTargetGoal extends Goal {
     }
 
     /**
-     * Home again: the fight is over, its health back to full and its damage ledger cleared, unless something hit it in the last
-     * 5 s (it heals once the hits stop: a reset must not erase hits that are still coming).
+     * Home again: the fight is over. It keeps its damage and its damage ledger (round 43, OSRS: no reset; it regenerates a hitpoint a
+     * minute, {@link MonsterAi#REGEN_TICKS}, and forgets who hurt it once it is back to full health, see {@link #regenerate}).
      */
     private void arrive() {
         returning = false;
         mob.getNavigation().stop();
-        if (MonsterAi.healsAtHome((long) mob.tickCount - lastHitAt)) {
-            heal();
-        } else {
-            healPending = true;
-        }
     }
 
-    private void heal() {
-        healPending = false;
-        mob.setHealth(mob.getMaxHealth());
-        KillCredit.forget(mob);
+    /**
+     * One step of OSRS hitpoint regeneration for a monster on OSRS AI ({@link MonsterAi#REGEN_TICKS}: 1 hitpoint every 100 game
+     * ticks, counted on its own age), called every Minecraft tick by its owner; back to full health, it forgets who damaged it
+     * ({@link KillCredit}). Bosses, raid and minigame creatures are left to their own scripts.
+     */
+    public static void regenerate(Mob mob) {
+        if (!mob.isAlive() || mob.getHealth() >= mob.getMaxHealth() || !MonsterAi.regenDue(mob.tickCount)
+                || mob instanceof BossEntity || mob instanceof com.runecraft.boss.DataBossEntity || ownedElsewhere(mob)) {
+            return;
+        }
+        mob.setHealth(MonsterAi.regenerated(mob.getHealth(), mob.getMaxHealth()));
+        if (mob.getHealth() >= mob.getMaxHealth()) {
+            KillCredit.forget(mob);
+        }
     }
 
     /**

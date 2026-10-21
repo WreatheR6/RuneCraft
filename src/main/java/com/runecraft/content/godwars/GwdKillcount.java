@@ -169,20 +169,20 @@ public final class GwdKillcount {
         God guard = GodWarsFactions.bodyguardGod(id);
         if (guard != null && QuestApi.stage(player, "the_frozen_door") > 0 && !QuestApi.isComplete(player, "the_frozen_door")
                 && !Inv.has(player, guard.keyPiece(), 1) && entity.getRandom().nextInt(KEY_PIECE_RATE) == 0) {
-            entity.spawnAtLocation(Inv.stack(guard.keyPiece(), 1));
+            com.runecraft.combat.LootDrops.spawn(entity, Inv.stack(guard.keyPiece(), 1), player);
             Msg.game(player, "The bodyguard drops a piece of a frozen key!");
         }
         if (inWildernessGwd(entity) && entity.getRandom().nextInt(Math.max(1, ecumenicalChance.applyAsInt(player))) == 0) {
             if (Inv.count(player, "ecumenical_key") >= ECUMENICAL_KEY_CAP) {
                 Msg.game(player, "You already have enough of these.");
             } else {
-                entity.spawnAtLocation(Inv.stack("ecumenical_key", 1));
+                com.runecraft.combat.LootDrops.spawn(entity, Inv.stack("ecumenical_key", 1), player);
             }
         }
         if (entity instanceof BossEntity be && be.boss() != null) {
             String bossId = be.boss().entityId();
             for (Drops.Rolled r : Drops.roll(GwdBosses.builtinExtraDrops(bossId), entity.getRandom(), false)) {
-                Inv.spawnAtLocation(entity, Inv.stack(r.item(), r.count()));
+                com.runecraft.combat.LootDrops.spawn(entity, Inv.stack(r.item(), r.count()), player);
                 CollectionLog.obtain(player, r.item());
             }
             String pet = GwdBosses.builtinPet(bossId);

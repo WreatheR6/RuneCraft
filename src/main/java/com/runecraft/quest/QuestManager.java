@@ -518,7 +518,7 @@ public final class QuestManager {
         for (FreeQuestObjectives.QuestDrop drop : FreeQuestObjectives.DROPS) {
             if (drop.matches(data.questStage(drop.quest()), name) && !Inv.has(p, drop.item(), 1)
                     && p.getRandom().nextInt(Math.max(1, drop.oneIn())) == 0) {
-                entity.spawnAtLocation(Inv.stack(drop.item(), 1));
+                com.runecraft.combat.LootDrops.spawn(entity, Inv.stack(drop.item(), 1), p);
             }
         }
         // OSRS: imps carry Mizgog's beads (also on their normal drop table); while the quest needs them,
@@ -528,7 +528,7 @@ public final class QuestManager {
             String bead = ImpCatcherBeads.questDrop(item -> Inv.has(p, item, 1),
                     p.getRandom().nextInt(ImpCatcherBeads.QUEST_DROP_ONE_IN), p.getRandom().nextInt(4));
             if (bead != null) {
-                entity.spawnAtLocation(Inv.stack(bead, 1));
+                com.runecraft.combat.LootDrops.spawn(entity, Inv.stack(bead, 1), p);
             }
         }
         Boss boss = ModEntities.boss(entity.getType());

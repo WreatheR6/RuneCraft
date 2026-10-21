@@ -354,9 +354,27 @@ public class DataBossEntity extends OsrsMonsterEntity {
         }
     }
 
+    /**
+     * A boss attacks any player whatever their combat level, unless the wiki infobox calls it not aggressive (round 43,
+     * {@link com.runecraft.osrs.data.MonsterAggression}: the Kraken, the Giant Mole, Vorkath, the Abyssal Sire, the Nightmare, the
+     * Thermonuclear smoke devil, the Grotesque Guardians, Vardorvis and some quest bosses): then it only fights the player who
+     * disturbed it (summoned at its stone or beside its quest's player: its first target) or attacked it, never hunting anyone new
+     * (the Giant Mole that dug away must be chased, as on the wiki). Its lair keeps its leash and reset rules. Raid and minigame
+     * bosses stay aggressive: their rooms set everything on the party.
+     */
     @Override
     protected boolean shouldAggro(LivingEntity entity) {
-        return entity instanceof ServerPlayer p && !p.isCreative() && !p.isSpectator();
+        if (!(entity instanceof ServerPlayer p) || p.isCreative() || p.isSpectator()) {
+            return false;
+        }
+        BossDef def = def();
+        if (def == null || def.raidOnly || instanceTag != null && (instanceTag.startsWith("raid:")
+                || instanceTag.startsWith(com.runecraft.content.minigames.MinigameSession.TAG))
+                || getTags().contains(com.runecraft.content.minigames.MinigameSession.TAG)
+                || com.runecraft.content.raids.RaidBuilder.slotAt(getX(), getZ()) >= 0) {
+            return true;
+        }
+        return com.runecraft.osrs.data.MonsterAggression.aggressive(def.id, true);
     }
 
     @Override

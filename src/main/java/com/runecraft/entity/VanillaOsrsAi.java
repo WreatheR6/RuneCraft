@@ -29,10 +29,15 @@ import net.minecraft.world.entity.ai.goal.WrappedGoal;
 
 /**
  * Vanilla mobs that stand in for OSRS monsters in Gielinor (Giant rat = silverfish, Spider = cave spider, Giant spider = spider,
- * Zombie, Skeleton, Wolf, Dark wizard = witch) put on OSRS AI when they join the world (round 42): their vanilla attack, target,
- * leap, potion, stone-merging, begging and sun goals are stripped and they get the OSRS attack goal (their {@link Monster} stats at
- * the OSRS attack speed, delivered in real time through {@code Mechanics}: melee after a wind-up, the witch's spell and the skeleton's
- * arrow as projectiles) and the OSRS target goal (aggression by combat level, tolerance, hunt range, leash, sticky retaliation).
+ * Zombie, Skeleton, Wolf, Dark wizard = witch; since round 43 the passive Cow, Chicken, Sheep and Pig too) put on OSRS AI when they
+ * join the world (round 42): their vanilla attack, target, leap, potion, stone-merging, begging, sun, panic, breeding and tempting
+ * goals are stripped and they get the OSRS attack goal (their {@link Monster} stats at the OSRS attack speed, delivered in real
+ * time through {@code Mechanics}: melee after a wind-up, the witch's spell and the skeleton's arrow as projectiles), the OSRS target
+ * goal (aggression from the wiki by combat level, tolerance, hunt range, leash, sticky retaliation) and the low-hitpoint retreat
+ * (the chicken, {@link OsrsRetreatGoal}). A hit cow, chicken, sheep or pig fights back with its OSRS stats instead of panicking (a
+ * sheep keeps grazing to regrow its wool). Round 43 also gives them their OSRS hitpoints (a wolf has 34, not vanilla's 8), the
+ * OSRS regeneration of a hitpoint a minute, and no burning in Gielinor's daylight (the zombie and the skeleton). A stray vanilla
+ * villager becomes the Man or Woman it stands for ({@link #convertVillager}: its brain-driven AI can't be put on OSRS goals).
  * Beneficial potion effects (the witch's drinking, the hard-difficulty spider's speed or regeneration) never take on them, and a
  * zombie calls no reinforcements. Outside Gielinor they stay vanilla.
  *
@@ -43,10 +48,15 @@ import net.minecraft.world.entity.ai.goal.WrappedGoal;
 public final class VanillaOsrsAi implements OsrsCombatant {
     /** The {@link Monster} constants with vanilla mobs that fight. */
     private static final Set<Monster> FIGHTERS = Set.of(Monster.GIANT_RAT, Monster.SPIDER, Monster.GIANT_SPIDER, Monster.ZOMBIE,
-            Monster.SKELETON, Monster.WOLF, Monster.WITCH);
-    /** The goals a stripped mob keeps (exact classes: the silverfish's stone-merging goal is a RandomStrollGoal subclass). */
+            Monster.SKELETON, Monster.WOLF, Monster.WITCH, Monster.COW, Monster.CHICKEN, Monster.SHEEP, Monster.PIG);
+    /**
+     * The goals a stripped mob keeps (exact classes: the silverfish's stone-merging goal is a RandomStrollGoal subclass; the sheep's
+     * grazing regrows its wool).
+     */
     private static final Set<Class<?>> KEEP = Set.of(FloatGoal.class, WaterAvoidingRandomStrollGoal.class, RandomStrollGoal.class,
-            LookAtPlayerGoal.class, RandomLookAroundGoal.class);
+            LookAtPlayerGoal.class, RandomLookAroundGoal.class, net.minecraft.world.entity.ai.goal.EatBlockGoal.class);
+    /** Stray villagers waiting to become a Man or Woman at the end of the tick (an entity can't be added while one joins). */
+    private static final java.util.List<net.minecraft.world.entity.npc.Villager> VILLAGERS = new java.util.ArrayList<>();
     private static final Map<Mob, VanillaOsrsAi> INSTALLED = new WeakHashMap<>();
 
     private final Mob mob;
@@ -63,10 +73,19 @@ public final class VanillaOsrsAi implements OsrsCombatant {
     /** Hooks the world: called once from {@code LocationSpawner.register}. */
     public static void register() {
         com.runecraft.platform.ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
+            if (entity instanceof net.minecraft.world.entity.npc.Villager villager && Gielinor.is(world)) {
+                synchronized (VILLAGERS) {
+                    VILLAGERS.add(villager);
+                }
+                return;
+            }
             if (entity instanceof Mob mob && Gielinor.is(world)) {
                 if (mob.getTags().contains(com.runecraft.world.LocationSpawner.TAG) || worldSpawned(mob) && fighter(mob) != null) {
                     // a spawn point's monster from before round 42, or a camp's (DungeonCamps and the like place vanilla mobs too)
                     MonsterHome.setIfAbsent(mob, mob.blockPosition());
+                } else if (mob instanceof OsrsMonsterEntity m && MonsterHome.get(m) == null && townResident(m)) {
+                    // a town resident placed before round 43 (as an EVENT spawn): it gets the spawn point it has now
+                    MonsterHome.set(m, m.blockPosition());
                 }
                 install(mob);
             }
@@ -78,6 +97,50 @@ public final class VanillaOsrsAi implements OsrsCombatant {
                         e.setResult(net.neoforged.neoforge.event.entity.living.MobEffectEvent.Applicable.Result.DO_NOT_APPLY);
                     }
                 });
+        com.runecraft.platform.ServerTickEvents.END_SERVER_TICK.register(server -> {
+            java.util.List<net.minecraft.world.entity.npc.Villager> due;
+            synchronized (VILLAGERS) {
+                if (VILLAGERS.isEmpty()) {
+                    return;
+                }
+                due = new java.util.ArrayList<>(VILLAGERS);
+                VILLAGERS.clear();
+            }
+            for (net.minecraft.world.entity.npc.Villager v : due) {
+                convertVillager(v);
+            }
+        });
+    }
+
+    /**
+     * A vanilla villager in Gielinor becomes the Man or Woman it stands for ({@link Monster#VILLAGER} is the Man: level 2, 7
+     * hitpoints, passive), on OSRS AI like every townsperson: it fights back when hit instead of panicking, its spot becoming its
+     * spawn point. The villager's own AI is a brain of behaviours, not goals, so it can't be stripped like the other stand-ins.
+     * Returns the new monster, or null when it wasn't converted.
+     */
+    public static Mob convertVillager(net.minecraft.world.entity.npc.Villager v) {
+        if (!v.isAlive() || v.isRemoved() || !(v.level() instanceof net.minecraft.server.level.ServerLevel level) || !Gielinor.is(level)) {
+            return null;
+        }
+        String id = (v.getUUID().getLeastSignificantBits() & 1) == 0 ? Monster.MAN.entity() : "woman";
+        net.minecraft.world.entity.EntityType<?> type = com.runecraft.registry.ModEntities.typeById(id);
+        if (type == null) {
+            type = com.runecraft.registry.ModEntities.typeById(Monster.MAN.entity());
+        }
+        if (type == null || !(type.create(level) instanceof Mob man)) {
+            return null;
+        }
+        net.minecraft.core.BlockPos home = MonsterHome.get(v) != null ? MonsterHome.get(v) : v.blockPosition();
+        man.moveTo(v.getX(), v.getY(), v.getZ(), v.getYRot(), v.getXRot());
+        if (v.hasCustomName()) {
+            man.setCustomName(v.getCustomName());
+        }
+        man.finalizeSpawn(level, level.getCurrentDifficultyAt(v.blockPosition()), net.minecraft.world.entity.MobSpawnType.CONVERSION, null);
+        man.setPersistenceRequired();
+        MonsterHome.set(man, home);
+        v.discard();
+        level.addFreshEntity(man);
+        return man;
     }
 
     /** The {@link Monster} a vanilla mob fights as in Gielinor, or null for anything else (animals, villagers, pets, summons). */
@@ -92,6 +155,26 @@ public final class VanillaOsrsAi implements OsrsCombatant {
         }
         Monster m = Monster.byEntity(BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).toString());
         return m != null && !m.isCustom() && FIGHTERS.contains(m) ? m : null;
+    }
+
+    private static Set<String> townIds;
+
+    /**
+     * A town resident ({@code TownSpawner}'s creatures: men, guards, muggers, snails...) that town spawner placed as an EVENT spawn
+     * before round 43, so it has no spawn point and would follow an encounter monster's rules.
+     */
+    private static boolean townResident(OsrsMonsterEntity m) {
+        if (m.getSpawnType() != net.minecraft.world.entity.MobSpawnType.EVENT || m.stats() == null || m.stats().profile() == null) {
+            return false;
+        }
+        if (townIds == null) {
+            java.util.Set<String> ids = new java.util.HashSet<>();
+            for (com.runecraft.osrs.content.npcs.TownMonsters.TownSpawn s : com.runecraft.osrs.content.npcs.TownMonsters.spawns()) {
+                ids.add(s.creature());
+            }
+            townIds = ids;
+        }
+        return townIds.contains(m.stats().profile().id);
     }
 
     /** Placed by a world spawner (NeoForge keeps the spawn type finalizeSpawn was given, saved with the mob). */
@@ -143,6 +226,8 @@ public final class VanillaOsrsAi implements OsrsCombatant {
             }
         }
         targets.removeAllGoals(g -> true);
+        goals.addGoal(0, new Upkeep(mob));
+        goals.addGoal(1, new OsrsRetreatGoal(ai));
         goals.addGoal(2, new OsrsAttackGoal(ai));
         if (!strolls && mob instanceof net.minecraft.world.entity.PathfinderMob walker) {
             goals.addGoal(6, new WaterAvoidingRandomStrollGoal(walker, 0.8));
@@ -159,9 +244,66 @@ public final class VanillaOsrsAi implements OsrsCombatant {
         if (reinforcements != null) {
             reinforcements.setBaseValue(0); // OSRS zombies call no friends
         }
+        osrsHitpoints(mob, def.hitpoints());
         mob.removeAllEffects();
         INSTALLED.put(mob, ai);
         return true;
+    }
+
+    /**
+     * Gives a stand-in its OSRS hitpoints (round 43: vanilla's 8 for a wolf against OSRS 34, 12 for a cave spider against 2),
+     * keeping the share of health it has (a reloaded mob already has them: its attributes are saved).
+     */
+    private static void osrsHitpoints(Mob mob, int hitpoints) {
+        AttributeInstance max = mob.getAttribute(Attributes.MAX_HEALTH);
+        if (max == null || hitpoints <= 0 || max.getBaseValue() == hitpoints && max.getModifiers().isEmpty()) {
+            return;
+        }
+        float share = mob.getMaxHealth() > 0 ? mob.getHealth() / mob.getMaxHealth() : 1f;
+        max.removeModifiers(); // a zombie leader's bonus health and the like
+        max.setBaseValue(hitpoints);
+        mob.setHealth(Math.max(1f, Math.min(hitpoints, share * hitpoints)));
+    }
+
+    /**
+     * What every stand-in on OSRS AI does each tick besides fighting: no burning in daylight (OSRS zombies and skeletons don't; the
+     * fire a vanilla zombie or skeleton sets on itself under the sun is put out before it hurts; lava still burns) and the OSRS
+     * regeneration of a hitpoint a minute ({@link OsrsTargetGoal#regenerate}). No flags: it runs beside every other goal.
+     */
+    private static final class Upkeep extends Goal {
+        private final Mob mob;
+
+        Upkeep(Mob mob) {
+            this.mob = mob;
+        }
+
+        @Override
+        public boolean canUse() {
+            return true;
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return true;
+        }
+
+        @Override
+        public boolean isInterruptable() {
+            return false;
+        }
+
+        @Override
+        public boolean requiresUpdateEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void tick() {
+            if (mob.getRemainingFireTicks() > 0 && !mob.isInLava()) {
+                mob.clearFire();
+            }
+            OsrsTargetGoal.regenerate(mob);
+        }
     }
 
     /** The goals (or, with {@code targets}, the target goals) a mob has now (self-tests). */
@@ -210,11 +352,17 @@ public final class VanillaOsrsAi implements OsrsCombatant {
         }
     }
 
-    /** An open-world stand-in follows OSRS aggression; an encounter spawn attacks any player, as its vanilla AI did. */
+    /**
+     * An open-world stand-in follows OSRS aggression as the wiki gives it ({@link com.runecraft.osrs.data.MonsterAggression#aggressive(
+     * Monster)}, round 43); an encounter spawn of a fighting kind attacks any player, as its vanilla AI did. A passive animal (a cow,
+     * a chicken) never starts a fight, encounter or not: it only fights back.
+     */
     @Override
     public boolean wantsToAttack(ServerPlayer player) {
         boolean encounter = encounter();
-        return OsrsTargetGoal.osrsAggression(mob, player, def.aggressive() || encounter, def.combatLevel(),
+        boolean wiki = com.runecraft.osrs.data.MonsterAggression.aggressive(def);
+        boolean animal = def == Monster.COW || def == Monster.CHICKEN || def == Monster.SHEEP || def == Monster.PIG;
+        return OsrsTargetGoal.osrsAggression(mob, player, wiki || encounter && !animal, def.combatLevel(),
                 com.runecraft.osrs.data.MonsterTraits.key(def), encounter);
     }
 

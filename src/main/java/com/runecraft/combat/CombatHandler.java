@@ -578,7 +578,9 @@ public final class CombatHandler {
         boolean osrsWorld = Gielinor.is(entity) || entity instanceof OsrsMonsterEntity;
         ServerPlayer killer = attacker instanceof ServerPlayer p ? p : KillCredit.owner(attacker);
         boolean boss = entity instanceof com.runecraft.entity.BossEntity || entity instanceof com.runecraft.boss.DataBossEntity;
-        ServerPlayer player = !osrsWorld ? null : boss ? killer : KillCredit.winner(entity, killer);
+        // the top damager, its ledger closed (kept for KillCredit.topDamager); bosses' loot keeps the killing blow
+        ServerPlayer top = osrsWorld ? KillCredit.winner(entity, killer) : null;
+        ServerPlayer player = !osrsWorld ? null : boss ? killer : top;
         KillCredit.forget(entity);
         if (player == null) {
             return;

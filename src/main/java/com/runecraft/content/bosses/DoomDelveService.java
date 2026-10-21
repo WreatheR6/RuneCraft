@@ -154,7 +154,12 @@ final class DoomDelveService {
         return DoomDelves.variant(boss, level);
     }
 
-    private static void completed(ServerPlayer player, DataBossEntity boss) {
+    private static void completed(ServerPlayer killer, DataBossEntity boss) {
+        // the level's loot goes to the run of whoever dealt the most damage, not the killing blow's (round 43, KillCredit)
+        ServerPlayer player = com.runecraft.combat.KillCredit.topDamager(boss, killer);
+        if (player == null) {
+            return;
+        }
         int level = Math.max(1, boss.delve());
         DoomDelveState st = state(player);
         DoomDelveState.Run run = st.getOrCreate(player.getUUID());

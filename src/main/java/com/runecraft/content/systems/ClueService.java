@@ -1261,7 +1261,7 @@ public final class ClueService {
                 return;
             }
             if (step.keyMonster() != null && ClueScrolls.monsterMatches(step.keyMonster(), name) && !Inv.has(p, keyItem(tier), 1)) {
-                entity.spawnAtLocation(Inv.stack(keyItem(tier), 1));
+                com.runecraft.combat.LootDrops.spawn(entity, Inv.stack(keyItem(tier), 1), p);
                 Msg.red(p, "The " + name + " drops a key!");
             }
             challengeEvent(p, tier, step, ClueChallenges.Kind.KILL, name, 1);
@@ -1643,7 +1643,7 @@ public final class ClueService {
         }
         Spellbooks.Head head = Spellbooks.headFor(stats.name());
         if (head != null && ItemCatalog.get(head.id()) != null && p.getRandom().nextInt(head.dropRate()) == 0) {
-            entity.spawnAtLocation(Inv.stack(head.id(), 1));
+            com.runecraft.combat.LootDrops.spawn(entity, Inv.stack(head.id(), 1), p);
         }
     }
 
@@ -1684,10 +1684,10 @@ public final class ClueService {
             }
             if (p.getRandom().nextInt(oneIn) == 0) {
                 if (!heldClue(p, tier)) {
-                    entity.spawnAtLocation(Inv.stack(tier.scrollItem(), 1));
+                    com.runecraft.combat.LootDrops.spawn(entity, Inv.stack(tier.scrollItem(), 1), p);
                     Msg.red(p, "A clue scroll (" + tier.id() + ") has dropped!");
                 } else if (canTakeClue(p, tier)) {
-                    entity.spawnAtLocation(Inv.stack(ClueRewards.scrollBox(tier), 1));
+                    com.runecraft.combat.LootDrops.spawn(entity, Inv.stack(ClueRewards.scrollBox(tier), 1), p);
                     Msg.red(p, "A scroll box (" + tier.id() + ") has dropped!");
                 } else {
                     sneakingSuspicion(p, tier);
