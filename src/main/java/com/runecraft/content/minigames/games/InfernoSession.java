@@ -1,8 +1,15 @@
 package com.runecraft.content.minigames.games;
 
+import com.runecraft.action.ActionManager;
 import com.runecraft.boss.DataBossEntity;
+import com.runecraft.boss.Mechanics;
+import com.runecraft.boss.StrikeMarkers;
+import com.runecraft.boss.ThreatCues;
 import com.runecraft.combat.CombatHandler;
 import com.runecraft.combat.CombatHooks;
+import com.runecraft.combat.MonsterStats;
+import com.runecraft.osrs.ArenaTiming;
+import com.runecraft.osrs.ThreatTiming;
 import com.runecraft.content.minigames.MinigameCombat;
 import com.runecraft.content.minigames.MinigameData;
 import com.runecraft.content.minigames.MinigameManager;
@@ -55,6 +62,21 @@ import net.minecraft.world.phys.Vec3;
  * </ul>
  * Entry costs a fire cape (sacrificed once); victory pays the infernal cape and 16,440 tokkul (doubled by the elite Karamja
  * Diary); a death pays tokkul for the waves completed.
+ *
+ * <p>Real time (round 42, CONTENT_GUIDE rule 5, // playability; every max hit, attack speed and wave is OSRS's):
+ * <ul>
+ *   <li>Jal-Xil, Jal-Zek and Jal-MejRah glow in their attack's style for 3 ticks before it lands ({@link
+ *   TzHaarWaves#STYLE_CUE_TICKS}), and round 41's spacing keeps different styles 20 Minecraft ticks apart: one prayer switch
+ *   per attack, read from the colour (OSRS players flick stacked monsters tick by tick from their animations).</li>
+ *   <li>A Jal-Ak's prayer scan flashes white and tells the player the style it read; the blob then glows in that style until it
+ *   attacks 3 ticks later.</li>
+ *   <li>Wave 68's JalTok-Jads wear name tags (West, East, South); the one telegraphing shows the style coming in its tag and its
+ *   warning, and their 3-tick stagger means one glows at a time.</li>
+ *   <li>A pillar nearly chewed down shows its collapse ring (the true reach) and warns once; wave 66's last pillars fall 3 ticks
+ *   after the wave with their rings drawn. Jal-MejJak lava balls land 3 ticks after the throw on a 3x3 square drawn from it.</li>
+ *   <li>Healers, Jal-MejJak and glyph attackers glow until the player hits them.</li>
+ *   <li>TzKal-Zuk's blast charges and the glyph's shadow is drawn ({@link ZukScript}).</li>
+ * </ul>
  */
 public class InfernoSession extends TzHaarSession {
     /** The rocky supports: west, north, south (arena offsets; north is -z). // approx */
@@ -83,8 +105,21 @@ public class InfernoSession extends TzHaarSession {
     private final Map<Integer, Long> blobAttackAt = new HashMap<>();
     private final Map<Integer, String> blobStyle = new HashMap<>();
     private long waveStartedAt;
-    /** Jal-MejJak lava balls in flight: landing tick and spot. */
-    private final List<Object[]> blasts = new ArrayList<>();
+    /** A Jal-MejJak lava ball in flight: the game tick it lands, its spot, and the Minecraft tick it was thrown. */
+    private record Blast(long landsAt, Vec3 spot, long thrownMc) {
+    }
+
+    private final List<Blast> blasts = new ArrayList<>();
+    /** Per Jal-Ak (entity id): the Minecraft tick its prayer scan happened (its style glow runs until it attacks). */
+    private final Map<Integer, Long> blobScanMc = new HashMap<>();
+    /** Wave 68's Jads (entity id): their name ("West", "East", "South") and the Minecraft tick their telegraph tag ends. */
+    private final Map<Integer, String> jadNames = new HashMap<>();
+    private final Map<Integer, Long> jadTagUntil = new HashMap<>();
+    /** The game tick wave 66's remaining pillars fall (-1: none pending). */
+    private long collapseAt = -1;
+    /** Pillars whose nearly-down warning was given. */
+    private final boolean[] pillarWarned = new boolean[3];
+    private static final String[] PILLAR_NAMES = {"west", "north", "south"};
 
     // TzKal-Zuk
     private boolean zukSpawned;
@@ -110,12 +145,16 @@ public class InfernoSession extends TzHaarSession {
         super(Minigame.INFERNO, id, slot, world, variant);
     }
 
-    /** Jal-MejRah drain 3 run energy per hit unless the player prays Protect from Missiles (OSRS Wiki "Jal-MejRah"). */
+    /**
+     * Jal-MejRah drain 3 run energy per hit unless the player prays Protect from Missiles (OSRS Wiki "Jal-MejRah"), read through
+     * the shared protection check (with its switch grace). Also registers the TzHaar runs' Minecraft-tick cues.
+     */
     public static void register() {
+        registerCues();
         CombatHooks.addDamageListener((player, attacker, attack, style, damage) -> {
             if (attacker == null || !MinigameManager.creatureId(attacker).equals(TzHaarWaves.JAL_MEJRAH)
                     || !(MinigameManager.owner(attacker) instanceof InfernoSession)
-                    || Players.data(player).isActive(Prayer.PROTECT_FROM_MISSILES)) {
+                    || CombatHandler.isProtected(Players.data(player), AttackType.RANGED)) {
                 return;
             }
             int energy = com.runecraft.content.systems.SysState.of(player).runEnergy;
@@ -233,6 +272,11 @@ public class InfernoSession extends TzHaarSession {
             if (id.equals(TzHaarWaves.JALTOK_JAD) && wave == 68) {
                 // Every 9 ticks, each Jad 3 ticks after the previous one (OSRS Wiki "Inferno/Strategies").
                 drive(mob, TzHaarWaves.TRIPLE_JAD_SPEED, 2 + jads * TzHaarWaves.TRIPLE_JAD_STAGGER);
+                // Each wears its place in the triangle (west, east, south). // playability: told apart by position in OSRS
+                String name = TzHaarWaves.TRIPLE_JAD_NAMES[jads % TzHaarWaves.TRIPLE_JAD_NAMES.length];
+                jadNames.put(mob.getId(), name);
+                mob.setCustomName(jadTag(name, null));
+                mob.setCustomNameVisible(true);
                 jads++;
             }
             if (!id.equals(TzHaarWaves.ZUK) && mob.getTarget() == null && !id.equals(TzHaarWaves.JAL_NIB)) {
@@ -301,6 +345,14 @@ public class InfernoSession extends TzHaarSession {
             }
         }
         super.gameTick();
+        if (collapseAt >= 0 && ticks >= collapseAt) {
+            collapseAt = -1;
+            for (int i = 0; i < PILLARS.length; i++) {
+                if (pillarStanding(i)) {
+                    collapse(i);
+                }
+            }
+        }
         nibblers();
         imkotDig();
         landBlasts();
@@ -325,8 +377,150 @@ public class InfernoSession extends TzHaarSession {
             case TzHaarWaves.JAL_ZEK -> zekTurn(mob);
             case TzHaarWaves.JAL_IMKOT -> attack(mob, attackOf(mob, "melee"));
             case "jal_mejjak" -> mejJakTurn(mob);
+            case TzHaarWaves.JALTOK_JAD -> jadNames.containsKey(mob.getId()) ? namedJadTurn(mob) : attack(mob, null);
             default -> attack(mob, null);
         };
+    }
+
+    // ------------------------------------------------------------------ real-time cues
+
+    /** A wave-68 Jad's name tag, with the style it is telegraphing in its colour (null: none). */
+    private static Component jadTag(String name, AttackType style) {
+        net.minecraft.network.chat.MutableComponent tag = Component.literal("JalTok-Jad (" + name + ")")
+                .withStyle(ChatFormatting.GOLD);
+        if (style != null) {
+            int rgb = ThreatCues.rgb(style);
+            tag.append(Component.literal(" " + styleName(style).toUpperCase(java.util.Locale.ROOT))
+                    .withStyle(s -> s.withColor(rgb).withBold(true)));
+        }
+        return tag;
+    }
+
+    private static String styleName(AttackType style) {
+        return style == AttackType.MAGIC ? "magic" : style == AttackType.RANGED ? "ranged" : "melee";
+    }
+
+    /**
+     * A wave-68 Jad's attack: its weighted choice as usual, its warning naming it ("West JalTok-Jad rears up! (magic)") and its
+     * tag showing the style until the hit lands. // playability: in OSRS the three are told apart by where they stand
+     */
+    private boolean namedJadTurn(OsrsMonsterEntity jad) {
+        String name = jadNames.get(jad.getId());
+        ServerPlayer t = targetOf(jad);
+        MonsterStats s = jad.stats();
+        if (t == null || s == null || s.profile() == null || s.profile().attacks.isEmpty()) {
+            return false;
+        }
+        AttackDef a = Mechanics.choose(s.profile().attacks, reach(jad, t), jad.getRandom());
+        if (a == null) {
+            return false;
+        }
+        AttackDef named = a.melee() || a.message() == null ? a
+                : a.message(name + " " + a.message() + " (" + styleName(a.style()) + ")");
+        if (!attack(jad, named)) {
+            return false;
+        }
+        if (!a.melee()) {
+            jad.setCustomName(jadTag(name, a.style()));
+            jadTagUntil.put(jad.getId(), ActionManager.mcTick() + ThreatTiming.leadMc(a.telegraphTicks(), a.special()));
+        }
+        return true;
+    }
+
+    /**
+     * Every Minecraft tick: wave 68's tags go back when their telegraph ends; every {@link ArenaTiming#REDRAW_MC}: Jal-Ak style
+     * glows, the collapse rings of pillars about to fall, and the squares of Jal-MejJak lava balls on their way.
+     */
+    @Override
+    protected void mcTick(long mc) {
+        if (!jadTagUntil.isEmpty()) {
+            for (Map.Entry<Integer, Long> e : new ArrayList<>(jadTagUntil.entrySet())) {
+                if (mc < e.getValue()) {
+                    continue;
+                }
+                jadTagUntil.remove(e.getKey());
+                net.minecraft.world.entity.Entity jad = world.getEntity(e.getKey());
+                String name = jadNames.get(e.getKey());
+                if (jad != null && jad.isAlive() && name != null) {
+                    jad.setCustomName(jadTag(name, null));
+                }
+            }
+        }
+        if (mc % ArenaTiming.REDRAW_MC != 0) {
+            return;
+        }
+        drawBlobCues(mc);
+        drawPillarWarnings(mc);
+        for (Blast b : blasts) {
+            boolean landing = b.landsAt() * TzHaarWaves.MC_PER_TICK - (long) ticks * TzHaarWaves.MC_PER_TICK <= ArenaTiming.FINAL_CUE_MC;
+            drawSquare(b.spot(), TzHaarWaves.MEJJAK_BLAST_HALF, landing);
+        }
+    }
+
+    /** Each Jal-Ak that read the prayer glows in the style it will use until it attacks, brighter and chiming at the end. */
+    private void drawBlobCues(long mc) {
+        if (blobScanMc.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<Integer, Long> e : new ArrayList<>(blobScanMc.entrySet())) {
+            net.minecraft.world.entity.Entity ent = world.getEntity(e.getKey());
+            String style = blobStyle.get(e.getKey());
+            long due = e.getValue() + TzHaarWaves.blobCueMc();
+            if (!(ent instanceof LivingEntity blob) || !blob.isAlive() || style == null || mc >= due) {
+                blobScanMc.remove(e.getKey());
+                continue;
+            }
+            ThreatCues.halo(blob, ThreatCues.rgb(styleType(style)), null, due - mc <= ThreatTiming.FINAL_NOTE_MC);
+            ThreatCues.finalNote(blob, ThreatTiming.finalNotePitch(mc, due));
+        }
+    }
+
+    private static AttackType styleType(String style) {
+        return switch (style) {
+            case "magic" -> AttackType.MAGIC;
+            case "ranged" -> AttackType.RANGED;
+            default -> AttackType.CRUSH;
+        };
+    }
+
+    /** Pillars about to fall (nearly chewed down, or wave 66's collapse pending) show their collapse ring at its true reach. */
+    private void drawPillarWarnings(long mc) {
+        for (int i = 0; i < PILLARS.length; i++) {
+            if (!pillarStanding(i) || !(collapseAt >= 0 || TzHaarWaves.pillarWarns(pillarHp[i]))) {
+                continue;
+            }
+            BlockPos c = rel(PILLARS[i][0], 1, PILLARS[i][1]);
+            boolean landing = collapseAt >= 0 && (collapseAt - ticks) * TzHaarWaves.MC_PER_TICK <= ArenaTiming.FINAL_CUE_MC;
+            StrikeMarkers.ring(world, new Vec3(c.getX() + 0.5, c.getY(), c.getZ() + 0.5), TzHaarWaves.PILLAR_COLLAPSE_REACH,
+                    ParticleTypes.SMOKE, landing, ArenaTiming.ringPoints(TzHaarWaves.PILLAR_COLLAPSE_REACH, 1));
+        }
+    }
+
+    /** A square outline {@code half} blocks either side of {@code centre} on the floor (a 3x3 area's edge). */
+    private void drawSquare(Vec3 centre, double half, boolean landing) {
+        net.minecraft.core.particles.DustParticleOptions dust = landing ? StrikeMarkers.OUTLINE_LANDING : StrikeMarkers.OUTLINE;
+        double y = centre.y + 0.1;
+        for (double d = -half; d <= half + 1e-6; d += 0.5) {
+            world.sendParticles(dust, centre.x + d, y, centre.z - half, 1, 0, 0, 0, 0);
+            world.sendParticles(dust, centre.x + d, y, centre.z + half, 1, 0, 0, 0, 0);
+            world.sendParticles(dust, centre.x - half, y, centre.z + d, 1, 0, 0, 0, 0);
+            world.sendParticles(dust, centre.x + half, y, centre.z + d, 1, 0, 0, 0, 0);
+        }
+    }
+
+    /** Self-test hook: a wave-68 Jad's name ("West", "East", "South"), or null. */
+    public final String selfTestJadName(LivingEntity jad) {
+        return jadNames.get(jad.getId());
+    }
+
+    /** Self-test hook: when wave 66's last pillars fall (game tick, -1: none pending). */
+    public final long selfTestCollapseAt() {
+        return collapseAt;
+    }
+
+    /** Self-test hook: Jal-MejJak lava balls on their way. */
+    public final int selfTestBlasts() {
+        return blasts.size();
     }
 
     // ------------------------------------------------------------------ nibblers and pillars
@@ -389,6 +583,12 @@ public class InfernoSession extends TzHaarSession {
         world.sendParticles(ParticleTypes.SMOKE, c.getX() + 0.5, c.getY(), c.getZ() + 0.5, 3, 1.2, 0.5, 1.2, 0.01);
         if (pillarHp[i] == 0) {
             collapse(i);
+        } else if (TzHaarWaves.pillarWarns(pillarHp[i]) && !pillarWarned[i]) {
+            // its collapse ring is drawn from now on (mcTick) // playability: OSRS players watch its health bar
+            pillarWarned[i] = true;
+            for (ServerPlayer p : online()) {
+                Msg.telegraph(p, "The " + PILLAR_NAMES[i] + " pillar is about to collapse!", ChatFormatting.GOLD);
+            }
         }
     }
 
@@ -402,7 +602,7 @@ public class InfernoSession extends TzHaarSession {
         if (wave < 67) {
             caRunFlags.add(CombatAchievements.FLAG_PILLAR_EARLY);
         }
-        double reach = 3.2;
+        double reach = TzHaarWaves.PILLAR_COLLAPSE_REACH;
         for (ServerPlayer p : online()) {
             if (horizontal(p, c) <= reach) {
                 hurt(p, TzHaarWaves.pillarCollapseDamage((int) Math.ceil(p.getHealth())));
@@ -421,14 +621,25 @@ public class InfernoSession extends TzHaarSession {
         return Math.sqrt(dx * dx + dz * dz);
     }
 
+    /**
+     * Clearing wave 66 brings the remaining pillars down: {@link TzHaarWaves#PILLAR_COLLAPSE_WARNING_TICKS} later, their collapse
+     * rings drawn meanwhile (before wave 67, 8 ticks on). // playability: OSRS drops them as the wave ends
+     */
     @Override
     protected void onWaveCleared(int cleared) {
-        if (cleared == TzHaarWaves.PILLARS_COLLAPSE_AFTER) {
-            for (int i = 0; i < PILLARS.length; i++) {
-                if (pillarStanding(i)) {
-                    collapse(i);
-                }
-            }
+        if (cleared != TzHaarWaves.PILLARS_COLLAPSE_AFTER) {
+            return;
+        }
+        boolean any = false;
+        for (int i = 0; i < PILLARS.length; i++) {
+            any |= pillarStanding(i);
+        }
+        if (!any) {
+            return;
+        }
+        collapseAt = ticks + TzHaarWaves.PILLAR_COLLAPSE_WARNING_TICKS;
+        for (ServerPlayer p : online()) {
+            Msg.telegraph(p, "The pillars are collapsing! Stand clear!", ChatFormatting.GOLD);
         }
     }
 
@@ -446,11 +657,17 @@ public class InfernoSession extends TzHaarSession {
             if (reach(blob, t) > 9.5 || !blob.getSensing().hasLineOfSight(t)) {
                 return false;
             }
+            // The scan reads the overhead the player shows now, not CombatHandler.isProtected: that check's switch grace keeps
+            // a prayer switched off 8 MC ago protecting (for hits landing just after a switch), so a scan right after a switch
+            // would read two overheads and pick at random; OSRS reads the one on. The blob's hit itself lands through
+            // Mechanics, which reads the protection (with the grace) at impact.
             PlayerData data = Players.data(t);
-            blobStyle.put(id, TzHaarWaves.blobStyle(data.isActive(Prayer.PROTECT_FROM_MAGIC), data.isActive(Prayer.PROTECT_FROM_MISSILES),
-                    data.isActive(Prayer.PROTECT_FROM_MELEE), reach(blob, t) <= 2.5, random.nextDouble()));
+            String style = TzHaarWaves.blobStyle(data.isActive(Prayer.PROTECT_FROM_MAGIC), data.isActive(Prayer.PROTECT_FROM_MISSILES),
+                    data.isActive(Prayer.PROTECT_FROM_MELEE), reach(blob, t) <= 2.5, random.nextDouble());
+            blobStyle.put(id, style);
             blobAttackAt.put(id, ticks + TzHaarWaves.BLOB_READ_TICKS);
             nextAttack.put(id, ticks + TzHaarWaves.BLOB_READ_TICKS);
+            scanCue(blob, t, style);
             return false;
         }
         blobAttackAt.remove(id);
@@ -462,6 +679,19 @@ public class InfernoSession extends TzHaarSession {
         }
         nextAttack.put(id, ticks + TzHaarWaves.BLOB_READ_TICKS);
         return false;
+    }
+
+    /**
+     * A Jal-Ak's prayer scan made visible: a white flash and chime as it reads the overhead, a warning naming the style it will
+     * use ("Jal-Ak scans your prayer: magic next!"), then its glow in that style until it attacks ({@link #drawBlobCues}).
+     * // playability: OSRS shows the blob looking at the player; players know the rule and switch in the 3 ticks after the scan
+     */
+    private void scanCue(LivingEntity blob, ServerPlayer t, String style) {
+        blobScanMc.put(blob.getId(), ActionManager.mcTick());
+        ThreatCues.halo(blob, 0xFFFFFF, ParticleTypes.END_ROD, true);
+        world.playSound(null, blob.getX(), blob.getY() + blob.getBbHeight() * 0.5, blob.getZ(),
+                net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME, net.minecraft.sounds.SoundSource.HOSTILE, 1.0f, 0.8f);
+        Msg.telegraph(t, "Jal-Ak scans your prayer: " + style + " next!", null);
     }
 
     /** Jal-Zek: 1 in 10 of its attacks revives a monster slain this wave instead, then it waits 8 ticks. */
@@ -603,6 +833,7 @@ public class InfernoSession extends TzHaarSession {
                 if (h != null) {
                     h.setNoAi(true);
                     drive(h, baseSpeed(h), 1);
+                    markUntagged(h);
                 }
             }
             broadcastRed("TzKal-Zuk is enraged! Jal-MejJak arrive to heal him!");
@@ -658,6 +889,7 @@ public class InfernoSession extends TzHaarSession {
         m.setTarget(null);
         m.setNoAi(true);
         drive(m, baseSpeed(m), 2);
+        markUntagged(m);
     }
 
     /** One attack of a shield attacker against the glyph (up to its ranged or magic max hit). */
@@ -697,22 +929,24 @@ public class InfernoSession extends TzHaarSession {
         }
         ServerPlayer t = online.get(random.nextInt(online.size()));
         Vec3 spot = t.position();
-        blasts.add(new Object[]{ticks + 2, spot});
+        // lands 3 ticks on, on the 3x3 square drawn from now // playability: 2 ticks before, the square never drawn
+        blasts.add(new Blast(ticks + TzHaarWaves.MEJJAK_BLAST_TICKS, spot, ActionManager.mcTick()));
         world.sendParticles(ParticleTypes.LAVA, spot.x, spot.y + 0.1, spot.z, 12, 1.0, 0.05, 1.0, 0);
+        drawSquare(spot, TzHaarWaves.MEJJAK_BLAST_HALF, false);
         return true;
     }
 
     private void landBlasts() {
-        for (java.util.Iterator<Object[]> it = blasts.iterator(); it.hasNext(); ) {
-            Object[] b = it.next();
-            if (ticks < (long) b[0]) {
+        for (java.util.Iterator<Blast> it = blasts.iterator(); it.hasNext(); ) {
+            Blast b = it.next();
+            if (ticks < b.landsAt()) {
                 continue;
             }
             it.remove();
-            Vec3 spot = (Vec3) b[1];
+            Vec3 spot = b.spot();
             world.sendParticles(ParticleTypes.EXPLOSION, spot.x, spot.y + 0.5, spot.z, 2, 0.8, 0.2, 0.8, 0);
             for (ServerPlayer p : online()) {
-                if (Math.abs(p.getX() - spot.x) <= 1.5 && Math.abs(p.getZ() - spot.z) <= 1.5) {
+                if (TzHaarWaves.inMejJakBlast(p.getX() - spot.x, p.getY() - spot.y, p.getZ() - spot.z)) {
                     hurt(p, TzHaarWaves.mejJakBlast(random));
                 }
             }
@@ -742,12 +976,14 @@ public class InfernoSession extends TzHaarSession {
             m.removeTag(SHIELD);
             m.setNoAi(false);
             m.setTarget(player);
+            unmark(m);
             if (!MinigameManager.creatureId(m).equals(TzHaarWaves.JAL_ZEK) && !MinigameManager.creatureId(m).equals(TzHaarWaves.JALTOK_JAD)) {
                 release(m);
             }
         }
         if (MinigameManager.creatureId(target).equals("jal_mejjak") && !target.getTags().contains(DISTRACTED)) {
             target.addTag(DISTRACTED);
+            unmark(target);
             Msg.action(player, "The Jal-MejJak stops healing TzKal-Zuk and turns on you.");
         }
     }
@@ -822,11 +1058,11 @@ public class InfernoSession extends TzHaarSession {
         return true;
     }
 
-    /** A paused run keeps its pillars' hitpoints. */
+    /** A paused run keeps its pillars' hitpoints (those wave 66's end is bringing down count as fallen). */
     @Override
     protected void savePause(MinigameData data, java.util.UUID player) {
         for (int i = 0; i < PILLARS.length; i++) {
-            data.setStat(player, pauseKey("pillar" + i, game), pillarHp[i] + 1);
+            data.setStat(player, pauseKey("pillar" + i, game), (collapseAt >= 0 ? 0 : pillarHp[i]) + 1);
         }
     }
 

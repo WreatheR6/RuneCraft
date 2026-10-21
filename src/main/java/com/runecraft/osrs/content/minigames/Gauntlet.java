@@ -872,6 +872,76 @@ public final class Gauntlet {
     /** Game ticks a pattern stays orange (approx). */
     public static final int FLOOR_ACTIVE_TICKS = 4;
 
+    // ------------------------------------------------------------------ real time (round 42, CONTENT_GUIDE rule 5)
+
+    /** Game ticks a floor pattern warns at the least: the real-time strike floor (round 41's {@code ArenaTiming}). */
+    public static final int FLOOR_MIN_WARN_TICKS = 3;
+
+    /**
+     * Game ticks a floor pattern stays blue (crimson) before it burns, by phase: {@link #FLOOR_WARN_TICKS}, at least
+     * {@link #FLOOR_MIN_WARN_TICKS}. // playability: the fast phase's 2 ticks (1.2 s) become 3 (1.8 s), the time to read the
+     * tiles drawn and step off; damage, the active time and the interval are unchanged
+     */
+    public static int floorWarnTicks(int phase) {
+        return Math.max(FLOOR_MIN_WARN_TICKS, FLOOR_WARN_TICKS[Math.max(0, Math.min(FLOOR_WARN_TICKS.length - 1, phase))]);
+    }
+
+    /** A floor tile's side in blocks (each OSRS tile of the Hunllef's room is two blocks here). */
+    public static final int FLOOR_TILE_BLOCKS = 2;
+    /**
+     * Blocks of leniency at a burning tile's edge: a player whose position is within this of an unlit spot counts as off the
+     * tiles. // playability: OSRS tests the one tile stood on; a Minecraft player stands anywhere on a block
+     */
+    public static final double FLOOR_EDGE_LENIENCY = 0.25;
+
+    /**
+     * Whether a player at ({@code px}, {@code pz}) (block coordinates, fractional) stands on the burning floor: every point
+     * within {@link #FLOOR_EDGE_LENIENCY} of the player lies on a lit tile. {@code tiles} holds each tile's north-west block
+     * ({x, z}); a tile covers {@link #FLOOR_TILE_BLOCKS} blocks each way. What hits is what the outline shows.
+     */
+    public static boolean onBurningFloor(List<int[]> tiles, double px, double pz) {
+        double e = FLOOR_EDGE_LENIENCY;
+        for (double ox : new double[]{-e, e}) {
+            for (double oz : new double[]{-e, e}) {
+                if (!onTile(tiles, px + ox, pz + oz)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static boolean onTile(List<int[]> tiles, double x, double z) {
+        for (int[] t : tiles) {
+            if (x >= t[0] && x < t[0] + FLOOR_TILE_BLOCKS && z >= t[1] && z < t[1] + FLOOR_TILE_BLOCKS) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Blocks a tornado moves towards the player per game tick (one tile; the player runs two). // approx */
+    public static final double TORNADO_STEP_PER_TICK = 1.0;
+    /**
+     * Horizontal blocks from a tornado's centre within which it hits the player (once a game tick); its ring is drawn at this
+     * radius. // playability: OSRS hits the player on the tornado's tile
+     */
+    public static final double TORNADO_HIT_RADIUS = 1.2;
+
+    /**
+     * One Minecraft tick of a tornado's chase: the step towards the player ({@code dx}, {@code dz} away), a twelfth of
+     * {@link #TORNADO_STEP_PER_TICK}, never past the hit radius's edge. Returns {stepX, stepZ}. // playability: it moved a whole
+     * block once a game tick, jumping over a player's dodge
+     */
+    public static double[] tornadoStep(double dx, double dz) {
+        double len = Math.sqrt(dx * dx + dz * dz);
+        double step = Math.min(TORNADO_STEP_PER_TICK / 12.0, Math.max(0, len - TORNADO_HIT_RADIUS * 0.5));
+        if (len < 1.0E-6 || step <= 0) {
+            return new double[]{0, 0};
+        }
+        return new double[]{dx / len * step, dz / len * step};
+    }
+
     /**
      * Creature stats (osrs-dps-calc monsters.json): level, hitpoints, attack, strength, defence, magic, ranged, max hit,
      * attack bonus, strength bonus. Defensive bonuses are all 0 since the July 2026 standardisation.

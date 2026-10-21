@@ -146,7 +146,13 @@ public class ColosseumSession extends MinigameSession {
 
     public ColosseumSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.FORTIS_COLOSSEUM, id, slot, world, variant);
+        LIVE.add(this);
     }
+
+    /** Runs whose players may be answering Sol Heredit's grapple with the hotbar keys (checked every Minecraft tick). */
+    private static final Set<ColosseumSession> LIVE = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+    /** Players answering a grapple: the hotbar slot they held when it was called (given back once it is answered or lands). */
+    private final Map<java.util.UUID, Integer> grappleHotbar = new HashMap<>();
 
     /** Children of the Sun opens Varlamore and the Colosseum; Minimus must have briefed the player once. */
     public static String requirement(ServerPlayer player) {
@@ -890,9 +896,18 @@ public class ColosseumSession extends MinigameSession {
         long at = FortisColosseum.manticoreVolleyTick(ticks, other);
         manticoreVolleys.put(id, at);
         int hits = FortisColosseum.manticoreHitsPerOrb(tier);
+        // Another manticore's orbs still on their way to this player: this volley's land at least 2 ticks after its last
+        // (FortisColosseum.manticoreOrbTicks: the two-manticore gap would otherwise be a single tick).
+        long otherLastOrb = Long.MIN_VALUE / 2;
+        for (Orb o : orbs) {
+            if (o.mob() != mob && o.player() == target) {
+                otherLastOrb = Math.max(otherLastOrb, o.due());
+            }
+        }
+        long[] lands = FortisColosseum.manticoreOrbTicks(at, otherLastOrb);
         for (int i = 0; i < pattern.size(); i++) {
             // the first orb no longer lands at once: 3, 5 and 7 ticks after the launch // playability: OSRS a tick apart
-            orbs.add(new Orb(mob, target, pattern.get(i), FortisColosseum.manticoreOrbTick(at, i), hits));
+            orbs.add(new Orb(mob, target, pattern.get(i), lands[Math.min(i, lands.length - 1)], hits));
         }
         world.sendParticles(ParticleTypes.ENCHANT, mob.getX(), mob.getY() + mob.getBbHeight(), mob.getZ(), 20, 0.5, 0.4, 0.5, 0.2);
         announceVolley(target, pattern);
@@ -934,6 +949,7 @@ public class ColosseumSession extends MinigameSession {
         Map<LivingEntity, Integer> stacked = new HashMap<>();
         List<Orb> sorted = new ArrayList<>(orbs);
         sorted.sort(java.util.Comparator.comparingLong(Orb::due));
+        boolean first = true;
         for (Orb o : sorted) {
             LivingEntity m = o.mob();
             if (!m.isAlive()) {
@@ -941,7 +957,16 @@ public class ColosseumSession extends MinigameSession {
             }
             int level = stacked.merge(m, 1, Integer::sum) - 1;
             var dust = o.type() == AttackType.MAGIC ? ORB_MAGIC : o.type() == AttackType.RANGED ? ORB_RANGED : ORB_MELEE;
-            world.sendParticles(dust, m.getX(), m.getY() + m.getBbHeight() + 0.4 + level * 0.6, m.getZ(), 4, 0.12, 0.12, 0.12, 0.0);
+            double y = m.getY() + m.getBbHeight() + 0.4 + level * 0.6;
+            // the bottom orb of each stack lands next: drawn bigger // playability (round 42)
+            world.sendParticles(dust, m.getX(), y, m.getZ(), level == 0 ? 9 : 4, level == 0 ? 0.2 : 0.12, level == 0 ? 0.2 : 0.12,
+                    level == 0 ? 0.2 : 0.12, 0.0);
+            if (first && o.due() - ticks <= 1 && o.player().isAlive()) {
+                // the orb landing within a game tick: a ring of its colour round the player it is aimed at
+                int rgb = o.type() == AttackType.MAGIC ? Msg.MAGIC_RGB : o.type() == AttackType.RANGED ? Msg.RANGED_RGB : Msg.MELEE_RGB;
+                com.runecraft.boss.ThreatCues.ring(world, o.player().position(), 0.7, rgb, null, true);
+            }
+            first = false;
         }
     }
 
@@ -1370,6 +1395,13 @@ public class ColosseumSession extends MinigameSession {
             if (com.runecraft.action.ActionManager.mcTick() % com.runecraft.osrs.ArenaTiming.REDRAW_MC == 0) {
                 redrawOrbStacks();
             }
+            for (ColosseumSession s : LIVE.toArray(new ColosseumSession[0])) {
+                if (s.isEnded()) {
+                    LIVE.remove(s);
+                } else {
+                    s.grappleKeys();
+                }
+            }
         });
         // Sol Heredit drops nothing: the Rewards Chest holds the loot (his pet roll and kill count still come with the kill).
         com.runecraft.boss.DataBossService.loot(FortisColosseum.SOL_HEREDIT, (killer, boss, table) -> List.of());
@@ -1742,6 +1774,10 @@ public class ColosseumSession extends MinigameSession {
         }
         PoisonService.cure(player, true, 0, com.runecraft.action.ActionManager.gameTick());
         clearSand(true);
+        Integer held = grappleHotbar.remove(player.getUUID());
+        if (held != null) {
+            selectHotbar(player, held); // the slot held before a grapple, back
+        }
     }
 
     @Override
@@ -1871,6 +1907,63 @@ public class ColosseumSession extends MinigameSession {
             }
         }
         return null;
+    }
+
+    /**
+     * Sol Heredit's grapple on the hotbar keys (every Minecraft tick): when he calls one, the player's held slot moves off keys
+     * 1-5 (to slot 9) and the legend is shown in the middle of the screen; pressing 1 body, 2 back, 3 hands, 4 legs or 5 feet
+     * within {@link SolHeredit#GRAPPLE_WINDOW_TICKS} defends that slot ({@link
+     * com.runecraft.content.bosses.SolHereditScript#parry}, the chat links' path), and the held slot comes back once the
+     * grapple is answered or lands. // playability: OSRS clicks the slot in the worn-equipment tab within 4 ticks
+     */
+    public void grappleKeys() {
+        for (ServerPlayer p : online()) {
+            UUID u = p.getUUID();
+            SolHeredit.Grapple called = com.runecraft.content.bosses.SolHereditScript.calledFor(p);
+            Integer held = grappleHotbar.get(u);
+            if (called == null) {
+                if (held != null) {
+                    grappleHotbar.remove(u);
+                    selectHotbar(p, held);
+                }
+                continue;
+            }
+            if (held == null) {
+                int was = p.getInventory().selected;
+                grappleHotbar.put(u, was);
+                if (SolHeredit.grappleByHotbar(was) != null) {
+                    selectHotbar(p, 8); // off the five keys, so each of them is a change the server sees
+                }
+                MutableComponent legend = Component.literal("Defend: ").withStyle(ChatFormatting.GRAY);
+                for (SolHeredit.Grapple g : SolHeredit.Grapple.values()) {
+                    String label = SolHeredit.hotbarKey(g) + " " + g.slot.substring(0, 1).toUpperCase(java.util.Locale.ROOT)
+                            + g.slot.substring(1) + "  ";
+                    legend.append(Component.literal(label).withStyle(g == called ? ChatFormatting.GOLD : ChatFormatting.GRAY));
+                }
+                Msg.telegraph(p, legend);
+                continue;
+            }
+            SolHeredit.Grapple pressed = SolHeredit.grappleByHotbar(p.getInventory().selected);
+            if (pressed != null) {
+                com.runecraft.content.bosses.SolHereditScript.parry(p, pressed.slot);
+            }
+        }
+    }
+
+    /** Moves a player's held hotbar slot (server and client). */
+    private static void selectHotbar(ServerPlayer p, int slot) {
+        if (slot < 0 || slot > 8 || p.getInventory().selected == slot) {
+            return;
+        }
+        p.getInventory().selected = slot;
+        if (!(p instanceof net.neoforged.neoforge.common.util.FakePlayer) && p.connection != null) {
+            p.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(slot));
+        }
+    }
+
+    /** Self-test: whether a player is answering a grapple on the hotbar keys (their held slot was moved). */
+    public boolean grappleKeysArmed(ServerPlayer p) {
+        return grappleHotbar.containsKey(p.getUUID());
     }
 
     /**

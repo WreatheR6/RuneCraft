@@ -57,6 +57,56 @@ public abstract class TzHaarSession extends MinigameSession {
 
     protected TzHaarSession(Minigame game, int id, int slot, ServerLevel world, String variant) {
         super(game, id, slot, world, variant);
+        LIVE.add(this);
+    }
+
+    // ------------------------------------------------------------------ real-time cues (round 42, // playability)
+
+    /** Runs whose cues are redrawn between game ticks. */
+    private static final Set<TzHaarSession> LIVE = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+    private static boolean cuesRegistered;
+
+    /**
+     * Registers the Minecraft-tick hook of the TzHaar cues (once, from the minigames module's init through
+     * {@link InfernoSession#register}): TzTok-Jad's style glow and each run's {@link #mcTick}.
+     */
+    static void registerCues() {
+        if (cuesRegistered) {
+            return;
+        }
+        cuesRegistered = true;
+        com.runecraft.platform.ServerTickEvents.END_SERVER_TICK.register(server -> {
+            TzTokJadScript.tickCues();
+            if (LIVE.isEmpty()) {
+                return;
+            }
+            long mc = com.runecraft.action.ActionManager.mcTick();
+            for (TzHaarSession s : LIVE.toArray(new TzHaarSession[0])) {
+                if (s.isEnded()) {
+                    LIVE.remove(s);
+                } else {
+                    s.mcTick(mc);
+                }
+            }
+        });
+    }
+
+    /** Every Minecraft tick while the run lasts: cues drawn between game ticks (markers, glows, name tags). */
+    protected void mcTick(long mc) {
+    }
+
+    /**
+     * Marks a monster whose attention the player must take (a healer, a Jal-MejJak, a glyph attacker) with the glowing outline
+     * until the player hits it. // playability: OSRS players find them by their animations and the minimap
+     */
+    protected static void markUntagged(LivingEntity e) {
+        e.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING,
+                net.minecraft.world.effect.MobEffectInstance.INFINITE_DURATION, 0, false, false));
+    }
+
+    /** Takes {@link #markUntagged}'s outline off once the player has hit the monster. */
+    protected static void unmark(LivingEntity e) {
+        e.removeEffect(net.minecraft.world.effect.MobEffects.GLOWING);
     }
 
     protected abstract int totalWaves();
@@ -184,9 +234,13 @@ public abstract class TzHaarSession extends MinigameSession {
                 if (h != null) {
                     h.addTag(HEALS + jad.getId());
                     h.setTarget(null);
+                    markUntagged(h);
                 }
             }
             broadcastRed("Yt-HurKot rush to " + jad.getName().getString() + "'s side!");
+            for (ServerPlayer p : online()) {
+                Msg.telegraph(p, "Healers! Hit each glowing Yt-HurKot to stop it healing.", net.minecraft.ChatFormatting.GOLD);
+            }
         }
     }
 
@@ -290,6 +344,7 @@ public abstract class TzHaarSession extends MinigameSession {
                 && !mob.getTags().contains(DISTRACTED)) {
             mob.addTag(DISTRACTED);
             mob.setTarget(player);
+            unmark(mob);
             Msg.action(player, "The Yt-HurKot turns its attention to you.");
         }
     }

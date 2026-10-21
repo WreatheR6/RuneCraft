@@ -526,11 +526,19 @@ public final class TzHaarSelfTest {
                 }
                 clear(s, null);
             }
+            // Round 42 playability: the last pillars fall 3 ticks after wave 66 ends, their collapse rings drawn meanwhile.
             tick(s, 1);
+            int[] standing = s.pillars();
+            if (standing[0] + standing[1] + standing[2] > 0) {
+                expect(s.selfTestCollapseAt() >= 0, "wave 66 ended without warning of the pillars' collapse");
+            }
+            tick(s, TzHaarWaves.PILLAR_COLLAPSE_WARNING_TICKS);
             int[] pillars = s.pillars();
-            expect(pillars[0] == 0 && pillars[1] == 0 && pillars[2] == 0, "pillars still standing after wave 66: "
-                    + java.util.Arrays.toString(pillars));
-            log.append("waves 1-66 spawned and cleared, pillars down after 66");
+            expect(pillars[0] == 0 && pillars[1] == 0 && pillars[2] == 0, "pillars still standing "
+                    + TzHaarWaves.PILLAR_COLLAPSE_WARNING_TICKS + " ticks after wave 66: " + java.util.Arrays.toString(pillars));
+            expect(s.wave() == 66, "wave 67 started before the pillars fell");
+            log.append("waves 1-66 spawned and cleared, pillars down ").append(TzHaarWaves.PILLAR_COLLAPSE_WARNING_TICKS)
+                    .append(" ticks after 66");
             jads(s);
             zuk(s);
         } finally {

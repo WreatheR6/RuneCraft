@@ -248,6 +248,11 @@ public final class TzHaarWaves {
 
     /** TzTok-Jad's magic attack hits up to 95 (his melee and ranged 97; OSRS Wiki "TzTok-Jad"). Melee is a stab. */
     public static final int JAD_MAGIC_MAX = 95;
+    /**
+     * TzTok-Jad's magic and ranged attacks land 3 game ticks after he rears up or stomps (OSRS Wiki "TzTok-Jad"): 36 Minecraft
+     * ticks, the real-time telegraph floor. His style-coloured glow lasts exactly that long.
+     */
+    public static final int JAD_TELEGRAPH_TICKS = 3;
 
     /** TzTok-Jad's level-108 healers and JalTok-Jad's level-141 ones (OSRS Wiki "Yt-HurKot"). */
     public static final String HURKOT = "yt_hurkot";
@@ -363,6 +368,109 @@ public final class TzHaarWaves {
     public static final int TRIPLE_JAD_SPEED = 9;
     public static final int TRIPLE_JAD_STAGGER = 3;
 
+    // ------------------------------------------------------------------ real-time cues (round 42, CONTENT_GUIDE rule 5)
+
+    /** Minecraft ticks in a game tick. */
+    public static final int MC_PER_TICK = 12;
+    /** The shared real-time telegraph floor (round 41, {@code ThreatTiming.TELEGRAPH_FLOOR_MC}): 36 Minecraft ticks, 1.8 s. */
+    public static final int TELEGRAPH_FLOOR_MC = 36;
+
+    /**
+     * Wave 68's JalTok-Jads stand at the west, east and south points of their triangle; each wears its name and, while it
+     * telegraphs, the colour and name of the style coming. // playability: OSRS players tell the three apart by position only
+     */
+    public static final String[] TRIPLE_JAD_NAMES = {"West", "East", "South"};
+
+    /**
+     * Whether wave 68's telegraphs are read one at a time: a telegraph of {@code leadMc} Minecraft ticks ends no later than
+     * the next Jad's starts ({@link #TRIPLE_JAD_STAGGER} ticks on), so only one Jad ever glows. The 9-tick speed and the
+     * 3-tick stagger are OSRS's.
+     */
+    public static boolean tripleJadCuesApart(int leadMc) {
+        return leadMc <= TRIPLE_JAD_STAGGER * MC_PER_TICK;
+    }
+
+    /**
+     * Game ticks of the style cue on the Inferno's ranged and magic attackers (Jal-Xil, Jal-Zek, Jal-MejRah): each attack
+     * glows in its style's colour for at least 36 Minecraft ticks before it lands, and attacks of different styles land at
+     * least 20 apart (round 41's spacing), so a prayer switch per attack is a human reaction. // playability: OSRS players
+     * flick between stacked monsters on consecutive ticks from their animations; max hits, attack speeds and the attacks
+     * themselves are unchanged
+     */
+    public static final int STYLE_CUE_TICKS = 3;
+
+    /**
+     * Minecraft ticks TzKal-Zuk charges his blast before it lands (an orange glow, a rising note and a warning; the glyph's
+     * shadow on the floor shows where it is blocked). // playability: OSRS shows his attack animation and the projectile;
+     * his 10-tick (7 enraged) cadence and 148 max hit are unchanged, and the glyph is checked as the blast lands
+     */
+    public static final int ZUK_CHARGE_MC = TELEGRAPH_FLOOR_MC;
+
+    /**
+     * How far beside the Ancestral Glyph's edge a player still counts as covered (blocks). // approx: the wiki marks the
+     * safe tiles on a map; a player-sized margin here
+     */
+    public static final double GLYPH_COVER_SLACK = 0.9;
+
+    /** Half the width of the glyph's shadow (where its cover counts) for a glyph {@code glyphWidth} blocks wide. */
+    public static double glyphShadowHalfWidth(double glyphWidth) {
+        return glyphWidth / 2 + GLYPH_COVER_SLACK;
+    }
+
+    /**
+     * Whether the Ancestral Glyph blocks TzKal-Zuk's blast at a player standing at ({@code px}, {@code pz}): lined up with the
+     * glyph east-west (within {@link #glyphShadowHalfWidth}) and further from Zuk (at {@code zukZ}) than the glyph is. What the
+     * floor shadow shows is exactly this area.
+     */
+    public static boolean glyphShields(double px, double pz, double glyphX, double glyphZ, double glyphWidth, double zukZ) {
+        boolean lined = Math.abs(px - glyphX) < glyphShadowHalfWidth(glyphWidth);
+        boolean behind = Math.abs(pz - zukZ) > Math.abs(glyphZ - zukZ);
+        return lined && behind;
+    }
+
+    /**
+     * Blocks from a pillar's centre within which its collapse hurts (horizontal): its 3x3 body, the tile around it, and the
+     * width of a player. The ring drawn while it is about to fall has exactly this radius.
+     */
+    public static final double PILLAR_COLLAPSE_REACH = 3.2;
+    /**
+     * A pillar at or below this many hitpoints shows its collapse ring (redrawn every few Minecraft ticks) and warns once.
+     * // playability: OSRS players watch the pillar's health bar; // approx threshold (nibblers chew about 3 a tick together)
+     */
+    public static final int PILLAR_WARN_HP = 40;
+    /**
+     * Game ticks between wave 66's end and the remaining pillars falling, their rings drawn meanwhile. // playability: OSRS
+     * drops them as the wave ends; here they fall the strike floor's 3 ticks later (still before wave 67, 8 ticks on)
+     */
+    public static final int PILLAR_COLLAPSE_WARNING_TICKS = 3;
+
+    /** Whether a pillar at {@code hp} hitpoints shows its collapse warning (standing and nearly down). */
+    public static boolean pillarWarns(int hp) {
+        return hp > 0 && hp <= PILLAR_WARN_HP;
+    }
+
+    /**
+     * Game ticks from a Jal-MejJak lobbing its lava ball to it landing on the 3x3 area it marked. // playability: 2 before (an
+     * approximation of the flight); the strike floor's 3 ticks, with the square drawn from the throw
+     */
+    public static final int MEJJAK_BLAST_TICKS = 3;
+    /** Half the side of the Jal-MejJak blast's 3x3 area (blocks). */
+    public static final double MEJJAK_BLAST_HALF = 1.5;
+
+    /** Whether a player ({@code dx}, {@code dy}, {@code dz}) from a lava ball's centre is in its 3x3 area. */
+    public static boolean inMejJakBlast(double dx, double dy, double dz) {
+        return Math.abs(dx) <= MEJJAK_BLAST_HALF && Math.abs(dz) <= MEJJAK_BLAST_HALF && Math.abs(dy) < 2.0;
+    }
+
+    /**
+     * Minecraft ticks from a Jal-Ak's prayer scan to its attack (its {@link #BLOB_READ_TICKS}): the scan flashes, then the blob
+     * glows in the style it read for this long, before its projectile flies. // playability: OSRS shows the scan only as the
+     * blob looking at the player
+     */
+    public static int blobCueMc() {
+        return BLOB_READ_TICKS * MC_PER_TICK;
+    }
+
     // ------------------------------------------------------------------ TzKal-Zuk
 
     /** TzKal-Zuk's hitpoints. */
@@ -389,7 +497,10 @@ public final class TzHaarWaves {
         return 15 + random.nextInt(10);
     }
 
-    /** A Jal-MejJak lava ball, once the healer has been attacked: 5-10 damage in a 3x3 area (OSRS Wiki "Jal-MejJak"). */
+    /**
+     * A Jal-MejJak lava ball, once the healer has been attacked: 5-10 damage in a 3x3 area (OSRS Wiki "Jal-MejJak"), landing
+     * {@link #MEJJAK_BLAST_TICKS} after the throw.
+     */
     public static int mejJakBlast(java.util.Random random) {
         return 5 + random.nextInt(6);
     }
