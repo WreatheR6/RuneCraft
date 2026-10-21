@@ -483,9 +483,20 @@ public final class MinigameWorld {
         pages.add(new CollectionLogData.Page(c, "Barbarian Assault", List.of("pet_penance_queen", "fighter_torso", "penance_gloves",
                 "penance_skirt", "fighter_hat", "ranger_hat", "runner_hat", "healer_hat", "runner_boots", "granite_body",
                 "granite_helm")));
-        pages.add(new CollectionLogData.Page(c, "Castle Wars", List.of("saradomin_halo", "zamorak_halo", "saradomin_hood",
-                "zamorak_hood", "guthix_halo", "red_decorative_helm", "red_decorative_body", "white_decorative_helm",
-                "white_decorative_body", "gold_decorative_helm", "gold_decorative_body")));
+        // The Castle Wars page holds Lanthus' whole stock (OSRS Wiki "Collection log").
+        List<String> castleWars = new ArrayList<>();
+        for (String tier : new String[]{"red", "white", "gold"}) {
+            for (String piece : new String[]{"sword", "body", "legs", "helm", "shield"}) {
+                castleWars.add(tier + "_decorative_" + piece);
+            }
+        }
+        castleWars.addAll(List.of("saradomin_hood", "saradomin_castlewars_cloak", "zamorak_hood", "zamorak_castlewars_cloak",
+                "saradomin_banner", "zamorak_banner", "red_decorative_skirt", "white_decorative_skirt", "gold_decorative_skirt",
+                "decorative_magic_top", "decorative_magic_legs", "decorative_magic_hat", "decorative_ranged_top",
+                "decorative_ranged_legs", "decorative_quiver", "saradomin_halo", "zamorak_halo", "guthix_halo", "red_decorative_boots",
+                "red_decorative_full_helm", "white_decorative_boots", "white_decorative_full_helm", "gold_decorative_boots",
+                "gold_decorative_full_helm"));
+        pages.add(new CollectionLogData.Page(c, "Castle Wars", castleWars));
         List<String> defenders = new ArrayList<>();
         for (String t : MinigameItems.DEFENDER_TIERS) {
             defenders.add(t + "_defender");

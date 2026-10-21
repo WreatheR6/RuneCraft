@@ -148,20 +148,28 @@ public final class RewardShops {
             }
         }
 
-        // Castle Wars: Lanthus' Castle Wars Ticket Exchange (OSRS Wiki prices; each decorative tier
-        // costs ten times the one before).
+        // Castle Wars: Lanthus' Castle Wars Ticket Exchange (OSRS Wiki stock and prices; each decorative tier costs ten times
+        // the one before, except the white full helm, 40 since April 2025).
         RewardShop cw = shop("castle_wars", "Castle Wars Ticket Exchange");
         String[] tiers = {"red", "white", "gold"};
         for (int i = 0; i < tiers.length; i++) {
             int m = i == 0 ? 1 : i == 1 ? 10 : 100;
-            cw.item(tiers[i] + "_decorative_helm", CW_TICKETS, (i == 1 ? 4 : 5) * m) // full helm: 5 / 40 / 500
+            cw.item(tiers[i] + "_decorative_helm", CW_TICKETS, 4 * m)
+                    .item(tiers[i] + "_decorative_full_helm", CW_TICKETS, (i == 1 ? 4 : 5) * m) // 5 / 40 / 500
                     .item(tiers[i] + "_decorative_body", CW_TICKETS, 8 * m)
                     .item(tiers[i] + "_decorative_legs", CW_TICKETS, 6 * m)
+                    .item(tiers[i] + "_decorative_skirt", CW_TICKETS, 6 * m)
+                    .item(tiers[i] + "_decorative_boots", CW_TICKETS, 4 * m)
                     .item(tiers[i] + "_decorative_shield", CW_TICKETS, 6 * m)
                     .item(tiers[i] + "_decorative_sword", CW_TICKETS, 5 * m);
         }
-        cw.item("saradomin_halo", CW_TICKETS, 75).item("zamorak_halo", CW_TICKETS, 75).item("guthix_halo", CW_TICKETS, 75)
-                .item("saradomin_hood", CW_TICKETS, 10).item("zamorak_hood", CW_TICKETS, 10);
+        cw.item("zamorak_hood", CW_TICKETS, 10).item("zamorak_castlewars_cloak", CW_TICKETS, 10)
+                .item("saradomin_hood", CW_TICKETS, 10).item("saradomin_castlewars_cloak", CW_TICKETS, 10)
+                .item("saradomin_banner", CW_TICKETS, 100).item("zamorak_banner", CW_TICKETS, 100)
+                .item("decorative_magic_hat", CW_TICKETS, 20).item("decorative_magic_top", CW_TICKETS, 40)
+                .item("decorative_magic_legs", CW_TICKETS, 30).item("decorative_ranged_top", CW_TICKETS, 40)
+                .item("decorative_ranged_legs", CW_TICKETS, 30).item("decorative_quiver", CW_TICKETS, 40)
+                .item("saradomin_halo", CW_TICKETS, 75).item("zamorak_halo", CW_TICKETS, 75).item("guthix_halo", CW_TICKETS, 75);
 
         // Mage Training Arena: Rewards Guardian (telekinetic / alchemist / enchantment / graveyard pizazz).
         RewardShop mta = shop("mage_training_arena", "Mage Training Arena Rewards");

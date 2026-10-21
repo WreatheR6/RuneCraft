@@ -26,9 +26,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 
 /**
- * Champions' Challenge: Larxus takes a champion scroll and the player fights that champion alone in the
- * Champions' Guild arena under the champion's rule. Breaking the rule forfeits the fight (the scroll is
- * spent, as in OSRS). Beating all ten champions earns Leon d'Cour's scroll; beating Leon, the Champion's cape.
+ * Champions' Challenge: the player fights the champion of the scroll they carry alone in the Champions' Guild arena
+ * under the champion's rule. Breaking the rule forfeits the fight; the scroll is only used up when the champion is
+ * defeated (OSRS Wiki: leaving or dying keeps it). A defeat gives Hitpoints and Slayer experience, and Larxus hands over a
+ * champion's lamp (ten times as much) for each beaten champion. Beating all ten champions earns Leon d'Cour's scroll;
+ * beating Leon, the Champion's cape, which Larxus replaces as often as asked.
  */
 public class ChampionsSession extends MinigameSession {
     private Champion champion;
@@ -169,7 +171,6 @@ public class ChampionsSession extends MinigameSession {
             end(false);
             return;
         }
-        Inv.remove(p, champion.scroll(), 1);
         Mob mob = spawn(champion.id(), rel(0, 1, -5));
         if (mob == null) {
             end(false);
@@ -191,7 +192,8 @@ public class ChampionsSession extends MinigameSession {
             return;
         }
         for (ServerPlayer p : online()) {
-            String broken = broken(p, champion.rule(), false);
+            // The scroll stays in the pack until the champion falls, so the empty-inventory rules allow it.
+            String broken = broken(p, champion.rule(), Inv.has(p, champion.scroll(), 1));
             if (broken != null) {
                 if (champion.rule() == Rule.NO_PRAYER) {
                     PlayerData d = Players.data(p);
@@ -213,7 +215,12 @@ public class ChampionsSession extends MinigameSession {
         MinigameData data = MinigameData.of(player);
         data.setFlag(player.getUUID(), ChampionsChallenge.defeatedFlag(champion.id()));
         data.incrementStat(player.getUUID(), "kc:" + game.id());
-        Msg.game(player, "Congratulations! You have defeated the " + champion.name() + ".");
+        // The scroll is used up only now; the defeat gives Hitpoints and Slayer experience (OSRS Wiki).
+        Inv.remove(player, champion.scroll(), 1);
+        int xp = ChampionsChallenge.xp(champion.id());
+        xp(player, com.runecraft.osrs.Skill.HITPOINTS, xp);
+        xp(player, com.runecraft.osrs.Skill.SLAYER, xp);
+        Msg.game(player, "Congratulations! You have defeated the " + champion.name() + ". Larxus has a champion's lamp for you.");
         if (champion.id().equals(ChampionsChallenge.LEON)) {
             // The cape is Leon's drop (picked up for the player when the arena closes).
             Msg.game(player, "Leon d'Cour yields his cape: you are the new Champion of Champions!");
@@ -227,7 +234,33 @@ public class ChampionsSession extends MinigameSession {
                 : List.of(game.displayName(), champion.name(), "Rule: " + champion.rule().text());
     }
 
-    /** Larxus: explains the challenge, reports progress and hands out Leon's scroll after all ten. */
+    /**
+     * Rubbing a champion's lamp: ten times the experience of the first beaten champion whose lamp hasn't been rubbed, in
+     * Hitpoints and Slayer (OSRS Wiki "Champion's lamp"). True if the item was the lamp.
+     */
+    public static boolean rubLamp(ServerPlayer p, String id) {
+        if (!id.equals(ChampionsChallenge.LAMP)) {
+            return false;
+        }
+        MinigameData data = MinigameData.of(p);
+        Champion c = ChampionsChallenge.lampOwed(cid -> data.flag(p.getUUID(), ChampionsChallenge.defeatedFlag(cid)),
+                cid -> data.flag(p.getUUID(), ChampionsChallenge.lampFlag(cid)));
+        if (c == null) {
+            Inv.remove(p, ChampionsChallenge.LAMP, 1);
+            Msg.game(p, "The lamp has nothing left to give.");
+            return true;
+        }
+        Inv.remove(p, ChampionsChallenge.LAMP, 1);
+        data.setFlag(p.getUUID(), ChampionsChallenge.lampFlag(c.id()));
+        int xp = ChampionsChallenge.xp(c.id()) * ChampionsChallenge.LAMP_MULTIPLIER;
+        xp(p, com.runecraft.osrs.Skill.HITPOINTS, xp);
+        xp(p, com.runecraft.osrs.Skill.SLAYER, xp);
+        Msg.game(p, "You rub the lamp for your victory over the " + c.name() + ": " + String.format("%,d", xp)
+                + " Hitpoints and Slayer experience.");
+        return true;
+    }
+
+    /** Larxus: explains the challenge, reports progress, hands out lamps and capes, and Leon's scroll after all ten. */
     public static void larxus(ServerPlayer p) {
         MinigameData data = MinigameData.of(p);
         int beaten = 0;
@@ -238,6 +271,19 @@ public class ChampionsSession extends MinigameSession {
         }
         boolean allTen = ChampionsChallenge.allTenDefeated(id -> data.flag(p.getUUID(), ChampionsChallenge.defeatedFlag(id)));
         boolean leon = data.flag(p.getUUID(), ChampionsChallenge.defeatedFlag(ChampionsChallenge.LEON));
+        // The Chest of Champions' lamps: one per beaten champion not yet rubbed (a lost lamp is replaced).
+        int owed = ChampionsChallenge.lampsOwed(id -> data.flag(p.getUUID(), ChampionsChallenge.defeatedFlag(id)),
+                id -> data.flag(p.getUUID(), ChampionsChallenge.lampFlag(id))) - Inv.count(p, ChampionsChallenge.LAMP);
+        if (owed > 0) {
+            Inv.give(p, ChampionsChallenge.LAMP, owed);
+            Msg.game(p, "Larxus hands you " + (owed == 1 ? "a champion's lamp" : owed + " champion's lamps")
+                    + " from the Chest of Champions.");
+        }
+        // After Leon, Larxus hands out as many Champion's capes as asked (OSRS Wiki "Larxus").
+        if (leon && !Inv.has(p, ChampionsChallenge.CAPE, 1)) {
+            Inv.give(p, ChampionsChallenge.CAPE, 1);
+            Msg.game(p, "Larxus hands you a Champion's cape.");
+        }
         if (allTen && !leon && !Inv.has(p, ChampionsChallenge.LEON_SCROLL, 1)) {
             Inv.give(p, ChampionsChallenge.LARXUS_REWARD.item(), 1);
             com.runecraft.collection.CollectionLog.obtain(p, ChampionsChallenge.LARXUS_REWARD.item());

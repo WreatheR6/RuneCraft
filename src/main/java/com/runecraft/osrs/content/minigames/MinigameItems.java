@@ -93,6 +93,9 @@ public final class MinigameItems {
         imbues(items);
         SorceressGarden.items(items);
         TempleTrekking.items(items);
+        // Champions' Challenge: the Chest of Champions' lamp (OSRS Wiki "Champion's lamp").
+        single(items, ChampionsChallenge.LAMP, "Champion's lamp", "lamp", 0xE0C040, 1,
+                "Sometimes that quiet feeling of accomplishment just isn't enough of a reward.");
     }
 
     // ------------------------------------------------------------------ Nightmare Zone / Soul Wars
@@ -391,22 +394,94 @@ public final class MinigameItems {
         single(items, "zamorak_standard", "Zamorak standard", "cape", 0xC02020, 1, "Zamorak's flag. Return it to the Saradomin flag stand!");
         items.add("castle_wars_bandage", "Bandages", Kind.FOOD, "cloth", 0xF0F0F0).value(0).heal(9).stack(16)
                 .examine("Heals 10% of your hitpoints.");
-        String[][] deco = {{"gold", "E0B030"}, {"red", "B02020"}, {"white", "E8E8E8"}};
-        for (String[] d : deco) {
-            int c = Integer.parseInt(d[1], 16);
-            String cap = Character.toUpperCase(d[0].charAt(0)) + d[0].substring(1);
-            wear(items, d[0] + "_decorative_helm", cap + " decorative helm", "full_helm", c, Slot.HEAD, 1,
-                    s(0, 0, 0, -6, -2, 30, 32, 27, -1, 30, 0, 0, 0, 0), Skill.DEFENCE, 40).tier("decorative");
-            wear(items, d[0] + "_decorative_body", cap + " decorative platebody", "platebody", c, Slot.CHEST, 1,
-                    s(0, 0, 0, -30, -10, 82, 80, 72, -6, 80, 0, 0, 0, 0), Skill.DEFENCE, 40).tier("decorative");
-            wear(items, d[0] + "_decorative_legs", cap + " decorative platelegs", "platelegs", c, Slot.LEGS, 1,
-                    s(0, 0, 0, -21, -11, 51, 49, 47, -4, 49, 0, 0, 0, 0), Skill.DEFENCE, 40).tier("decorative");
-            wear(items, d[0] + "_decorative_shield", cap + " decorative shield", "kiteshield", c, Slot.SHIELD, 1,
-                    s(0, 0, 0, -8, -2, 44, 48, 46, -1, 46, 0, 0, 0, 0), Skill.DEFENCE, 40).tier("decorative");
-            weapon(items, d[0] + "_decorative_sword", cap + " decorative sword", Kind.MELEE_WEAPON, "longsword", c, 1,
-                    s(38, 47, -2, 0, 0, 0, 3, 2, 0, 0, 49, 0, 0, 0), 5, AttackType.SLASH, WeaponClass.MELEE, Skill.ATTACK, 40)
-                    .tier("decorative");
+        // Decorative armour (OSRS Wiki "Castle Wars Ticket Exchange"): red, white and gold pieces have the stats of steel,
+        // mithril and adamant armour and need 5, 20 and 30 Defence (Attack for the sword). "_helm" is OSRS's "Decorative helm"
+        // (a med helm; EquipmentBonuses has the same stats), "_full_helm" the full helm added in 2020.
+        String[] tiers = {"red", "white", "gold"};
+        int[] colours = {0xB02020, 0xE8E8E8, 0xE0B030};
+        int[] level = {5, 20, 30};
+        int[][] fullHelm = {{9, 10, 7, 9}, {13, 14, 11, 13}, {19, 21, 16, 19}};
+        int[][] medHelm = {{7, 8, 6, 7}, {10, 11, 9, 10}, {14, 15, 13, 14}};
+        int[][] body = {{32, 31, 24, 31}, {46, 44, 38, 44}, {65, 63, 55, 63}};
+        int[][] legs = {{17, 16, 15, 16}, {24, 22, 20, 22}, {33, 31, 29, 31}};
+        int[][] boots = {{5, 6, 7}, {8, 9, 10}, {10, 11, 12}};
+        int[][] shield = {{13, 15, 14, 14}, {18, 22, 20, 20}, {27, 31, 29, 29}};
+        int[][] sword = {{13, 18, 16}, {15, 20, 22}, {20, 29, 31}};
+        // Shop values (OSRS Wiki infoboxes): med helm, full helm, platebody, platelegs/skirt, boots, shield, sword.
+        int[][] value = {{300, 850, 2000, 1000, 850, 850, 500}, {780, 850, 5200, 2600, 850, 2210, 1300},
+                {1920, 850, 12800, 6400, 850, 5440, 3200}};
+        for (int t = 0; t < tiers.length; t++) {
+            String id = tiers[t];
+            int c = colours[t];
+            int lv = level[t];
+            int[] v = value[t];
+            String cap = Character.toUpperCase(id.charAt(0)) + id.substring(1);
+            wear(items, id + "_decorative_helm", cap + " decorative helm", "med_helm", c, Slot.HEAD, v[0],
+                    s(0, 0, 0, -3, 0, medHelm[t][0], medHelm[t][1], medHelm[t][2], -1, medHelm[t][3], 0, 0, 0, 0), Skill.DEFENCE, lv)
+                    .tier("decorative").examine("A very decorative helm.");
+            wear(items, id + "_decorative_body", cap + " decorative platebody", "platebody", c, Slot.CHEST, v[2],
+                    s(0, 0, 0, -30, -15, body[t][0], body[t][1], body[t][2], -6, body[t][3], 0, 0, 0, 0), Skill.DEFENCE, lv)
+                    .tier("decorative").examine("Very decorative armour.");
+            wear(items, id + "_decorative_legs", cap + " decorative platelegs", "platelegs", c, Slot.LEGS, v[3],
+                    s(0, 0, 0, -21, -11, legs[t][0], legs[t][1], legs[t][2], -4, legs[t][3], 0, 0, 0, 0), Skill.DEFENCE, lv)
+                    .tier("decorative").examine("Very decorative armour.");
+            wear(items, id + "_decorative_shield", cap + " decorative shield", "kiteshield", c, Slot.SHIELD, v[5],
+                    s(0, 0, 0, -8, -3, shield[t][0], shield[t][1], shield[t][2], -1, shield[t][3], 0, 0, 0, 0), Skill.DEFENCE, lv)
+                    .tier("decorative").examine("A very decorative shield.");
+            weapon(items, id + "_decorative_sword", cap + " decorative sword", Kind.MELEE_WEAPON, "longsword", c, v[6],
+                    s(sword[t][0], sword[t][1], -2, 0, 0, 0, 3, 2, 0, 0, sword[t][2], 0, 0, 0), 5, AttackType.SLASH, WeaponClass.MELEE,
+                    Skill.ATTACK, lv).tier("decorative").examine("A very decorative sword.");
         }
+        // Round 40: the rest of Lanthus' decorative stock.
+        for (int t = 0; t < tiers.length; t++) {
+            String id = tiers[t];
+            int c = colours[t];
+            int lv = level[t];
+            int[] v = value[t];
+            String cap = Character.toUpperCase(id.charAt(0)) + id.substring(1);
+            wear(items, id + "_decorative_full_helm", cap + " decorative full helm", "full_helm", c, Slot.HEAD, v[1],
+                    s(0, 0, 0, -6, -3, fullHelm[t][0], fullHelm[t][1], fullHelm[t][2], -1, fullHelm[t][3], 0, 0, 0, 0),
+                    Skill.DEFENCE, lv).tier("decorative").examine("A very decorative full face helmet.");
+            wear(items, id + "_decorative_skirt", cap + " decorative plateskirt", "plateskirt", c, Slot.LEGS, v[3],
+                    s(0, 0, 0, -21, -11, legs[t][0], legs[t][1], legs[t][2], -4, legs[t][3], 0, 0, 0, 0), Skill.DEFENCE, lv)
+                    .tier("decorative").examine("Very decorative armour.");
+            wear(items, id + "_decorative_boots", cap + " decorative boots", "boots", c, Slot.FEET, v[4],
+                    s(0, 0, 0, -3, -1, boots[t][0], boots[t][1], boots[t][2], 0, 0, t == 2 ? 1 : 0, 0, 0, 0), Skill.DEFENCE, lv)
+                    .tier("decorative").examine("Very decorative boots.");
+        }
+        // Decorative magic and ranged armour (members): 20 Magic / 30 Ranged, defence in every style.
+        EquipmentStats four = s(0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 0, 0, 0, 0);
+        EquipmentStats fifteen = s(0, 0, 0, 0, 0, 15, 15, 15, 15, 15, 0, 0, 0, 0);
+        EquipmentStats twenty = s(0, 0, 0, 0, 0, 20, 20, 20, 20, 20, 0, 0, 0, 0);
+        wear(items, "decorative_magic_hat", "Decorative magic hat", "cowl", 0x3050C0, Slot.HEAD, 45000, four, Skill.MAGIC, 20)
+                .tier("decorative").examine("Very decorative armour.");
+        wear(items, "decorative_magic_top", "Decorative magic top", "robe_top", 0x3050C0, Slot.CHEST, 48000, twenty, Skill.MAGIC, 20)
+                .tier("decorative").examine("Very decorative armour.");
+        wear(items, "decorative_magic_legs", "Decorative magic robe", "robe_bottom", 0x3050C0, Slot.LEGS, 45000, fifteen, Skill.MAGIC, 20)
+                .tier("decorative").examine("Very decorative armour.");
+        wear(items, "decorative_ranged_top", "Decorative ranged top", "leather_body", 0x2A7A3A, Slot.CHEST, 48000, twenty,
+                Skill.RANGED, 30).tier("decorative").examine("Very decorative armour.");
+        wear(items, "decorative_ranged_legs", "Decorative ranged legs", "chaps", 0x2A7A3A, Slot.LEGS, 45000, fifteen, Skill.RANGED, 30)
+                .tier("decorative").examine("Very decorative armour.");
+        // The quiver and the team cloaks are worn in the cape slot (the systems module's extra slots, 30 Ranged for the quiver).
+        items.add("decorative_quiver", "Decorative quiver", Kind.SIMPLE, "cape", 0x8A6A3A).value(45000).stack(1).tier("decorative")
+                .examine("Very decorative armour.");
+        com.runecraft.osrs.content.systems.Jewellery.register(new com.runecraft.osrs.content.systems.Jewellery.Worn("decorative_quiver",
+                "Decorative quiver", com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE, four,
+                com.runecraft.osrs.content.systems.Jewellery.Perk.NONE, null, -1, List.of(), false));
+        // Team colours: the hoods and cloaks (10 tickets) and the banners (100; a weapon with no bonuses).
+        for (String[] cloak : new String[][]{{"saradomin", "Saradomin", "3060E0"}, {"zamorak", "Zamorak", "C02020"}}) {
+            String id = cloak[0] + "_castlewars_cloak";
+            String name = "Castlewars cloak (" + cloak[1] + ")";
+            items.add(id, name, Kind.SIMPLE, "cape", Integer.parseInt(cloak[2], 16)).value(100).stack(1).examine("A fine castlewars Cape.");
+            com.runecraft.osrs.content.systems.Jewellery.register(new com.runecraft.osrs.content.systems.Jewellery.Worn(id, name,
+                    com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0),
+                    com.runecraft.osrs.content.systems.Jewellery.Perk.NONE, null, -1, List.of(), false));
+        }
+        weapon(items, "saradomin_banner", "Saradomin banner", Kind.MELEE_WEAPON, "staff", 0x3060E0, 1, EquipmentStats.NONE, 4,
+                AttackType.CRUSH, WeaponClass.MELEE).examine("The Saradomin Team Standard.");
+        weapon(items, "zamorak_banner", "Zamorak banner", Kind.MELEE_WEAPON, "staff", 0xC02020, 1, EquipmentStats.NONE, 4,
+                AttackType.CRUSH, WeaponClass.MELEE).examine("The Zamorak Team Standard.");
         EquipmentStats halo = s(0, 0, 0, 0, 0, 11, 12, 10, 11, -1, 0, 0, 0, 3);
         wear(items, "saradomin_halo", "Saradomin halo", "full_helm", 0xE0E0FF, Slot.HEAD, 1, halo)
                 .examine("A halo of Saradomin. (75 Castle Wars tickets)");
@@ -417,8 +492,11 @@ public final class MinigameItems {
         // Legacy carried copy; the real (wearable, enchanted emerald) bracelet is castle_wars_bracelet.
         single(items, "castlewars_brace", "Castle wars bracelet", "ring", 0xE0C060, 1,
                 "+20% damage against flag carriers.");
-        wear(items, "saradomin_hood", "Saradomin hood", "cowl", 0x3060E0, Slot.HEAD, 1, EquipmentStats.NONE);
-        wear(items, "zamorak_hood", "Zamorak hood", "cowl", 0xC02020, Slot.HEAD, 1, EquipmentStats.NONE);
+        // Castlewars hoods (OSRS Wiki): +1 slash, +2 crush, +1 ranged defence.
+        wear(items, "saradomin_hood", "Saradomin hood", "cowl", 0x3060E0, Slot.HEAD, 1, s(0, 0, 0, 0, 0, 0, 1, 2, 0, 1, 0, 0, 0, 0))
+                .examine("The colours of Saradomin.");
+        wear(items, "zamorak_hood", "Zamorak hood", "cowl", 0xC02020, Slot.HEAD, 1, s(0, 0, 0, 0, 0, 0, 1, 2, 0, 1, 0, 0, 0, 0))
+                .examine("The colours of Zamorak.");
     }
 
     // ------------------------------------------------------------------ Warriors' Guild

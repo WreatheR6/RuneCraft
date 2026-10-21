@@ -461,6 +461,8 @@ public final class Jewellery {
             "red_dhide_vambraces", Map.of(com.runecraft.osrs.Skill.RANGED, 60),
             "black_dhide_vambraces", Map.of(com.runecraft.osrs.Skill.RANGED, 70),
             "hueycoatl_hide_vambraces", Map.of(com.runecraft.osrs.Skill.RANGED, 70),
+            // Castle Wars' decorative quiver (minigames module): 30 Ranged.
+            "decorative_quiver", Map.of(com.runecraft.osrs.Skill.RANGED, 30),
             // Worn like the rest of the Void equipment (wiki "Void Knight equipment"): 42 combat skills, 22 Prayer.
             "void_knight_gloves", com.runecraft.osrs.content.minigames.PestControlRules.VOID_REQUIREMENTS);
 

@@ -216,45 +216,45 @@ Camdozaal|Ancient ledger|25688|ancient_ledger
 Camdozaal|Ancient astroscope|25690|ancient_astroscope
 Camdozaal|Ancient treatise|25692|ancient_treatise
 Camdozaal|Ancient carcanet|25694|ancient_carcanet
-Castle Wars|Decorative sword|4068|-
-Castle Wars|Decorative armour|4069|-
-Castle Wars|Decorative armour|4070|-
-Castle Wars|Decorative helm|4071|-
-Castle Wars|Decorative shield|4072|-
-Castle Wars|Decorative sword|4503|-
-Castle Wars|Decorative armour|4504|-
-Castle Wars|Decorative armour|4505|-
-Castle Wars|Decorative helm|4506|-
-Castle Wars|Decorative shield|4507|-
-Castle Wars|Decorative sword|4508|-
-Castle Wars|Decorative armour|4509|-
-Castle Wars|Decorative armour|4510|-
-Castle Wars|Decorative helm|4511|-
-Castle Wars|Decorative shield|4512|-
-Castle Wars|Castlewars hood|4513|-
-Castle Wars|Castlewars cloak|4514|-
-Castle Wars|Castlewars hood|4515|-
-Castle Wars|Castlewars cloak|4516|-
-Castle Wars|Saradomin banner|11891|-
-Castle Wars|Zamorak banner|11892|-
-Castle Wars|Decorative armour|11893|-
-Castle Wars|Decorative armour|11894|-
-Castle Wars|Decorative armour|11895|-
-Castle Wars|Decorative armour|11896|-
-Castle Wars|Decorative armour|11897|-
-Castle Wars|Decorative armour|11898|-
-Castle Wars|Decorative armour|11899|-
-Castle Wars|Decorative armour|11900|-
-Castle Wars|Decorative armour|11901|-
+Castle Wars|Decorative sword|4068|red_decorative_sword
+Castle Wars|Decorative armour|4069|red_decorative_body
+Castle Wars|Decorative armour|4070|red_decorative_legs
+Castle Wars|Decorative helm|4071|red_decorative_helm
+Castle Wars|Decorative shield|4072|red_decorative_shield
+Castle Wars|Decorative sword|4503|white_decorative_sword
+Castle Wars|Decorative armour|4504|white_decorative_body
+Castle Wars|Decorative armour|4505|white_decorative_legs
+Castle Wars|Decorative helm|4506|white_decorative_helm
+Castle Wars|Decorative shield|4507|white_decorative_shield
+Castle Wars|Decorative sword|4508|gold_decorative_sword
+Castle Wars|Decorative armour|4509|gold_decorative_body
+Castle Wars|Decorative armour|4510|gold_decorative_legs
+Castle Wars|Decorative helm|4511|gold_decorative_helm
+Castle Wars|Decorative shield|4512|gold_decorative_shield
+Castle Wars|Castlewars hood|4513|saradomin_hood
+Castle Wars|Castlewars cloak|4514|saradomin_castlewars_cloak
+Castle Wars|Castlewars hood|4515|zamorak_hood
+Castle Wars|Castlewars cloak|4516|zamorak_castlewars_cloak
+Castle Wars|Saradomin banner|11891|saradomin_banner
+Castle Wars|Zamorak banner|11892|zamorak_banner
+Castle Wars|Decorative armour|11893|red_decorative_skirt
+Castle Wars|Decorative armour|11894|white_decorative_skirt
+Castle Wars|Decorative armour|11895|gold_decorative_skirt
+Castle Wars|Decorative armour|11896|decorative_magic_top
+Castle Wars|Decorative armour|11897|decorative_magic_legs
+Castle Wars|Decorative armour|11898|decorative_magic_hat
+Castle Wars|Decorative armour|11899|decorative_ranged_top
+Castle Wars|Decorative armour|11900|decorative_ranged_legs
+Castle Wars|Decorative armour|11901|decorative_quiver
 Castle Wars|Saradomin halo|12637|saradomin_halo
 Castle Wars|Zamorak halo|12638|zamorak_halo
 Castle Wars|Guthix halo|12639|guthix_halo
-Castle Wars|Decorative boots|25163|-
-Castle Wars|Decorative full helm|25165|-
-Castle Wars|Decorative boots|25167|-
-Castle Wars|Decorative full helm|25169|-
-Castle Wars|Decorative boots|25171|-
-Castle Wars|Decorative full helm|25174|-
+Castle Wars|Decorative boots|25163|red_decorative_boots
+Castle Wars|Decorative full helm|25165|red_decorative_full_helm
+Castle Wars|Decorative boots|25167|white_decorative_boots
+Castle Wars|Decorative full helm|25169|white_decorative_full_helm
+Castle Wars|Decorative boots|25171|gold_decorative_boots
+Castle Wars|Decorative full helm|25174|gold_decorative_full_helm
 Cerberus|Eternal crystal|13227|eternal_crystal
 Cerberus|Pegasian crystal|13229|pegasian_crystal
 Cerberus|Primordial crystal|13231|primordial_crystal

@@ -509,7 +509,16 @@ public final class LastManStanding {
     public static final int[] VICTOR_WINS = {1, 10, 50, 100, 500, 1000};
     /** Tradeable rewards need at least one won game (since May 2026). */
     public static final List<String> WIN_LOCKED = List.of("ring_of_wealth_scroll", "magic_shortbow_scroll", "adamant_arrow",
-            "rune_arrow");
+            "rune_arrow", "bolt_rack", "blighted_entangle_sack", "blighted_teleport_spell_sack", "blighted_vengeance_sack",
+            "blighted_ancient_ice_sack", "blighted_karambwan", "blighted_manta_ray", "blighted_anglerfish", "blighted_super_restore");
+
+    /**
+     * Justine's supply bundles for 1 point each (OSRS Wiki "Justine's stuff for the Last Shopper Standing"): item and how many
+     * come per point.
+     */
+    public static final Object[][] SHOP_SUPPLIES = {{"blighted_entangle_sack", 70}, {"blighted_teleport_spell_sack", 50},
+            {"blighted_vengeance_sack", 50}, {"blighted_ancient_ice_sack", 30}, {"bolt_rack", 200}, {"blighted_karambwan", 12},
+            {"blighted_manta_ray", 15}, {"blighted_anglerfish", 15}, {"blighted_super_restore", 4}};
 
     /** Competitive wins needed to buy a reward (0 for none). */
     public static int winsNeeded(String item) {
@@ -526,8 +535,11 @@ public final class LastManStanding {
         shop.item("ring_of_wealth_scroll", POINTS, 5)
                 .item("magic_shortbow_scroll", POINTS, 5)
                 .item("adamant_arrow", 350, POINTS, 1)
-                .item("rune_arrow", 300, POINTS, 3)
-                .item("deadmans_chest", POINTS, 160)
+                .item("rune_arrow", 300, POINTS, 3);
+        for (Object[] s : SHOP_SUPPLIES) {
+            shop.item((String) s[0], (Integer) s[1], POINTS, 1);
+        }
+        shop.item("deadmans_chest", POINTS, 160)
                 .item("deadmans_legs", POINTS, 160)
                 .item("deadmans_cape", POINTS, 160);
         for (String halo : HALOS) {

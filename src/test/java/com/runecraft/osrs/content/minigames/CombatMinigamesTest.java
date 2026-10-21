@@ -146,15 +146,60 @@ class CombatMinigamesTest {
         assertEquals(1, CastleWars.tickets(0, 0));
         assertEquals(2, CastleWars.tickets(1, 1));
         assertEquals(1, CastleWars.tickets(0, 3));
-        assertEquals(5, cost("castle_wars", "red_decorative_helm", MinigameCurrencies.CW_TICKETS));
+        // "_helm" is the (med) decorative helm, 4 / 40 / 400; the full helm is 5 / 40 / 500 (white cut from 50 in April 2025).
+        assertEquals(4, cost("castle_wars", "red_decorative_helm", MinigameCurrencies.CW_TICKETS));
+        assertEquals(5, cost("castle_wars", "red_decorative_full_helm", MinigameCurrencies.CW_TICKETS));
         assertEquals(8, cost("castle_wars", "red_decorative_body", MinigameCurrencies.CW_TICKETS));
         assertEquals(80, cost("castle_wars", "white_decorative_body", MinigameCurrencies.CW_TICKETS));
         assertEquals(40, cost("castle_wars", "white_decorative_helm", MinigameCurrencies.CW_TICKETS));
+        assertEquals(40, cost("castle_wars", "white_decorative_full_helm", MinigameCurrencies.CW_TICKETS));
+        assertEquals(500, cost("castle_wars", "gold_decorative_full_helm", MinigameCurrencies.CW_TICKETS));
         assertEquals(800, cost("castle_wars", "gold_decorative_body", MinigameCurrencies.CW_TICKETS));
         assertEquals(500, cost("castle_wars", "gold_decorative_sword", MinigameCurrencies.CW_TICKETS));
         assertEquals(75, cost("castle_wars", "guthix_halo", MinigameCurrencies.CW_TICKETS));
         assertEquals(10, cost("castle_wars", "zamorak_hood", MinigameCurrencies.CW_TICKETS));
         assertEquals(3, ItemCatalog.get("saradomin_halo").equipment().stats().prayer());
+        // Round 40: Lanthus' whole stock (OSRS Wiki "Castle Wars Ticket Exchange").
+        assertEquals(400, cost("castle_wars", "gold_decorative_helm", MinigameCurrencies.CW_TICKETS));
+        assertEquals(60, cost("castle_wars", "white_decorative_skirt", MinigameCurrencies.CW_TICKETS));
+        assertEquals(400, cost("castle_wars", "gold_decorative_boots", MinigameCurrencies.CW_TICKETS));
+        assertEquals(10, cost("castle_wars", "saradomin_castlewars_cloak", MinigameCurrencies.CW_TICKETS));
+        assertEquals(100, cost("castle_wars", "zamorak_banner", MinigameCurrencies.CW_TICKETS));
+        assertEquals(20, cost("castle_wars", "decorative_magic_hat", MinigameCurrencies.CW_TICKETS));
+        assertEquals(30, cost("castle_wars", "decorative_ranged_legs", MinigameCurrencies.CW_TICKETS));
+        assertEquals(40, cost("castle_wars", "decorative_quiver", MinigameCurrencies.CW_TICKETS));
+        assertEquals(39, RewardShops.get("castle_wars").entries().size(), "24 decorative pieces, 4 hoods and cloaks, 2 banners, "
+                + "6 magic and ranged pieces and 3 halos");
+        // Red, white and gold have steel, mithril and adamant stats and need 5, 20 and 30 Defence (Attack for the sword).
+        com.runecraft.osrs.EquipmentDef redHelm = ItemCatalog.get("red_decorative_full_helm").equipment();
+        assertEquals(9, redHelm.stats().stabDefence());
+        assertEquals(5, redHelm.requirements().get(Skill.DEFENCE));
+        assertEquals(14, ItemCatalog.get("gold_decorative_helm").equipment().stats().stabDefence());
+        com.runecraft.osrs.EquipmentDef goldBody = ItemCatalog.get("gold_decorative_body").equipment();
+        assertEquals(65, goldBody.stats().stabDefence());
+        assertEquals(30, goldBody.requirements().get(Skill.DEFENCE));
+        com.runecraft.osrs.EquipmentDef whiteSword = ItemCatalog.get("white_decorative_sword").equipment();
+        assertEquals(22, whiteSword.stats().meleeStrength());
+        assertEquals(20, whiteSword.requirements().get(Skill.ATTACK));
+        assertEquals(1, ItemCatalog.get("gold_decorative_boots").equipment().stats().meleeStrength());
+        assertEquals(20, ItemCatalog.get("decorative_magic_top").equipment().stats().magicDefence());
+        assertEquals(20, ItemCatalog.get("decorative_magic_top").equipment().requirements().get(Skill.MAGIC));
+        assertEquals(2, ItemCatalog.get("zamorak_hood").equipment().stats().crushDefence());
+        Jewellery.Worn cloak = Jewellery.worn("saradomin_castlewars_cloak");
+        assertNotNull(cloak);
+        assertEquals(Jewellery.Slot.CAPE, cloak.slot());
+        assertEquals(2, cloak.stats().rangedDefence());
+        assertEquals(30, Jewellery.wearLevels("decorative_quiver").get(Skill.RANGED));
+        List<String> log = castleWarsLog();
+        assertEquals(39, log.size());
+        for (String id : log) {
+            assertTrue(ItemCatalog.exists(id), id);
+        }
+    }
+
+    private static List<String> castleWarsLog() {
+        return com.runecraft.osrs.CollectionLogData.pages().stream().filter(p -> p.name().equals("Castle Wars")).findFirst()
+                .orElseThrow().items();
     }
 
     @Test
