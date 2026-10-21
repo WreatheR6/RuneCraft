@@ -221,6 +221,7 @@ public final class SailingSelfTest {
             int fishXp = xp(p, Skill.FISHING) - fishing;
             check(fishXp > 0 && trawl.fish <= trawl.catches * 2, "trawl", trawl.fish + " fish in " + trawl.catches
                     + " catches with a rope net (max 2 a catch), " + fishXp / 10.0 + " Fishing XP");
+            check(trawl.crewCatches == 0, "trawl", "a crewmate worked the boat's only net (one operator per net)");
             if (!trawl.everMixed) {
                 check(fishXp == Math.round(trawl.catches * krillFish.fishXp() * 10), "trawl", "Fishing XP " + fishXp / 10.0
                         + " for " + trawl.catches + " catches (wiki: 112.5 a catch)");
@@ -295,6 +296,18 @@ public final class SailingSelfTest {
             SailingTraining.Facility catcher = facility("wind_catcher");
             build(p, type, catcher, "wind catcher");
             check(Inv.has(p, "captured_wind_mote", 1), "wind catcher", "the captured wind mote was used up");
+            // A lost mote is handed back (wiki: Gurtob in Backwater gives another): use the trial buoy without one.
+            Inv.remove(p, "captured_wind_mote", Inv.count(p, "captured_wind_mote"));
+            Players.data(p).bank().withdraw("captured_wind_mote", "", Players.data(p).bank().count("captured_wind_mote", ""));
+            check(!Inv.has(p, "captured_wind_mote", 1), "trials", "couldn't clear the captured wind mote");
+            if (p.isShiftKeyDown()) {
+                SailingHooks.reclaimTrialRewards(p, jive); // sneaking at the buoy would start a run
+            } else {
+                SailingHooks.useTrialBuoy(p, new BlockPos(com.runecraft.osrs.GielinorMap.toBlockX(jive.objectiveB()[0]), world.getSeaLevel(),
+                        com.runecraft.osrs.GielinorMap.toBlockZ(jive.objectiveB()[1])));
+            }
+            check(Inv.count(p, "captured_wind_mote") == 1, "trials", "the trial buoy didn't hand back a lost captured wind mote");
+            check(SailingHooks.reclaimTrialRewards(p, jive).isEmpty(), "trials", "a second captured wind mote was handed out");
             sailing = xp(p, Skill.SAILING);
             double trimmed = SailingHooks.trimSails(p, type);
             check(Math.abs(trimmed - trim * SailingTraining.CATCHER_TRIM_FACTOR) < 1e-9 && SailingHooks.storedMotes(p) == 1, "wind catcher",
@@ -311,6 +324,12 @@ public final class SailingSelfTest {
             check(boat.getVariant() == SeaHooks.PAINTS.get("shark_paint") && "shark_paint".equals(SeaHooks.trim(p, type))
                     && xp(p, Skill.CONSTRUCTION) - con == 100 && !Inv.has(p, "shark_paint", 1), "paint", "trim not applied");
             notes.add("trimmed with shark paint");
+
+            // 12. A range aboard cooks what it heats; food that is also an ingredient is still eaten (no cooking menu).
+            check(SailingHooks.cookedOnRange("raw_shrimps") && SailingHooks.cookedOnRange("uncooked_pizza"), "range", "raw food not cookable aboard");
+            for (String food : List.of("tomato", "cheese", "banana", "minecraft:milk_bucket", "plain_pizza")) {
+                check(!SailingHooks.cookedOnRange(food), "range", food + " would open the cooking menu instead of being eaten");
+            }
             return String.join(", ", notes);
         } finally {
             ActionManager.cancel(p);

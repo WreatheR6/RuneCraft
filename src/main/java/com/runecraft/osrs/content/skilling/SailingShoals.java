@@ -67,6 +67,12 @@ public final class SailingShoals {
     public static final int PLAYER_ROLL_TICKS = 3;
     public static final int CREW_ROLL_TICKS = 5;
     public static final double CREW_CHANCE = 0.04;
+    /**
+     * A crewmate's net Sailing XP against the player's: wiki Deep sea trawling gives 10.5 (5.2 at the wrong depth) a roll
+     * for a Deckhandiness 4 crewmate on a cotton net, which gives the player 15 (7.5). The wiki says it scales with
+     * Deckhandiness but gives only that level, so lower levels use the same factor (approx).
+     */
+    public static final double CREW_XP_FACTOR = 0.7;
     /** A shoal resuming its route turns mixed 10% of the time, for two stops (wiki). */
     public static final double MIXED_CHANCE = 0.10;
     public static final int MIXED_STOPS = 2;

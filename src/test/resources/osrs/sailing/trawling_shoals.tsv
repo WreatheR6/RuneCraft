@@ -1,6 +1,6 @@
 # Source: OSRS Wiki wikitext dump (Kiyogitpy/osrs-wiki-data, July 2026): pages "Deep sea trawling" (shoal table, nets,
 # baiting) and each shoal page (Fishing XP per successful catch, stop ticks, trawling-net and fishing-rod "Skilling success
-# chart" low/high, crewmate flat chance, ObjectLocLine map pins; mixed shoals' fish distribution and spawn rule).
+# chart" low/high, crewmate flat chance and Sailing XP per roll, ObjectLocLine map pins; mixed shoals' fish distribution and spawn rule).
 # shoal	name	fishing	depths	stop_ticks	bait	fish	xp_per_catch	net_low	net_high	rod_low	rod_high	pins (x,y;...)
 shoal	Giant krill shoal	69	Shallow	150	Fish offcuts	Raw giant krill	112.5	15	30	10	25	1564,3364;2784,2633;1493,2924;3021,2510
 shoal	Haddock shoal	73	Shallow	120	Fish offcuts	Raw haddock	128.5	12	28	7	23	2814,2373;1404,2722;2978,2223
@@ -20,6 +20,7 @@ rule	mixed_chance_percent	10
 rule	mixed_stops	2
 rule	net_capacity	250
 rule	bait_extra_fish_percent	20
+rule	crew_cotton_xp_per_roll	10.5
 # net	name	depths	max_fish	sailing_xp_per_roll	deckhandiness
 net	Rope trawling net	Shallow	2	7	1
 net	Linen trawling net	Shallow,Moderate	3	9	2

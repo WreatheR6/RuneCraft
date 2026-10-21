@@ -57,23 +57,41 @@ public final class SailingLockboxHooks {
 
     /**
      * A sand bar of 5 x 5 blocks on the water over a small key's tile on an islet RuneCraft's sea has not traced (the Tear
-     * of the Soul), so the key can be dug up (approx).
+     * of the Soul), so the key can be dug up (approx). Sand falls through water, so each column stands on sandstone
+     * filled up from the sea floor (or {@link #SAND_BAR_DEPTH} blocks down), with sand only on top.
      */
     private static void sandBar(net.minecraft.server.level.ServerLevel world, BlockPos centre) {
+        net.minecraft.world.level.block.state.BlockState sand = net.minecraft.world.level.block.Blocks.SAND.defaultBlockState();
+        net.minecraft.world.level.block.state.BlockState support = net.minecraft.world.level.block.Blocks.SANDSTONE.defaultBlockState();
         for (int dx = -2; dx <= 2; dx++) {
             for (int dz = -2; dz <= 2; dz++) {
                 if (Math.abs(dx) == 2 && Math.abs(dz) == 2) {
                     continue;
                 }
-                BlockPos at = centre.offset(dx, 0, dz);
-                if (world.getBlockState(at).getFluidState().is(net.minecraft.tags.FluidTags.WATER) || world.getBlockState(at).canBeReplaced()) {
-                    world.setBlock(at, net.minecraft.world.level.block.Blocks.SAND.defaultBlockState(),
-                            net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
-                    world.setBlock(at.below(), net.minecraft.world.level.block.Blocks.SAND.defaultBlockState(),
-                            net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
+                BlockPos top = centre.offset(dx, 0, dz);
+                if (!open(world, top)) {
+                    continue;
                 }
+                BlockPos.MutableBlockPos at = top.mutable().move(0, -1, 0);
+                while (top.getY() - at.getY() < SAND_BAR_DEPTH && at.getY() > world.getMinBuildHeight() && open(world, at)) {
+                    at.move(0, -1, 0);
+                }
+                // The support first, from the bottom up, so the sand never has open water under it.
+                for (int y = at.getY() + 1; y < top.getY(); y++) {
+                    world.setBlock(at.setY(y), support, net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
+                }
+                world.setBlock(top, sand, net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
             }
         }
+    }
+
+    /** How far down a sand bar's sandstone reaches looking for the sea floor. */
+    static final int SAND_BAR_DEPTH = 48;
+
+    /** Water, air or another block a sand bar fills (anything a falling block would drop through). */
+    private static boolean open(net.minecraft.server.level.ServerLevel world, BlockPos pos) {
+        net.minecraft.world.level.block.state.BlockState state = world.getBlockState(pos);
+        return state.getFluidState().is(net.minecraft.tags.FluidTags.WATER) || state.canBeReplaced();
     }
 
     private static CompoundTag state(ServerPlayer player) {

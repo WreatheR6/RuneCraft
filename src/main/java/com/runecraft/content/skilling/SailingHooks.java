@@ -289,15 +289,28 @@ final class SailingHooks {
         return xp;
     }
 
-    /** Raw food used aboard a boat with a range opens the cooking menu there (wiki Range (facility)). True when it did. */
+    /**
+     * Raw food used aboard a boat with a range opens the cooking menu there (wiki Range (facility)). Only what the range
+     * heats counts (the "cook_" recipes: raw fish and meat, doughs, uncooked pies...); food and potions that are also some
+     * recipe's ingredient (a tomato, cheese, a banana) are still eaten or drunk. True when it opened the menu.
+     */
     static boolean cookAboard(ServerPlayer player, String item) {
         String type = boatType(player.getVehicle());
-        if (type == null || !hasFacility(player, type, "range")
-                || com.runecraft.osrs.Recipes.menu(com.runecraft.osrs.MenuType.COOKING).stream().noneMatch(r -> r.inputs().containsKey(item))) {
+        if (type == null || !hasFacility(player, type, "range") || !cookedOnRange(item)) {
             return false;
         }
         com.runecraft.menu.MenuService.open(player, com.runecraft.osrs.MenuType.COOKING, null, true);
         return true;
+    }
+
+    /** Whether a range cooks this item: an input of a heat ("cook_") recipe that isn't itself food or a potion. */
+    static boolean cookedOnRange(String item) {
+        com.runecraft.osrs.ItemDef def = com.runecraft.osrs.ItemCatalog.get(item);
+        if (def != null && (def.kind() == com.runecraft.osrs.ItemDef.Kind.FOOD || def.kind() == com.runecraft.osrs.ItemDef.Kind.POTION)) {
+            return false;
+        }
+        return com.runecraft.osrs.Recipes.menu(com.runecraft.osrs.MenuType.COOKING).stream()
+                .anyMatch(r -> r.id().startsWith("cook_") && r.inputs().containsKey(item));
     }
 
     static boolean nearBoat(ServerPlayer player) {
@@ -779,6 +792,7 @@ final class SailingHooks {
             Msg.game(player, "You abandon the trial.");
             return;
         }
+        reclaimTrialRewards(player, trial);
         CompoundTag best = SkillingState.get(player.getServer()).entry("trials", player.getStringUUID());
         int rank = Math.floorMod(best.getInt(trial.id() + ".pick"), 3);
         if (!player.isShiftKeyDown()) {
@@ -867,6 +881,32 @@ final class SailingHooks {
                 Msg.action(player, "You receive " + Msg.article(SkillingUtil.lower(SkillingUtil.name(r.reward()))) + ".");
             }
         }
+        reclaimTrialRewards(player, run.trial);
+    }
+
+    /**
+     * Hands back a trial's rank reward (the captured wind mote, the heart of ithell) to a player who earned the rank but
+     * has it in neither the pack nor the bank: it is a reusable building tool, and the wiki has Gurtob in Backwater and
+     * Gwyna in Porth Gwenith give another if it is lost or destroyed (here the trial buoy, or finishing a run, does).
+     * Also covers saves from before the reward was handed out. Returns the items given.
+     */
+    public static List<String> reclaimTrialRewards(ServerPlayer player, SailingTraining.Trial trial) {
+        CompoundTag best = SkillingState.get(player.getServer()).entry("trials", player.getStringUUID());
+        List<String> given = new ArrayList<>();
+        for (SailingTraining.Rank r : trial.ranks()) {
+            if (r.reward() != null && best.getBoolean(trial.id() + "." + r.name()) && available(player, r.reward()) == 0) {
+                SkillingUtil.give(player, r.reward(), 1);
+                given.add(r.reward());
+                Msg.action(player, "The trial master hands you another " + SkillingUtil.lower(SkillingUtil.name(r.reward()))
+                        + " for your " + r.name() + " rank.");
+            }
+        }
+        return given;
+    }
+
+    /** Uses the trial buoy at a block as a player would (self-test). */
+    public static void useTrialBuoy(ServerPlayer player, BlockPos pos) {
+        trialBuoy(player, pos);
     }
 
     /** Whether a trial's rank can be attempted: the rank before it must have been earned (wiki: Swordfish first). */
@@ -892,6 +932,23 @@ final class SailingHooks {
             }
         }
         return best;
+    }
+
+    /**
+     * The net a crewmate works beside the player: the second-best net built, or null with fewer than two. One person
+     * operates each net facility (wiki Deep sea trawling: a crewmate operating a net rolls every 5 ticks instead of 3;
+     * Trawling net: a boat can carry two nets), and the player works the best one.
+     */
+    static SailingTraining.Net crewNet(ServerPlayer player, String boat) {
+        SailingTraining.Net best = null;
+        SailingTraining.Net second = null;
+        for (SailingTraining.Net n : SailingTraining.NETS) {
+            if (boat != null && hasFacility(player, boat, n.facility())) {
+                second = best;
+                best = n;
+            }
+        }
+        return second;
     }
 
     /**
@@ -972,7 +1029,8 @@ final class SailingHooks {
 
     /**
      * A trawling net working a shoal: every 3 ticks the net's Sailing XP (halved at the wrong depth) and a catch roll at
-     * the shoal's trawling-net chance; every 5 ticks the best deckhand's flat 4%. The shoal's stops cycle on the spot
+     * the shoal's trawling-net chance; on a boat with a second net, every 5 ticks the best deckhand able to work it rolls
+     * a flat 4% on that net (crew Sailing XP scaled, see {@link SailingShoals#CREW_XP_FACTOR}). The shoal's stops cycle on the spot
      * (OSRS: along its route): the stop depth (shallow, or deep for three-depth shoals) then moderate halfway; a resuming
      * shoal turns mixed 10% of the time for two stops; a chum station spreads one offcut per stop (see {@link SailingShoals}).
      */
@@ -988,8 +1046,9 @@ final class SailingHooks {
         int mixedStops;
         boolean baited;
         int crewTicks;
-        /** Catches and fish so far, and whether a mixed shoal swam in its place (self-test). */
+        /** Catches (the crew's among them) and fish so far, and whether a mixed shoal swam in its place (self-test). */
         public int catches;
+        public int crewCatches;
         public int fish;
         public boolean everMixed;
 
@@ -1033,13 +1092,13 @@ final class SailingHooks {
             }
             ticks++;
             if (ticks % SailingShoals.PLAYER_ROLL_TICKS == 0) {
-                roll(p, false);
+                roll(p, net, false);
             }
             if (++crewTicks >= SailingShoals.CREW_ROLL_TICKS) {
                 crewTicks = 0;
-                SailingCrew.Crewmate hand = crewTrawler(p);
-                if (hand != null) {
-                    roll(p, true);
+                SailingTraining.Net second = crewNet(p, boat);
+                if (second != null && crewTrawler(p, second) != null) {
+                    roll(p, second, true);
                 }
             }
             return true;
@@ -1075,9 +1134,9 @@ final class SailingHooks {
             return false;
         }
 
-        /** The deckhand aboard who can work this net (Deckhandiness 1 rope .. 4 cotton), or null. */
-        private SailingCrew.Crewmate crewTrawler(ServerPlayer p) {
-            int need = SailingTraining.NETS.indexOf(net) + 1;
+        /** The deckhand aboard who can work the given net (Deckhandiness 1 rope .. 4 cotton), or null. */
+        private SailingCrew.Crewmate crewTrawler(ServerPlayer p, SailingTraining.Net n) {
+            int need = SailingTraining.NETS.indexOf(n) + 1;
             SailingCrew.Crewmate best = null;
             for (SailingCrew.Crewmate c : SailingCrew.aboard(SeaHooks.crewOrder(p), boat, SkillingUtil.level(p, Skill.SAILING))) {
                 if (c.deckhandiness() >= need && (best == null || c.deckhandiness() > best.deckhandiness())) {
@@ -1087,11 +1146,12 @@ final class SailingHooks {
             return best;
         }
 
-        /** One roll of the net (the player's, or a crewmate's flat 4% for fish only). Returns the fish caught. */
-        public int roll(ServerPlayer p, boolean crew) {
+        /** One roll of a net (the player's, or a crewmate's flat 4% for fish only). Returns the fish caught. */
+        int roll(ServerPlayer p, SailingTraining.Net net, boolean crew) {
             int depth = SailingShoals.depthAt(shoal.maxDepth(), shoal.stopTicks(), stopTick, deepStop);
             boolean right = net.depth() >= depth; // the net follows the shoal's depth where it can reach (playability)
-            XpService.add(p, Skill.SAILING, right ? net.xpPerRoll() : net.xpPerRoll() / 2);
+            double xp = (right ? net.xpPerRoll() : net.xpPerRoll() / 2) * (crew ? SailingShoals.CREW_XP_FACTOR : 1);
+            XpService.add(p, Skill.SAILING, xp);
             SailingShoals.Mixed m = mixed();
             int fishing = SkillingUtil.level(p, Skill.FISHING);
             double chance = crew ? SailingShoals.CREW_CHANCE : m != null ? SailingShoals.catchChance(fishing, m.low(), m.high())
@@ -1107,6 +1167,7 @@ final class SailingHooks {
             }
             SkillingUtil.give(p, f.raw(), n);
             catches++;
+            crewCatches += crew ? 1 : 0;
             fish += n;
             if (!crew) {
                 XpService.add(p, Skill.FISHING, f.fishXp()); // wiki: the shoal's Fishing XP once per successful catch

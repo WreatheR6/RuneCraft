@@ -36,8 +36,8 @@ final class CharredDungeon {
             2683, 8843, 2684, 8844, 2680, 8844, 2679, 8845, 2683, 8846, 2678, 8848, 2681, 8848, 2682, 8849, 2679, 8850, 2680, 8854,
             2681, 8855, 2684, 8853, 2683, 8852, 2684, 8851, 2685, 8851, 2687, 8849};
 
-    /** Kragin's two rubium deposits, next to his spot (2685, 8850) in the south-central mine (approx tiles). */
-    static final int[] CD_RUBIUM_DEPOSITS = {2687, 8851, 2687, 8848};
+    /** Kragin's two rubium deposits in the south-central mine, near his spot (2685, 8850) (wiki Rubium deposit object tiles). */
+    static final int[] CD_RUBIUM_DEPOSITS = {2679, 8852, 2685, 8847};
 
     private CharredDungeon() {
     }
@@ -65,7 +65,7 @@ final class CharredDungeon {
         for (int i = 0; i < CD_RUBIUM.length; i += 2) {
             c.set(s.x(CD_RUBIUM[i]), f + 1, s.z(CD_RUBIUM[i + 1]), rc("rubium_rock"));         // the 24 rubium rocks
         }
-        // Kragin's two rubium deposits beside him (wiki: Kragin at 2685, 8850; deposit tiles approx).
+        // Kragin's two rubium deposits (wiki Rubium deposit tiles; Kragin stands at 2685, 8850).
         for (int i = 0; i < CD_RUBIUM_DEPOSITS.length; i += 2) {
             c.set(s.x(CD_RUBIUM_DEPOSITS[i]), f + 1, s.z(CD_RUBIUM_DEPOSITS[i + 1]), rc("rubium_deposit"));
         }

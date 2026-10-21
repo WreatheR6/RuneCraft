@@ -255,6 +255,9 @@ class SailingRound40Test {
                         case "mixed_stops" -> assertEquals((int) v, SailingShoals.MIXED_STOPS);
                         case "net_capacity" -> assertEquals((int) v, SailingShoals.NET_CAPACITY);
                         case "bait_extra_fish_percent" -> assertEquals(v / 100, SailingShoals.BAIT_EXTRA, 1e-12);
+                        // Sailing XP table: a Deckhandiness 4 crewmate on a cotton net, correct depth.
+                        case "crew_cotton_xp_per_roll" -> assertEquals(v, SailingTraining.NETS.get(3).xpPerRoll()
+                                * SailingShoals.CREW_XP_FACTOR, 1e-9);
                         default -> throw new AssertionError(r[1]);
                     }
                 }
