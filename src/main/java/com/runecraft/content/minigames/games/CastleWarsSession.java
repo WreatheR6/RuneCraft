@@ -28,6 +28,7 @@ public class CastleWarsSession extends MinigameSession {
     private static final int ZAM = 1;
     private static final String[] TEAM = {"Saradomin", "Zamorak"};
     private static final String[] STANDARD = {"saradomin_standard", "zamorak_standard"};
+    private static final String[] TEAM_CLOAK = {"saradomin_team_cloak", "zamorak_team_cloak"};
     private final Map<UUID, Integer> teams = new HashMap<>();
     private final int[] score = new int[2];
     /** Who carries each team's standard (null = on its stand). */
@@ -104,7 +105,21 @@ public class CastleWarsSession extends MinigameSession {
             BlockPos at = spawnPoint(p, t + 2 * (i / 2));
             p.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYRot(), p.getXRot());
             Msg.game(p, "You are on team " + TEAM[t] + ". Capture the " + TEAM[1 - t] + " standard!");
-            Inv.give(p, t == SARA ? "saradomin_hood" : "zamorak_hood", 1);
+            // The team's cloak marks the side (OSRS Wiki); it used to be the 10-ticket reward hood, kept after every game.
+            Inv.give(p, TEAM_CLOAK[t], 1);
+        }
+    }
+
+    /** Takes the team cloaks back, carried or worn in the cape slot. */
+    private static void takeCloaks(ServerPlayer p) {
+        for (String cloak : TEAM_CLOAK) {
+            Inv.remove(p, cloak, 10);
+        }
+        var worn = com.runecraft.content.systems.SysState.of(p).worn;
+        net.minecraft.world.item.ItemStack cape = worn.get(com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE);
+        if (cape != null && !cape.isEmpty() && java.util.Arrays.asList(TEAM_CLOAK).contains(Inv.idOf(cape))) {
+            worn.remove(com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE);
+            com.runecraft.network.ServerNetworking.sync(p);
         }
     }
 
@@ -186,6 +201,7 @@ public class CastleWarsSession extends MinigameSession {
         Inv.remove(player, "castle_wars_bandage", 1000);
         Inv.remove(player, STANDARD[0], 10);
         Inv.remove(player, STANDARD[1], 10);
+        takeCloaks(player);
     }
 
     @Override

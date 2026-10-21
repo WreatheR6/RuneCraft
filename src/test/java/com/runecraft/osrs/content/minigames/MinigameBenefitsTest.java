@@ -175,7 +175,7 @@ class MinigameBenefitsTest {
     @Test
     void nightmareZoneHardBossesHitHarder() throws IOException {
         List<String[]> rows = tsv("nmz_hard_stats.tsv");
-        assertEquals(NightmareZone.BOSSES.length, rows.size());
+        assertEquals(12, rows.size());
         for (String[] row : rows) {
             NightmareZone.HardStats h = NightmareZone.hardStats(row[0]);
             assertNotNull(h, row[0]);
@@ -207,14 +207,15 @@ class MinigameBenefitsTest {
         assertEquals(d, NightmareZone.Dream.parse(d.variant()));
         assertEquals(new NightmareZone.Dream(NightmareZone.Mode.RUMBLE, true, null), NightmareZone.Dream.parse("nightmare_zone_hard_entrance"));
         assertEquals(new NightmareZone.Dream(NightmareZone.Mode.RUMBLE, false, null), NightmareZone.Dream.parse("nightmare_zone_entrance"));
-        // Unlocks and point scaling: all twelve bosses pay the wiki maximum, six pay half.
+        // Unlocks and point scaling: all fifty bosses pay the wiki maximum, twenty-five pay half.
         assertEquals(List.of("nmz_count_draynor", "nmz_elvarg"),
                 NightmareZone.unlocked(q -> q.equals("VAMPYRE_SLAYER") || q.equals("dragon_slayer_i")));
         // No boss quest done: no bosses (not every boss at full points), so the dream is refused.
         assertTrue(NightmareZone.unlocked(q -> false).isEmpty());
         assertEquals(NightmareZone.BOSSES.length, NightmareZone.allBosses().size());
         assertEquals(NightmareZone.points("nmz_glod", true), NightmareZone.points("nmz_glod", true, NightmareZone.BOSSES.length));
-        assertEquals(17493 / 2, NightmareZone.points("nmz_glod", true, 6));
+        assertEquals(50, NightmareZone.BOSSES.length);
+        assertEquals(17493 / 2, NightmareZone.points("nmz_glod", true, 25));
     }
 
     @Test

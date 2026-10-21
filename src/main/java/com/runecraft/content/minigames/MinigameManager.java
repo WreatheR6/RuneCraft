@@ -198,11 +198,7 @@ public final class MinigameManager {
             if (!MinigameRules.WarriorsGuild.canEnter(skills.level(Skill.ATTACK), skills.level(Skill.STRENGTH))) {
                 return "You need a combined Attack and Strength level of 130, or 99 in either, to enter the Warriors' Guild.";
             }
-            if (variant.contains("cyclops") && !Inv.has(player, "warrior_guild_token", MinigameRules.WarriorsGuild.CYCLOPS_ENTRY_TOKENS)) {
-                return "Kamfreena: You need at least " + MinigameRules.WarriorsGuild.CYCLOPS_ENTRY_TOKENS
-                        + " warrior guild tokens to enter the cyclops room.";
-            }
-            return null;
+            return WarriorsGuildSession.requirement(player, variant);
         }
         if (game == Minigame.INFERNO) {
             boolean sacrificed = MinigameData.of(player).flag(player.getUUID(), "inferno_cape_sacrificed");
@@ -485,6 +481,16 @@ public final class MinigameManager {
             }
             Msg.game(player, "Nothing interesting happens.");
         }
+    }
+
+    /** A chat option of the player's session ({@code /minigame act <action> [arg]}); also the self-tests' way to pick one. */
+    public static boolean action(ServerPlayer player, String action, String arg) {
+        MinigameSession s = session(player);
+        if (s == null || s.isEnded() || !s.onAction(player, action, arg)) {
+            Msg.game(player, "Nothing interesting happens.");
+            return false;
+        }
+        return true;
     }
 
     /** Returns false to cancel a player's death (they're handled by their minigame). */

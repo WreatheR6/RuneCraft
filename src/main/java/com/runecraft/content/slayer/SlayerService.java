@@ -426,15 +426,18 @@ public final class SlayerService {
     }
 
     /**
-     * Kills that never count for Slayer: those that give no experience (Nightmare Zone practice dreams) and every
-     * Nightmare Zone dream (OSRS: NMZ monsters give no Slayer experience or task progress).
+     * Kills that never count for Slayer: those that give no experience (Nightmare Zone practice dreams). Other dreams do
+     * count: the dream bosses listed on the wiki's Slayer training table (Elvarg for green dragons, Dad for trolls...) give task
+     * credit and their own Slayer XP (OSRS Wiki "Nightmare Zone"; the others have no Slayer category).
      */
     private static boolean noSlayerCredit(ServerPlayer player) {
-        if (!XpService.allowed(player, Skill.SLAYER)) {
-            return true;
-        }
-        com.runecraft.content.minigames.MinigameSession s = com.runecraft.content.minigames.MinigameManager.session(player);
-        return s != null && s.game == com.runecraft.osrs.content.minigames.Minigame.NIGHTMARE_ZONE;
+        return !XpService.allowed(player, Skill.SLAYER);
+    }
+
+    /** The Slayer XP of a Nightmare Zone boss killed on task (the wiki's normal / hard values), or -1 for other kills. */
+    private static double dreamSlayerXp(LivingEntity entity, String id) {
+        return com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.slayerXp(id,
+                entity.getTags().contains(com.runecraft.content.minigames.games.NightmareZoneSession.HARD_TAG));
     }
 
     /**
@@ -490,7 +493,7 @@ public final class SlayerService {
             return;
         }
         if (noSlayerCredit(player)) {
-            // Kills that give no experience (practice dreams) and Nightmare Zone dreams give no task credit either.
+            // Kills that give no experience (Nightmare Zone practice dreams) give no task credit either.
             return;
         }
         SlayerMasters.Master master = p.master == null ? null : SlayerMasters.get(p.master);
@@ -506,8 +509,9 @@ public final class SlayerService {
         p.chooseAmount = false;
         CombatProfile<?> prof = stats.profile();
         Superiors.Superior superior = prof == null ? null : Superiors.byId(prof.id);
-        // OSRS: a kill gives its hitpoints in Slayer XP unless the wiki lists another value (bosses, dragons, ...).
-        XpService.add(player, Skill.SLAYER, superior != null ? superior.xp()
+        // OSRS: a kill gives its hitpoints in Slayer XP unless the wiki lists another value (bosses, dragons, dream bosses...).
+        double dream = prof == null ? -1 : dreamSlayerXp(entity, prof.id);
+        XpService.add(player, Skill.SLAYER, superior != null ? superior.xp() : dream >= 0 ? dream
                 : com.runecraft.osrs.data.MonsterTraits.slayerXp(stats.traitsKey(), stats.hitpoints()));
         // "Double Trouble": each Grotesque Guardians kill counts twice.
         // Expeditious bracelet / bracelet of slaughter (systems module): 25% chance to double or void the credit.

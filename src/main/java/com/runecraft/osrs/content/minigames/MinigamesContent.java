@@ -75,6 +75,27 @@ public final class MinigamesContent implements ContentModule {
         List<ModelSpec.Variant> list = new java.util.ArrayList<>(Gauntlet.modelVariants());
         // Barbarian Assault's queen spawns look like small Penance Queens.
         list.add(ModelSpec.Variant.of("queen_spawn", "penance_queen", 0.35f));
+        // Nightmare Zone: the dream bosses added in round 40 are copies of their quest bosses (the first twelve live in the
+        // bestiary's look-alikes); the Headless Beast and the Elven traitor have no quest creature and keep their own looks.
+        String[][] nmz = {{"nmz_trapped_soul", "ghost"}, {"nmz_corsair_traitor", "pirate"}, {"nmz_sand_snake", "sea_snake"},
+                {"nmz_corrupt_lizardman", "corrupt_lizardman"}, {"nmz_witchs_experiment", "witchs_experiment"},
+                {"nmz_witchs_experiment_spider", "giant_spider"}, {"nmz_witchs_experiment_bear", "grizzly_bear"},
+                {"nmz_witchs_experiment_wolf", "wolf"}, {"nmz_moss_guardian", "moss_guardian"}, {"nmz_slagilith", "quest_slagilith"},
+                {"nmz_nazastarool", "nazastarool"}, {"nmz_nazastarool_skeleton", "nazastarool"}, {"nmz_nazastarool_ghost", "nazastarool"},
+                {"nmz_treus_dayth", "treus_dayth"}, {"nmz_skeleton_hellhound", "skeleton_hellhound"},
+                {"nmz_dagannoth_mother", "dagannoth_mother"}, {"nmz_agrith_naar", "agrith_naar"}, {"nmz_tanglefoot", "tanglefoot"},
+                {"nmz_ice_troll_king", "ice_troll_king"}, {"nmz_evil_chicken", "rfd_evil_chicken"}, {"nmz_agrith_na_na", "agrith_na_na"},
+                {"nmz_flambeed", "flambeed"}, {"nmz_karamel", "karamel"}, {"nmz_dessourt", "dessourt"},
+                {"nmz_gelatinnoth_mother", "gelatinnoth_mother"}, {"nmz_culinaromancer", "culinaromancer"},
+                {"nmz_chronozon", "chronozon"}, {"nmz_black_demon", "glough_black_demon"}, {"nmz_giant_roc", "quest_giant_roc"},
+                {"nmz_dessous", "dessous"}, {"nmz_damis", "damis"}, {"nmz_damis_second", "damis"}, {"nmz_fareed", "fareed"},
+                {"nmz_kamil", "kamil"}, {"nmz_nezikchened", "nezikchened"}, {"nmz_barrelchest", "quest_barrelchest"},
+                {"nmz_giant_scarab", "giant_scarab"}, {"nmz_jungle_demon", "jungle_demon"},
+                {"nmz_essyllt", "sote_essyllt"}, {"nmz_the_untouchable", "the_untouchable"},
+                {"nmz_the_everlasting", "the_everlasting"}, {"nmz_the_inadequacy", "the_inadequacy"}};
+        for (String[] n : nmz) {
+            list.add(ModelSpec.Variant.of(n[0], n[1]));
+        }
         return list;
     }
 

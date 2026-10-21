@@ -56,7 +56,7 @@ final class SlayerChecks {
         checks.add(new SelfTest.Check("slayer:protective_gear", g::protectiveGear));
         checks.add(new SelfTest.Check("slayer:leaf_bladed_and_finishers", g::weaponsAndFinishers));
         checks.add(new SelfTest.Check("slayer:karuulm_hot_floor", g::hotFloor));
-        checks.add(new SelfTest.Check("slayer:nightmare_zone_no_credit", g::nmzNoCredit));
+        checks.add(new SelfTest.Check("slayer:nightmare_zone_credit", g::nmzCredit));
         return checks;
     }
 
@@ -412,34 +412,59 @@ final class SlayerChecks {
 
     // ------------------------------------------------------------------ Nightmare Zone
 
-    /** A kill in a Nightmare Zone dream never counts for the task; the same kill outside does. */
-    private String nmzNoCredit() {
+    /**
+     * Nightmare Zone kills and Slayer (OSRS Wiki "Nightmare Zone", Slayer training): a dream boss on the wiki's table counts
+     * for its task with the table's Slayer XP (Dad: trolls, 126), a boss that isn't on it doesn't (the Bouncer is no hellhound),
+     * and a practice dream gives no credit at all.
+     */
+    private String nmzCredit() {
         c.completeQuests(null);
-        EntityType<?> type = ModEntities.typeById("kurask");
-        if (type == null) {
-            throw new SelfTest.Skip("no kurask entity");
+        EntityType<?> dad = ModEntities.typeById("nmz_dad");
+        EntityType<?> bouncer = ModEntities.typeById("nmz_bouncer");
+        if (dad == null || bouncer == null) {
+            throw failure("no Nightmare Zone boss entities");
         }
         SlayerState.Profile prof = profile();
-        prof.task = "kurask";
+        prof.task = "trolls";
         prof.amount = 10;
         prof.remaining = 10;
+        double xp = slayerXp();
         com.runecraft.content.minigames.MinigameSession s = com.runecraft.content.minigames.MinigameManager.selfTestStart(
                 com.runecraft.osrs.content.minigames.Minigame.NIGHTMARE_ZONE,
                 com.runecraft.osrs.content.minigames.Minigame.NIGHTMARE_ZONE.entranceBlock(), p());
         try {
-            killAsPlayer(spawnAt(type, p().blockPosition().offset(2, 0, 0), true));
+            killAsPlayer(spawnAt(dad, p().blockPosition().offset(2, 0, 0), true));
+            if (prof.remaining != 9) {
+                throw failure("Dad killed in a rumble didn't count for the troll task (" + prof.remaining + " left)");
+            }
+            if (Math.abs(slayerXp() - xp - 126) > 0.05) {
+                throw failure("Dad gave " + (slayerXp() - xp) + " Slayer XP in a normal dream, not the wiki's 126");
+            }
+            prof.task = "hellhounds";
+            prof.remaining = 10;
+            killAsPlayer(spawnAt(bouncer, p().blockPosition().offset(2, 0, 0), true));
             if (prof.remaining != 10) {
-                throw failure("a kurask killed in a Nightmare Zone dream counted for the kurask task");
+                throw failure("the Bouncer counted for a hellhound task");
             }
         } finally {
             s.end(false);
         }
-        c.home();
-        killAsPlayer(spawnAt(type, c.near(3, 0), true));
-        if (prof.remaining != 9) {
-            throw failure("a kurask killed outside the Nightmare Zone didn't count (" + prof.remaining + " left)");
+        prof.task = "trolls";
+        prof.remaining = 10;
+        com.runecraft.content.minigames.MinigameSession practice = com.runecraft.content.minigames.MinigameManager.selfTestStart(
+                com.runecraft.osrs.content.minigames.Minigame.NIGHTMARE_ZONE,
+                new com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.Dream(
+                        com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.Mode.PRACTICE, false, "nmz_dad").variant(), p());
+        try {
+            killAsPlayer(spawnAt(dad, p().blockPosition().offset(2, 0, 0), true));
+            if (prof.remaining != 10) {
+                throw failure("a practice dream kill counted for the task");
+            }
+        } finally {
+            practice.end(false);
         }
-        return "dream kill 10 -> 10, outside 10 -> 9";
+        c.home();
+        return "rumble Dad 10 -> 9 (+126 Slayer XP), Bouncer no hellhound credit, practice no credit";
     }
 
     // ------------------------------------------------------------------ Karuulm hot floor

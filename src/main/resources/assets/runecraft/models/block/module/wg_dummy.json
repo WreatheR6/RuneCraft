@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/wg_dummy_side",
+    "top": "runecraft:block/module/wg_dummy_top",
+    "bottom": "runecraft:block/module/wg_dummy_bottom"
+  }
+}

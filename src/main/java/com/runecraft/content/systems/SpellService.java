@@ -182,6 +182,24 @@ public final class SpellService {
         plan.forEach((item, n) -> Inv.remove(p, item, n));
     }
 
+    /**
+     * Pays a spell's runes the way casting does (a staff or tome covers its element, combination runes count); false, with
+     * nothing taken, when the player lacks them. For spells cast outside the spellbook screen (the Mage Training Arena).
+     */
+    public static boolean payRunes(ServerPlayer p, Map<String, Integer> runes) {
+        Map<String, Integer> plan = runePlan(p, runes);
+        if (plan == null) {
+            return false;
+        }
+        consume(p, plan);
+        return true;
+    }
+
+    /** Whether the player could pay a spell's runes the way {@link #payRunes} does, without taking any. */
+    public static boolean canPayRunes(ServerPlayer p, Map<String, Integer> runes) {
+        return runePlan(p, runes) != null;
+    }
+
     // ---------------- Requirements ----------------
 
     /** Whether the player may use a spellbook (quest requirement looked up at runtime). */

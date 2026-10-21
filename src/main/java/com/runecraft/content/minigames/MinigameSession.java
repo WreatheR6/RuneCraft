@@ -107,6 +107,14 @@ public abstract class MinigameSession {
         return false;
     }
 
+    /**
+     * A player picked one of the session's chat options ({@code /minigame act <action> [arg]}: a throwing style, a block, a
+     * spell). Return true if handled.
+     */
+    protected boolean onAction(ServerPlayer player, String action, String arg) {
+        return false;
+    }
+
     /** A player would have died. Default: they're removed from the game (items kept). */
     protected void onDeath(ServerPlayer player) {
         Msg.red(player, "Oh dear, you are dead! You have been removed from " + game.displayName() + ".");

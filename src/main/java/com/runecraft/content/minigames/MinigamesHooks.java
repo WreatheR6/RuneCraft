@@ -147,8 +147,8 @@ public final class MinigamesHooks implements ModuleHooks {
                 + "Fix broken braziers with a hammer and keep the pyromancers alive. Earn 500 points for rewards at the reward cart.");
         talk("mg_first_mate_deri", "First Mate Deri", "Tempoross brews a storm! Harpoon the harpoonfish, load the cannons, "
                 + "tether yourself when a wave comes, and strike the spirit pool when it falls. Permits buy from the reward pool.");
-        talk("mg_harrallak_menarous", "Harrallak Menarous", "Welcome to the Warriors' Guild. Animate armour on the magical animators "
-                + "to earn tokens, then spend them in the cyclops room for defenders.");
+        QuestScripts.onTalk("mg_harrallak_menarous", (player, npc) ->
+                com.runecraft.content.minigames.games.WarriorsGuildSession.harrallak(player));
         QuestScripts.onTalk("mg_guardian_mummy", (player, entity) -> guardianMummy(player));
         talk("mg_murphy", "Murphy", "The Fishing Trawler sails soon. Patch leaks, bail water and keep her afloat for the net to fill.");
         talk("mg_mortton_priest", "Ulsquire Shauncy", "The shades plague Mort'ton. Repair the temple and slay the shades to earn "
@@ -362,6 +362,31 @@ public final class MinigamesHooks implements ModuleHooks {
                                                     }
                                                     return 1;
                                                 })))))
+                        .then(Commands.literal("act").then(Commands.argument("action", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
+                                    if (p != null) {
+                                        MinigameManager.action(p, StringArgumentType.getString(ctx, "action"), null);
+                                    }
+                                    return 1;
+                                })
+                                .then(Commands.argument("arg", StringArgumentType.word()).executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
+                                    if (p != null) {
+                                        MinigameManager.action(p, StringArgumentType.getString(ctx, "action"),
+                                                StringArgumentType.getString(ctx, "arg"));
+                                    }
+                                    return 1;
+                                }))))
+                        .then(Commands.literal("wg").then(Commands.argument("activity", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
+                                    if (p != null && nearNpc(p, "mg_harrallak_menarous")) {
+                                        com.runecraft.content.minigames.games.WarriorsGuildSession.enterActivity(p,
+                                                StringArgumentType.getString(ctx, "activity"));
+                                    }
+                                    return 1;
+                                })))
                         .then(Commands.literal("token").then(Commands.argument("reward", StringArgumentType.word())
                                 .executes(ctx -> {
                                     ServerPlayer p = ctx.getSource().getPlayer();

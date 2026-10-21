@@ -770,6 +770,7 @@ public final class MonsterTraits {
         t("warped_jelly", 1, false, false, 140); // Warped Jelly
         t("warped_terrorbird", 2, false, false, 200); // Warped Terrorbird (Level 138)
         t("warriors_guild_cyclops", 2, false, false, 75); // Cyclops (Level 56)
+        t("warriors_guild_cyclops_76", 2, false, false, 100); // Cyclops (Level 76)
         t("waterfiend", 1, true, true, 128, "demon"); // Waterfiend (Normal)
         t("white_knight", 1, false, false, 0); // White Knight (Initiate (f))
         t("wild_dog", 1, false, false, 62); // Wild dog (Normal)

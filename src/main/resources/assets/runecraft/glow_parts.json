@@ -1627,8 +1627,23 @@
     "head",
     "sparkle"
   ],
+  "nmz_agrith_na_na": [
+    "eyes",
+    "jaw"
+  ],
+  "nmz_agrith_naar": [
+    "head",
+    "jaw"
+  ],
   "nmz_arrg": [
     "head"
+  ],
+  "nmz_barrelchest": [
+    "head"
+  ],
+  "nmz_black_demon": [
+    "head",
+    "jaw"
   ],
   "nmz_black_knight_titan": [
     "titan_eyes"
@@ -1645,17 +1660,117 @@
     "leg_b_r",
     "tail_fire"
   ],
+  "nmz_chronozon": [
+    "head",
+    "jaw"
+  ],
+  "nmz_corrupt_lizardman": [
+    "head",
+    "lizard_jaw",
+    "corrupt_mark"
+  ],
   "nmz_count_draynor": [
     "head"
   ],
   "nmz_dad": [
     "head"
   ],
+  "nmz_dagannoth_mother": [
+    "eyes",
+    "jaw"
+  ],
+  "nmz_damis": [
+    "head",
+    "soul_glow",
+    "hand_wisp_l",
+    "hand_wisp_r"
+  ],
+  "nmz_damis_second": [
+    "head",
+    "soul_glow",
+    "hand_wisp_l",
+    "hand_wisp_r"
+  ],
+  "nmz_dessourt": [
+    "head",
+    "soul_glow",
+    "hand_wisp_l",
+    "hand_wisp_r"
+  ],
+  "nmz_dessous": [
+    "head",
+    "brooch"
+  ],
   "nmz_elvarg": [
+    "eyes"
+  ],
+  "nmz_fareed": [
+    "head",
+    "flame_crest",
+    "hand_flame_l",
+    "hand_flame_r",
+    "blade_fire"
+  ],
+  "nmz_flambeed": [
+    "waist",
+    "chest",
+    "neck",
+    "trap_l",
+    "trap_r",
+    "head",
+    "brow",
+    "chin",
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r",
+    "bicep_l",
+    "bicep_r",
+    "shin_l",
+    "shin_r",
+    "calf_l",
+    "calf_r",
+    "flame0",
+    "flame1",
+    "flame2",
+    "flame3",
+    "hand_fire_l",
+    "hand_fire_r",
+    "shoulder_flame_l",
+    "shoulder_flame_r"
+  ],
+  "nmz_gelatinnoth_mother": [
+    "hips",
+    "torso",
+    "head",
+    "eyes",
+    "jaw",
+    "core",
+    "drips"
+  ],
+  "nmz_giant_roc": [
+    "eyes"
+  ],
+  "nmz_giant_scarab": [
     "eyes"
   ],
   "nmz_glod": [
     "head"
+  ],
+  "nmz_ice_troll_king": [
+    "head",
+    "crown_gem"
+  ],
+  "nmz_jungle_demon": [
+    "head",
+    "jaw"
+  ],
+  "nmz_kamil": [
+    "blade_frost"
+  ],
+  "nmz_karamel": [
+    "staff_orb",
+    "frost_orb"
   ],
   "nmz_king_roald": [
     "head",
@@ -1668,11 +1783,89 @@
     "hand_wisp_l",
     "hand_wisp_r"
   ],
+  "nmz_moss_guardian": [
+    "head"
+  ],
+  "nmz_nazastarool": [
+    "head"
+  ],
+  "nmz_nazastarool_ghost": [
+    "head"
+  ],
+  "nmz_nazastarool_skeleton": [
+    "head"
+  ],
+  "nmz_nezikchened": [
+    "head",
+    "jaw"
+  ],
+  "nmz_sand_snake": [
+    "head"
+  ],
+  "nmz_slagilith": [
+    "torso",
+    "chest_seam",
+    "eyes",
+    "jaw",
+    "arm_l",
+    "arm_r",
+    "forearm_l",
+    "forearm_r",
+    "shin_l",
+    "shin_r"
+  ],
+  "nmz_tanglefoot": [
+    "eyes",
+    "jaw",
+    "stamen0",
+    "stamen1",
+    "stamen2"
+  ],
+  "nmz_the_inadequacy": [
+    "mass",
+    "upper",
+    "core",
+    "eyes",
+    "jaw",
+    "body_eyes",
+    "arm2_tip",
+    "arm3_tip",
+    "drips"
+  ],
   "nmz_the_kendal": [
     "eyes"
   ],
+  "nmz_trapped_soul": [
+    "body",
+    "skirt",
+    "hem",
+    "wisp",
+    "wisp_tip",
+    "hood",
+    "hood_rim",
+    "head",
+    "arm_l",
+    "arm_r",
+    "sleeve_l",
+    "sleeve_r",
+    "sleeve_rag_l",
+    "sleeve_rag_r",
+    "hand_l",
+    "hand_r"
+  ],
   "nmz_tree_spirit": [
     "head"
+  ],
+  "nmz_treus_dayth": [
+    "head",
+    "soul_glow",
+    "sword_aura"
+  ],
+  "nmz_witchs_experiment": [
+    "eyes"
+  ],
+  "nmz_witchs_experiment_spider": [
+    "eyes"
   ],
   "nylocas_athanatos": [
     "eyes_main"

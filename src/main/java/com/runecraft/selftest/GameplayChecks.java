@@ -153,6 +153,13 @@ final class GameplayChecks {
                 () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::gnomeRestaurant)));
         checks.add(new SelfTest.Check("minigame:garden_round",
                 () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::sorceressGarden)));
+        // Round 40: an NMZ dream to a reward, a dragon defender at the Warriors' Guild, every MTA room and a reward.
+        checks.add(new SelfTest.Check("minigame:nmz_dream", () -> g.tzhaarRun(
+                com.runecraft.content.minigames.games.CombatMinigameSelfTest::nightmareZone)));
+        checks.add(new SelfTest.Check("minigame:warriors_guild_walk", () -> g.tzhaarRun(
+                com.runecraft.content.minigames.games.CombatMinigameSelfTest::warriorsGuild)));
+        checks.add(new SelfTest.Check("minigame:mta_walk", () -> g.tzhaarRun(
+                com.runecraft.content.minigames.games.CombatMinigameSelfTest::mageTrainingArena)));
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }

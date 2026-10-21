@@ -13,9 +13,11 @@ import java.util.function.Predicate;
 
 /**
  * Champions' Challenge (OSRS): champion scrolls drop at 1/5,000 from the champions' kin; Larxus in the
- * Champions' Guild (32 quest points) takes a scroll and sends you into the arena against that champion, who
- * sets a rule for the fight. Beating all ten earns Leon d'Cour's scroll, and beating Leon the Champion's cape.
- * Champion stats are the OSRS wiki's (DPS calculator data); rules are the wiki's champion table.
+ * Champions' Guild (32 quest points) sends you into the arena against the champion of the scroll you carry, who
+ * sets a rule for the fight; the scroll is only used up when the champion is defeated. Each defeat gives
+ * Hitpoints and Slayer experience and a champion's lamp worth ten times as much. Beating all ten earns Leon
+ * d'Cour's scroll, and beating Leon the Champion's cape (Larxus hands out more). Champion stats are the OSRS
+ * wiki's (DPS calculator data); rules and experience are the wiki's champion table.
  */
 public final class ChampionsChallenge {
     /** OSRS: every champion scroll is a 1/5,000 drop from its kin. */
@@ -98,6 +100,56 @@ public final class ChampionsChallenge {
             new Champion("lesser_demon_champion", "Lesser Demon Champion", "lesser_demon_champion_scroll", Rule.NO_EQUIPMENT));
 
     public static final Champion LEON_DCOUR = new Champion(LEON, "Leon d'Cour", LEON_SCROLL, Rule.NO_INVENTORY);
+
+    /**
+     * Hitpoints and Slayer experience (each) for defeating a champion, in {@link #all()}'s order (OSRS Wiki "Champions'
+     * Challenge" table).
+     */
+    private static final int[] XP = {160, 128, 232, 240, 280, 232, 400, 432, 480, 592, 492};
+
+    /** The champion's lamp from the Chest of Champions gives ten times a champion's experience (OSRS Wiki "Champion's lamp"). */
+    public static final String LAMP = "champions_lamp";
+    public static final int LAMP_MULTIPLIER = 10;
+
+    /** Hitpoints and Slayer experience a champion's defeat gives (0 for anything else). */
+    public static int xp(String championId) {
+        List<Champion> all = all();
+        for (int i = 0; i < all.size(); i++) {
+            if (all.get(i).id().equals(championId)) {
+                return XP[i];
+            }
+        }
+        return 0;
+    }
+
+    /** Flag key remembering that a champion's lamp has been rubbed. */
+    public static String lampFlag(String championId) {
+        return "champion_lamp_used:" + championId;
+    }
+
+    /**
+     * The champion whose lamp a rub pays for: the first beaten champion (in {@link #all()}'s order) whose lamp hasn't been
+     * rubbed, or null when none is owed.
+     */
+    public static Champion lampOwed(Predicate<String> defeated, Predicate<String> rubbed) {
+        for (Champion c : all()) {
+            if (defeated.test(c.id()) && !rubbed.test(c.id())) {
+                return c;
+            }
+        }
+        return null;
+    }
+
+    /** How many lamps a player is owed: one per beaten champion whose lamp hasn't been rubbed. */
+    public static int lampsOwed(Predicate<String> defeated, Predicate<String> rubbed) {
+        int n = 0;
+        for (Champion c : all()) {
+            if (defeated.test(c.id()) && !rubbed.test(c.id())) {
+                n++;
+            }
+        }
+        return n;
+    }
 
     /** A reward Larxus hands out and when. */
     public record Reward(String item, String when) {

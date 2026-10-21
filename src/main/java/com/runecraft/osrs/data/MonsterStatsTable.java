@@ -705,6 +705,8 @@ public final class MonsterStatsTable {
         row("animated_rune_armour", 138, 120, 120, 120, 120, 1, 1, 4, 50, 25, 19, 400, 400, 4, 0, 0);
         // Cyclops (Level 56)
         row("warriors_guild_cyclops", 56, 75, 47, 50, 26, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        // Cyclops (Level 76)
+        row("warriors_guild_cyclops_76", 76, 100, 65, 65, 35, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
         // Cyclops (Level 106)
         row("cyclops_elite", 106, 150, 95, 75, 55, 1, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
         maxHit("cyclops_elite", "melee", 8); // was 11

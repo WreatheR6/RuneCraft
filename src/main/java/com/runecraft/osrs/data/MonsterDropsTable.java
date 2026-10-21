@@ -1645,14 +1645,14 @@ public final class MonsterDropsTable {
                 d("ancient_ceremonial_boots", 1, 1, 640));
         // Cyclops <- parsed:Cyclops(56)
         add("warriors_guild_cyclops", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Cyclops <- parsed:Cyclops(76) (the wiki's one "Warriors' Guild Rooftop" table for the level 56 and 76 versions)
+        add("warriors_guild_cyclops_76", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
         // Cyclops <- parsed:Cyclops(106)
         add("cyclops_elite", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
         // Dad <- parsed:Dad(101)
         add("nmz_dad", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
         // Glod <- parsed:Glod(138)
         add("nmz_glod", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
-        // Forgotten Soul <- parsed:Forgotten Soul(20)
-        add("forgotten_soul", rm(), d("black_robe", 1, 1, 128));
         // Nail beast <- parsed:Nail beast(69)
         add("trek_nail_beast_1", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
         // Nail beast <- parsed:Nail beast(98)

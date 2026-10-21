@@ -1,16 +1,18 @@
-# boss	points_normal	points_hard	hitpoints_normal	hitpoints_hard  (OSRS Wiki, Nightmare Zone boss table; dump July 2026)
+# boss	points_normal	points_hard	hitpoints_normal	hitpoints_hard  (OSRS Wiki, Nightmare Zone boss table; dump July 2026; multi-form bosses: first form; Khazard warlord's hard hitpoints are 255 as in his infobox, the table says 256)
 Trapped Soul	183	2301	30	98
 Count Draynor	224	7135	35	210
 Corsair Traitor	244	2301	55	160
 Sand Snake	244	5294	60	180
 Corrupt Lizardman	427	5294	50	150
 King Roald	448	8056	75	150
+Witch's experiment	570	2301	21	63
 The Kendal	998	10127	50	150
 Me	1263	9207	45	135
 Headless Beast	1365	12429	100	320
 Elvarg	1385	10357	80	240
 Moss Guardian	1426	7595	120	240
 Slagilith	1711	9207	60	150
+Nazastarool	1752	7365	100	154
 Treus Dayth	1834	8516	100	240
 Skeleton Hellhound	1915	8976	55	132
 Dagannoth mother	2038	9207	120	240
@@ -18,7 +20,7 @@ Agrith-Naar	2038	8746	95	209
 Tree spirit	2078	8976	85	187
 Dad	2078	9207	120	240
 Tanglefoot	2506	8976	102	204
-Khazard warlord	2547	8286	169	256
+Khazard warlord	2547	8286	169	255
 Arrg	2588	10127	150	255
 Black Knight Titan	2934	10127	141	255
 Ice Troll King	3016	10357	150	255
@@ -35,6 +37,7 @@ Chronozon	5890	20255	60	120
 Black demon	6012	19564	165	255
 Giant Roc	6012	15191	200	255
 Dessous	3933	10818	200	255
+Damis	6155	16802	90	198
 Fareed	5665	20485	130	255
 Kamil	4830	17032	130	255
 Nezikchened	7112	20025	150	150

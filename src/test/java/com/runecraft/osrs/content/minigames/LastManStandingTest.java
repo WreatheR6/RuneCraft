@@ -134,6 +134,19 @@ class LastManStandingTest {
         }
         assertEquals(10, LastManStanding.winsNeeded("victors_cape_10"));
         assertEquals(1, LastManStanding.winsNeeded("magic_shortbow_scroll"));
+        // Round 40: the supply bundles, 1 point each and tradeable (a won game needed), per the wiki's stock.
+        RewardShop.Entry entangle = shop.entries().stream().filter(e -> e.item().equals("blighted_entangle_sack")).findFirst()
+                .orElseThrow();
+        assertEquals(70, entangle.count());
+        assertEquals(1, entangle.costs().get(0).amount());
+        RewardShop.Entry restore = shop.entries().stream().filter(e -> e.item().equals("blighted_super_restore")).findFirst()
+                .orElseThrow();
+        assertEquals(4, restore.count());
+        assertEquals(200, shop.entries().stream().filter(e -> e.item().equals("bolt_rack")).findFirst().orElseThrow().count());
+        for (Object[] s : LastManStanding.SHOP_SUPPLIES) {
+            assertEquals(1, LastManStanding.winsNeeded((String) s[0]), (String) s[0]);
+        }
+        assertEquals(0, LastManStanding.winsNeeded("deadmans_cape"));
     }
 
     @Test

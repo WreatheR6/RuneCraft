@@ -93,4 +93,28 @@ class ChampionsChallengeTest {
             assertTrue(ItemCatalog.exists(item), item);
         }
     }
+
+    /** Round 40: Hitpoints and Slayer experience per defeat, and the champion's lamps (OSRS Wiki). */
+    @Test
+    void experienceAndLamps() {
+        assertEquals(160, ChampionsChallenge.xp("imp_champion"));
+        assertEquals(128, ChampionsChallenge.xp("goblin_champion"));
+        assertEquals(232, ChampionsChallenge.xp("hobgoblin_champion"));
+        assertEquals(592, ChampionsChallenge.xp("lesser_demon_champion"));
+        assertEquals(492, ChampionsChallenge.xp("leon_dcour"));
+        assertEquals(0, ChampionsChallenge.xp("goblin"));
+        // "A total of 40,348 Hitpoints and Slayer experience" from every defeat and every lamp.
+        int total = 0;
+        for (Champion c : ChampionsChallenge.all()) {
+            total += ChampionsChallenge.xp(c.id()) * (1 + ChampionsChallenge.LAMP_MULTIPLIER);
+        }
+        assertEquals(40_348, total);
+        assertTrue(ItemCatalog.exists(ChampionsChallenge.LAMP));
+        // A lamp pays for the first beaten champion whose lamp hasn't been rubbed.
+        Set<String> beaten = Set.of("goblin_champion", "giant_champion");
+        assertEquals("goblin_champion", ChampionsChallenge.lampOwed(beaten::contains, Set.<String>of()::contains).id());
+        assertEquals("giant_champion", ChampionsChallenge.lampOwed(beaten::contains, Set.of("goblin_champion")::contains).id());
+        assertNull(ChampionsChallenge.lampOwed(beaten::contains, beaten::contains));
+        assertEquals(2, ChampionsChallenge.lampsOwed(beaten::contains, Set.<String>of()::contains));
+    }
 }

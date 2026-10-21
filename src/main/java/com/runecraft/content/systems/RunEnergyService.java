@@ -36,16 +36,6 @@ public final class RunEnergyService {
         SysState.SysPlayer sp = SysState.of(p);
         int before = sp.runEnergy;
         boolean stamina = sp.staminaUntil > tick;
-        int agility = Players.data(p).skills().currentLevel(Skill.AGILITY);
-        String cape = sp.wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE);
-        // A full Graceful set restores energy 30% faster, the same boost as the Agility cape (they don't stack).
-        boolean agilityCape = cape.startsWith("agility_cape") || cape.equals("max_cape")
-                || com.runecraft.osrs.content.skilling.AgilityData.fullGraceful(
-                        Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD)),
-                        Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST)),
-                        Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.LEGS)),
-                        Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET)), cape,
-                        sp.wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.HANDS));
         if (p.isSprinting() && p.getVehicle() == null) {
             sp.runEnergy = Math.max(0, sp.runEnergy - RunEnergy.drain(carriedWeight(p, sp), stamina));
             if (sp.runEnergy <= 0) {
@@ -57,11 +47,27 @@ public final class RunEnergyService {
                 }
             }
         } else {
-            sp.runEnergy = Math.min(RunEnergy.MAX, sp.runEnergy + RunEnergy.regen(agility, agilityCape));
+            sp.runEnergy = Math.min(RunEnergy.MAX, sp.runEnergy + restorePerTick(p));
         }
         if (sp.runEnergy / 100 != before / 100) {
             SysNet.sendState(p);
         }
+    }
+
+    /** Energy (hundredths of a percent) restored each tick the player isn't running: Agility, Agility cape or full Graceful. */
+    public static int restorePerTick(ServerPlayer p) {
+        SysState.SysPlayer sp = SysState.of(p);
+        int agility = Players.data(p).skills().currentLevel(Skill.AGILITY);
+        String cape = sp.wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE);
+        // A full Graceful set restores energy 30% faster, the same boost as the Agility cape (they don't stack).
+        boolean agilityCape = cape.startsWith("agility_cape") || cape.equals("max_cape")
+                || com.runecraft.osrs.content.skilling.AgilityData.fullGraceful(
+                        Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD)),
+                        Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST)),
+                        Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.LEGS)),
+                        Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET)), cape,
+                        sp.wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.HANDS));
+        return RunEnergy.regen(agility, agilityCape);
     }
 
     /**

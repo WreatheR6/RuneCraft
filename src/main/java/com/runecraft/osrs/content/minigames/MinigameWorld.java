@@ -33,6 +33,11 @@ public final class MinigameWorld {
             EXTRA_ENTRANCES.put("mta_" + room + "_entrance", Minigame.MAGE_TRAINING_ARENA);
         }
         EXTRA_ENTRANCES.put("warriors_guild_cyclops_entrance", Minigame.WARRIORS_GUILD);
+        for (String wg : new String[]{MinigameRules.WarriorsGuild.BASEMENT_ENTRANCE, MinigameRules.WarriorsGuild.DUMMY_ENTRANCE,
+                MinigameRules.WarriorsGuild.CATAPULT_ENTRANCE, MinigameRules.WarriorsGuild.SHOT_PUT_ENTRANCE,
+                MinigameRules.WarriorsGuild.KEG_ENTRANCE}) {
+            EXTRA_ENTRANCES.put(wg, Minigame.WARRIORS_GUILD);
+        }
         EXTRA_ENTRANCES.put("nightmare_zone_hard_entrance", Minigame.NIGHTMARE_ZONE);
         EXTRA_ENTRANCES.put(LastManStanding.COMPETITIVE_ENTRANCE, Minigame.LAST_MAN_STANDING);
         EXTRA_ENTRANCES.put(LastManStanding.HIGH_STAKES_ENTRANCE, Minigame.LAST_MAN_STANDING);
@@ -116,6 +121,11 @@ public final class MinigameWorld {
             // Warriors' Guild
             {"wg_armour_animator", "Magical animator", "9A9AA0", "statue"},
             {"wg_cyclops_door", "Cyclops room door", "6A4A2A", "portal_door"},
+            {"wg_dummy", "Dummy", "B08A4A", "statue"},
+            {"wg_catapult", "Catapult", "6A4A2A", "machine"},
+            {"wg_shot_18", "Shot (18lb)", "6A6A70", "rock"},
+            {"wg_shot_22", "Shot (22lb)", "4A4A50", "rock"},
+            {"wg_keg", "Keg", "8A6A3A", "crate"},
             // Mage Training Arena
             {"mta_statue", "Guardian statue", "8A8AA0", "statue"},
             {"mta_cupboard", "Cupboard", "8A6A3A", "chest"},
@@ -124,6 +134,7 @@ public final class MinigameWorld {
             {"mta_enchant_hole", "Hole", "202030", "portal_glow"},
             {"mta_bone_pile", "Bone pile", "E8E0D0", "crate"},
             {"mta_food_chute", "Food chute", "A0E060", "machine"},
+            {"mta_dragonstone_spot", "Dragonstone", "A040C0", "crate"},
             // Pyramid Plunder
             {"pp_urn", "Urn", "C0A080", "pot"},
             {"pp_chest", "Grand gold chest", "E0B030", "chest"},
@@ -506,9 +517,20 @@ public final class MinigameWorld {
         pages.add(new CollectionLogData.Page(c, "Barbarian Assault", List.of("pet_penance_queen", "fighter_torso", "penance_gloves",
                 "penance_skirt", "fighter_hat", "ranger_hat", "runner_hat", "healer_hat", "runner_boots", "granite_body",
                 "granite_helm")));
-        pages.add(new CollectionLogData.Page(c, "Castle Wars", List.of("saradomin_halo", "zamorak_halo", "saradomin_hood",
-                "zamorak_hood", "guthix_halo", "red_decorative_helm", "red_decorative_body", "white_decorative_helm",
-                "white_decorative_body", "gold_decorative_helm", "gold_decorative_body")));
+        // The Castle Wars page holds Lanthus' whole stock (OSRS Wiki "Collection log").
+        List<String> castleWars = new ArrayList<>();
+        for (String tier : new String[]{"red", "white", "gold"}) {
+            for (String piece : new String[]{"sword", "body", "legs", "helm", "shield"}) {
+                castleWars.add(tier + "_decorative_" + piece);
+            }
+        }
+        castleWars.addAll(List.of("saradomin_hood", "saradomin_castlewars_cloak", "zamorak_hood", "zamorak_castlewars_cloak",
+                "saradomin_banner", "zamorak_banner", "red_decorative_skirt", "white_decorative_skirt", "gold_decorative_skirt",
+                "decorative_magic_top", "decorative_magic_legs", "decorative_magic_hat", "decorative_ranged_top",
+                "decorative_ranged_legs", "decorative_quiver", "saradomin_halo", "zamorak_halo", "guthix_halo", "red_decorative_boots",
+                "red_decorative_full_helm", "white_decorative_boots", "white_decorative_full_helm", "gold_decorative_boots",
+                "gold_decorative_full_helm"));
+        pages.add(new CollectionLogData.Page(c, "Castle Wars", castleWars));
         List<String> defenders = new ArrayList<>();
         for (String t : MinigameItems.DEFENDER_TIERS) {
             defenders.add(t + "_defender");
