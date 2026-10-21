@@ -491,6 +491,7 @@ final class TobRooms {
             bloodSpawns = 0;
             trail.clear();
             trailTiles.clear();
+            trailMarked.clear();
             maiden = spawnBoss("the_maiden_of_sugadinti", at(15, 0));
             if (maiden != null) {
                 maiden.setNoAi(true);
@@ -535,6 +536,7 @@ final class TobRooms {
                     if (trailTiles.add(sp.blockPosition())) {
                         CombatAchievementService.countNear(maiden, CombatAchievements.COUNT_MAIDEN_TRAIL);
                     }
+                    markTrail(sp.position());
                 }
                 if (sp.tickCount > 200) {
                     CombatAchievementService.flagNear(maiden, CombatAchievements.FLAG_BLOODSPAWN_OLD);
@@ -563,6 +565,24 @@ final class TobRooms {
                     }
                 }
             }
+        }
+
+        /** The room tick each blood-trail floor block stays marked until (Hard mode: for good). */
+        private final Map<BlockPos, Integer> trailMarked = new HashMap<>();
+
+        /**
+         * A blood trail's tile marked on the floor for as long as the trail lies there (round 43; Hard mode: the pools never
+         * despawn, OSRS wiki). // playability: OSRS paints the blood on the tiles
+         */
+        private void markTrail(Vec3 at) {
+            BlockPos b = BlockPos.containing(at);
+            int until = hard() ? Integer.MAX_VALUE : t + TobRules.MAIDEN_TRAIL_TICKS;
+            Integer marked = trailMarked.get(b);
+            if (marked != null && marked >= until - 4) {
+                return;
+            }
+            trailMarked.put(b, until);
+            RaidFloor.disc(world(), at, 0.1, RaidFloor.BLOOD, hard() ? 0 : TobRules.MAIDEN_TRAIL_TICKS, maiden);
         }
 
         private ServerPlayer closest() {
@@ -664,7 +684,7 @@ final class TobRooms {
                 int k = i;
                 Vec3 at = spots.get(i);
                 RaidEffects.Marker m = RaidEffects.mark(world(), at, 0.9).delay(3).source(source).warn(ParticleTypes.DAMAGE_INDICATOR)
-                        .live(() -> alive(source) && current.getAsBoolean())
+                        .floor(RaidFloor.BLOOD).live(() -> alive(source) && current.getAsBoolean())
                         .onHit(p -> {
                             stepped[k] = true;
                             int dealt = hurt(source, p, TobRules.maidenSplat(fed), null, true);
@@ -910,7 +930,7 @@ final class TobRooms {
                     Vec3 at = bloat.position();
                     RaidEffects.telegraph(players, "The Bloat is about to stomp - get away from it!");
                     RaidEffects.mark(world(), at, 4.5).delay(STOMP_WARNING_TICKS).source(source).warn(ParticleTypes.SMOKE)
-                            .live(() -> alive(source) && !walking)
+                            .floor(RaidFloor.DANGER).live(() -> alive(source) && !walking)
                             .onHit(p -> {
                                 hurt(source, p, TobRules.BLOAT_STOMP_MIN + rnd().nextInt(TobRules.BLOAT_STOMP_MAX - TobRules.BLOAT_STOMP_MIN + 1),
                                         null, true);
@@ -969,7 +989,20 @@ final class TobRooms {
             Vec3 at = p.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2);
             world().sendParticles(ParticleTypes.FALLING_LAVA, at.x, at.y + 3, at.z, 10, 0.4, 0.2, 0.4, 0);
             DataBossEntity source = bloat;
-            RaidEffects.mark(world(), at, 1.0).delay(3).source(source).warn(ParticleTypes.FALLING_LAVA).live(current()).onHit(q -> {
+            // Round 43: its shadow marked on the floor, and the limb seen falling from the ceiling onto it. // playability: OSRS
+            // shows the falling limb's shadow
+            long due = RaidEffects.now() + 3;
+            RaidEffects.cue(3, center().getCenter(), () -> {
+                if (!alive(source)) {
+                    return false;
+                }
+                double left = (due * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK - RaidEffects.clockMc())
+                        / (3.0 * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK);
+                double h = 0.5 + Math.max(0, left) * (RaidBuilder.HEIGHT - 2);
+                world().sendParticles(LIMB, at.x, at.y + h, at.z, 6, 0.25, 0.25, 0.25, 0);
+                return true;
+            });
+            RaidEffects.mark(world(), at, 1.0).delay(3).source(source).warn(ParticleTypes.FALLING_LAVA).floor(RaidFloor.DANGER).live(current()).onHit(q -> {
                 handsLanded++;
                 hurt(source, q, TobRules.BLOAT_HANDS_MIN + rnd().nextInt(TobRules.BLOAT_HANDS_MAX - TobRules.BLOAT_HANDS_MIN + 1), null, true);
                 com.runecraft.content.systems.SysCombat.freeze(q, 3);
@@ -978,6 +1011,8 @@ final class TobRooms {
 
         /** Falling hands that landed on a player (self-test). */
         int handsLanded;
+        private static final net.minecraft.core.particles.DustParticleOptions LIMB =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.45f, 0.55f, 0.25f), 1.8f);
 
         @Override
         protected void onComplete() {
@@ -1114,6 +1149,53 @@ final class TobRooms {
             java.util.Arrays.fill(pillarHp, TobNylocas.PILLAR_HP);
             decorate(); // the supports stand again on a retry (Entry mode)
             say("Protect the supports! " + TobNylocas.WAVES + " waves of Nylocas approach.");
+            // Round 43: each support's health bar over it, and all four on the raid HUD. // playability: OSRS shows a health
+            // bar over each support
+            java.util.function.BooleanSupplier attempt = current();
+            RaidEffects.cue(Integer.MAX_VALUE / 4, center().getCenter(), () -> {
+                if (!attempt.getAsBoolean()) {
+                    return false;
+                }
+                for (int i = 0; i < PILLARS.length; i++) {
+                    drawSupportBar(i);
+                }
+                return true;
+            });
+        }
+
+        private static final net.minecraft.core.particles.DustParticleOptions BAR_GOOD =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.2f, 0.9f, 0.2f), 1.0f);
+        private static final net.minecraft.core.particles.DustParticleOptions BAR_HALF =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(1.0f, 0.85f, 0.1f), 1.0f);
+        private static final net.minecraft.core.particles.DustParticleOptions BAR_LOW =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.95f, 0.15f, 0.1f), 1.0f);
+        private static final net.minecraft.core.particles.DustParticleOptions BAR_LOST =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.25f, 0.05f, 0.05f), 0.7f);
+
+        /** A support's health bar: a line of dust over it, its standing share coloured green, yellow or red. */
+        private void drawSupportBar(int i) {
+            if (pillarHp[i] <= 0) {
+                return;
+            }
+            BlockPos b = pillarBase(i);
+            double share = pillarHp[i] / (double) TobNylocas.PILLAR_HP;
+            var colour = share > 0.5 ? BAR_GOOD : share > 0.25 ? BAR_HALF : BAR_LOW;
+            double y = b.getY() + 6.4;
+            for (int k = 0; k <= 10; k++) {
+                double f = k / 10.0;
+                world().sendParticles(f <= share ? colour : BAR_LOST, b.getX() - 0.5 + f * 2, y, b.getZ() + 0.5, 1, 0, 0, 0, 0);
+            }
+        }
+
+        /** The supports' health for the raid HUD, by compass ("Supports NW 100 NE 62 ..."). */
+        @Override
+        String hudNote() {
+            StringBuilder s = new StringBuilder("Supports");
+            for (int i = 0; i < PILLARS.length; i++) {
+                String c = (PILLARS[i][1] < 0 ? "N" : "S") + (PILLARS[i][0] < 0 ? "W" : "E");
+                s.append(' ').append(c).append(' ').append(Math.max(0, pillarHp[i]));
+            }
+            return s.toString();
         }
 
         /** The Nylocas room a player is fighting in, if any. */
@@ -1681,20 +1763,77 @@ final class TobRooms {
             java.util.Collections.shuffle(party, new java.util.Random(rnd().nextLong()));
             int taken = hard() && party.size() > 1 ? party.size() - 1 : 1;
             runners.clear();
+            segments.clear();
+            trails.clear();
+            releaseMazeMarks();
             mazeTicks = 0;
             BlockPos o = mazeOrigin();
             for (int i = 0; i < taken; i++) {
                 ServerPlayer p = party.get(i);
                 runners.add(p.getUUID());
-                raid.teleport(p, new BlockPos(o.getX() + COLS - taken / 2 + i, o.getY() + 1, o.getZ() - 2));
+                // Hard mode (OSRS wiki): the runners divide the maze among themselves, in orb order (round 43; here in the
+                // order they were picked): each walks its own rows and leaves its own trail.
+                int from = i * ROWS / taken;
+                int to = (i + 1) * ROWS / taken;
+                segments.put(p.getUUID(), new int[]{from, to});
+                if (i == 0) {
+                    raid.teleport(p, new BlockPos(o.getX() + COLS - taken / 2 + i, o.getY() + 1, o.getZ() - 2));
+                } else {
+                    int startCol = firstPathColumn(from);
+                    raid.teleport(p, new BlockPos(o.getX() + startCol * 2, o.getY() + 1, o.getZ() + from * 2));
+                }
                 warn("Sotetseg chooses " + p.getName().getString() + "... They are dragged into the shadow realm!");
-                Msg.game(p, "Follow the souls through the maze. Stepping off the path hurts.");
+                Msg.game(p, taken > 1 ? "Follow the souls through rows " + (from + 1) + "-" + to + " of the maze. Stepping off the path hurts."
+                        : "Follow the souls through the maze. Stepping off the path hurts.");
             }
+            // Round 43: the path is marked on the shadow realm's floor for the runners. // playability: OSRS shows them the red path
+            List<int[]> cols = new ArrayList<>();
+            for (long k : path) {
+                addTile(cols, o, (int) (k >> 32), (int) k);
+            }
+            mazePathMarks = RaidFloor.columns(world(), cols, o.getY() + 1, RaidFloor.SAFE, 0, sotetseg, Vec3.atBottomCenterOf(o));
             for (int i = taken; i < party.size(); i++) {
                 // OSRS: the others are thrown to the far end of the arena.
                 raid.teleport(party.get(i), at(-16, i % 2 == 0 ? -3 : 3));
                 Msg.game(party.get(i), "Follow the red glow across the tiled floor: only the shadow realm runner can see the path.");
             }
+        }
+
+        /** Hard mode: the maze rows each runner walks ({from, to}, to exclusive); one runner walks them all. */
+        private final Map<UUID, int[]> segments = new HashMap<>();
+        /** The path tiles each runner has walked, in order: their own trail on the arena floor (round 43). */
+        private final Map<UUID, List<Long>> trails = new java.util.LinkedHashMap<>();
+        /** The path marked on the shadow realm's floor, and the trail tiles marked on the arena floor. */
+        private RaidFloor.Group mazePathMarks;
+        private final Map<Long, RaidFloor.Group> trailMarks = new HashMap<>();
+
+        /** The column of the first path tile in a row (as the runner arrives on it). */
+        private int firstPathColumn(int row) {
+            for (long k : pathOrder) {
+                if ((int) k == row) {
+                    return (int) (k >> 32);
+                }
+            }
+            return COLS / 2;
+        }
+
+        /** Adds the four floor columns of maze tile (c, r) on a grid starting at {@code o}. */
+        private static void addTile(List<int[]> cols, BlockPos o, int c, int r) {
+            for (int dx = 0; dx < 2; dx++) {
+                for (int dz = 0; dz < 2; dz++) {
+                    cols.add(new int[]{o.getX() + c * 2 + dx, o.getZ() + r * 2 + dz});
+                }
+            }
+        }
+
+        /** Puts back the maze's floor marks (the maze is walked, or the room is left). */
+        private void releaseMazeMarks() {
+            if (mazePathMarks != null) {
+                mazePathMarks.release();
+                mazePathMarks = null;
+            }
+            trailMarks.values().forEach(RaidFloor.Group::release);
+            trailMarks.clear();
         }
 
         @Override
@@ -1721,6 +1860,7 @@ final class TobRooms {
                     // The maze is walked: Sotetseg's Defence is restored (OSRS wiki).
                     com.runecraft.content.systems.SysCombat.drain(sotetseg).defence = 0;
                     tornado = -1;
+                    releaseMazeMarks();
                 }
                 return;
             }
@@ -1902,7 +2042,7 @@ final class TobRooms {
         private void mazeTick() {
             BlockPos o = mazeOrigin();
             mazeTicks++;
-            ServerPlayer lead = null;
+            List<ServerPlayer> inMaze = new ArrayList<>();
             int leadRow = -1;
             for (UUID id : new ArrayList<>(runners)) {
                 ServerPlayer p = player(id);
@@ -1912,11 +2052,19 @@ final class TobRooms {
                 }
                 int col = (int) Math.floor((p.getX() - o.getX()) / 2);
                 int row = (int) Math.floor((p.getZ() - o.getZ()) / 2);
-                if (p.getZ() >= o.getZ() + ROWS * 2) {
+                int[] seg = segments.getOrDefault(id, new int[]{0, ROWS});
+                if (p.getZ() >= o.getZ() + seg[1] * 2) {
                     raid.teleport(p, at(-14, 0));
-                    say(p.getName().getString() + " escapes the shadow realm!");
+                    say(p.getName().getString() + (seg[1] >= ROWS ? " escapes the shadow realm!" : " has walked their part of the maze!"));
                     runners.remove(id);
                     continue;
+                }
+                if (col >= 0 && col < COLS && row >= 0 && row < ROWS && path.contains(key(col, row))) {
+                    List<Long> trail = trails.computeIfAbsent(id, k -> new ArrayList<>());
+                    long k = key(col, row);
+                    if (!trail.contains(k)) {
+                        trail.add(k);
+                    }
                 }
                 if (mazeTicks > MAZE_SAFETY_TICKS) {
                     // A safety net for a runner who never moves (OSRS has no time limit; the tornado punishes dawdling).
@@ -1949,35 +2097,49 @@ final class TobRooms {
                     }
                     return true;
                 });
-                if (row > leadRow) {
-                    lead = p;
-                    leadRow = row;
-                }
+                inMaze.add(p);
+                leadRow = Math.max(leadRow, row);
             }
-            if (lead != null) {
-                arenaTick(o, lead, leadRow);
+            if (!inMaze.isEmpty()) {
+                arenaTick(o, inMaze, leadRow);
             }
         }
 
-        private void arenaTick(BlockPos o, ServerPlayer lead, int leadRow) {
+        private void arenaTick(BlockPos o, List<ServerPlayer> inMaze, int leadRow) {
             BlockPos a = arenaOrigin();
-            int col = (int) Math.floor((lead.getX() - o.getX()) / 2);
-            int row = (int) Math.floor((lead.getZ() - o.getZ()) / 2);
-            if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
-                world().sendParticles(ParticleTypes.CRIMSON_SPORE, a.getX() + col * 2 + 1, a.getY() + 1.1, a.getZ() + row * 2 + 1, 6, 0.5,
-                        0.1, 0.5, 0);
-                long k = key(col, row);
-                if (path.contains(k) && (walkedTiles.isEmpty() || walkedTiles.get(walkedTiles.size() - 1) != k) && !walkedTiles.contains(k)) {
-                    walkedTiles.add(k);
+            // Each runner's red glow where they stand (OSRS), and (round 43) each runner's own trail: every path tile they have
+            // walked stays lit and marked on the arena floor, their newest the brightest, so the others can follow each part of
+            // the path at their own pace. // playability: OSRS lights the tile each runner stands on, read tick by tick
+            for (ServerPlayer runner : inMaze) {
+                int col = (int) Math.floor((runner.getX() - o.getX()) / 2);
+                int row = (int) Math.floor((runner.getZ() - o.getZ()) / 2);
+                if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
+                    world().sendParticles(ParticleTypes.CRIMSON_SPORE, a.getX() + col * 2 + 1, a.getY() + 1.1, a.getZ() + row * 2 + 1, 6, 0.5,
+                            0.1, 0.5, 0);
                 }
             }
-            // Every path tile the runner has walked stays lit on the arena floor, in order (the newest brightest), so the
-            // others can follow at their own pace. // playability: OSRS lights the tile the runner stands on, read tick by tick
+            walkedTiles.clear();
+            List<Long> newest = new ArrayList<>();
+            for (List<Long> trail : trails.values()) {
+                for (long k : trail) {
+                    if (!walkedTiles.contains(k)) {
+                        walkedTiles.add(k);
+                    }
+                    if (!trailMarks.containsKey(k)) {
+                        List<int[]> cols = new ArrayList<>();
+                        addTile(cols, a, (int) (k >> 32), (int) k);
+                        trailMarks.put(k, RaidFloor.columns(world(), cols, a.getY() + 1, RaidFloor.SAFE, 0, sotetseg,
+                                new Vec3(a.getX() + (int) (k >> 32) * 2 + 1, a.getY() + 1, a.getZ() + (int) k * 2 + 1)));
+                    }
+                }
+                if (!trail.isEmpty()) {
+                    newest.add(trail.get(trail.size() - 1));
+                }
+            }
             List<Long> lit = new ArrayList<>(walkedTiles);
             RaidEffects.cue(1, () -> {
-                for (int i = 0; i < lit.size(); i++) {
-                    long t2 = lit.get(i);
-                    drawTile(a, (int) (t2 >> 32), (int) t2, i == lit.size() - 1 ? MAZE_NEXT : MAZE_WALKED);
+                for (long t2 : lit) {
+                    drawTile(a, (int) (t2 >> 32), (int) t2, newest.contains(t2) ? MAZE_NEXT : MAZE_WALKED);
                 }
                 return true;
             });
@@ -2075,6 +2237,9 @@ final class TobRooms {
                 }
             }
             runners.clear();
+            segments.clear();
+            trails.clear();
+            releaseMazeMarks();
         }
 
         /**
@@ -2225,6 +2390,7 @@ final class TobRooms {
                     for (int tz = -ARENA_HALF; tz <= ARENA_HALF; tz++) {
                         if (TobRules.xarpusHardEdge(tx, tz, ARENA_HALF)) {
                             pools.add(vec(tx * 2, tz * 2));
+                            markPool(vec(tx * 2, tz * 2));
                         }
                     }
                 }
@@ -2276,6 +2442,10 @@ final class TobRooms {
                     ServerPlayer p = players.get(rnd().nextInt(players.size()));
                     Exhumed e = new Exhumed(exhumedTile(p), t + TobRules.XARPUS_EXHUMED_TICKS);
                     exhumeds.add(e);
+                    // Round 43: its tile marked on the floor (where to stand) until it resolves. // playability: OSRS shows the
+                    // acid bubbling on its tile
+                    RaidFloor.disc(world(), e.pos(), 0.1, RaidFloor.SAFE, TobRules.XARPUS_EXHUMED_TICKS, xarpus);
+                    exhumedMarks++;
                     // Where to stand to stop it: its true reach in green until it is resolved. // playability: OSRS shows the
                     // acid bubbling up on one tile
                     RaidEffects.cue(TobRules.XARPUS_EXHUMED_TICKS, () -> {
@@ -2336,9 +2506,12 @@ final class TobRooms {
                 world().sendParticles(ParticleTypes.ITEM_SLIME, at.x, at.y + 0.2, at.z, 10, 0.8, 0.05, 0.8, 0);
                 // The spit lands as a raid strike, its splash outlined from the spit. // playability: OSRS shows the projectile
                 DataBossEntity source = xarpus;
-                RaidEffects.mark(world(), at, 1.5).delay(3).source(source).warn(ParticleTypes.ITEM_SLIME).live(current())
+                RaidEffects.mark(world(), at, 1.5).delay(3).source(source).warn(ParticleTypes.ITEM_SLIME).floor(RaidFloor.POISON).live(current())
                         .onHit(q -> hurt(source, q, 1 + rnd().nextInt(4), null, true)) // the splash "lightly damages"
-                        .onLand(() -> pools.add(at)).start();
+                        .onLand(() -> {
+                            pools.add(at);
+                            markPool(at);
+                        }).start();
             }
             if (phase == 2 && raid.healthFraction(xarpus) <= TobRules.XARPUS_SCREECH_AT) {
                 phase = 3;
@@ -2371,6 +2544,18 @@ final class TobRooms {
                 }
             }
             return tile(p.getBlockX(), p.getBlockZ()); // the player's own tile (players() only holds players in the arena)
+        }
+
+        /** Exhumed tiles marked on the floor (self-test). */
+        int exhumedMarks;
+
+        /**
+         * A poison pool's 3x3 marked on the floor for the rest of the fight (round 43): what hurts is what is marked (a pool
+         * hurts within 1.5 blocks each way). // playability: OSRS paints the poison on the tiles
+         */
+        private void markPool(Vec3 at) {
+            BlockPos b = BlockPos.containing(at);
+            RaidFloor.rect(world(), b.getX() - 1, b.getZ() - 1, b.getX() + 1, b.getZ() + 1, at.y, RaidFloor.POISON, 0, xarpus);
         }
 
         /** The standing position at the centre of the block column (x, z). */
@@ -2465,6 +2650,9 @@ final class TobRooms {
             w.until(() -> !exhumeds.isEmpty(), 10, "no exhumed appeared");
             Exhumed first = exhumeds.get(0);
             w.expect(onArenaFloor(first.pos()), "the first exhumed rose off the arena floor (at " + where(first.pos()) + ")");
+            // round 43: its tile is marked on the floor while it bubbles
+            w.expect(exhumedMarks > 0 && com.runecraft.boss.FloorMarkers.marked(world(), BlockPos.containing(first.pos()).below()),
+                    "the first exhumed's tile was not marked on the floor (at " + where(first.pos()) + ")");
             w.moveTo(first.pos());
             w.until(() -> intercepted > 0 || phase > 1, TobRules.XARPUS_EXHUMED_TICKS + 2, "standing on an exhumed (at " + where(first.pos())
                     + ") did not stop it");

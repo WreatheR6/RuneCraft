@@ -3949,7 +3949,7 @@ final class CoxRooms {
                     burstHits++;
                     imperfect = true; // "Perfect Olm": caught by a Crystal Burst
                     RaidEffects.hit(source, q, 20 + rnd().nextInt(21), null, true);
-                    if (shove(q, seed, 1.6)) {
+                    if (burstShove(q, seed, 1.6)) {
                         shoves++;
                     }
                 }).start();
@@ -3961,7 +3961,7 @@ final class CoxRooms {
          * Shoves a player about {@code dist} blocks away from {@code from} onto a free spot in the chamber (straight away first,
          * then round the compass); nowhere free, they stay. Returns whether they moved.
          */
-        private boolean shove(ServerPlayer p, Vec3 from, double dist) {
+        private boolean burstShove(ServerPlayer p, Vec3 from, double dist) {
             Vec3 away = p.position().subtract(from).multiply(1, 0, 1);
             double base = away.lengthSqr() < 1e-4 ? rnd().nextDouble() * Math.PI * 2 : Math.atan2(away.z, away.x);
             for (int k = 0; k < 8; k++) {

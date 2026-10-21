@@ -175,6 +175,8 @@ public class RoomLogic {
         if (!done) {
             done = true;
             onComplete();
+            // round 43: the room's floor marks (pools, trails, the maze) go with its fight
+            RaidFloor.clear(world(), RaidBuilder.roomBox(raid.slot, index));
             raid.onRoomComplete(this);
         }
     }
@@ -219,6 +221,28 @@ public class RoomLogic {
     public java.util.function.BooleanSupplier current() {
         int a = attempt;
         return () -> a == attempt && started && !done;
+    }
+
+    /**
+     * Shoves a player along {@code dir} (horizontal) by up to {@code max} blocks onto the furthest free spot inside this room, a
+     * block at a time (round 43: a raid knock-back or shove onto a walkable tile, as OSRS moves players tile by tile). Returns
+     * how far they moved (0: nowhere free).
+     */
+    public double shove(ServerPlayer p, Vec3 dir, double max) {
+        Vec3 d = dir.multiply(1, 0, 1);
+        if (d.lengthSqr() < 1e-6) {
+            return 0;
+        }
+        d = d.normalize();
+        for (double k = Math.floor(max); k >= 1; k--) {
+            Vec3 to = p.position().add(d.scale(k));
+            if (inside(to) && world().noCollision(p, p.getBoundingBox().move(to.x - p.getX(), 0, to.z - p.getZ()))) {
+                p.teleportTo(to.x, p.getY(), to.z);
+                p.hurtMarked = true;
+                return k;
+            }
+        }
+        return 0;
     }
 
     /** Removes everything this room spawned. */

@@ -947,6 +947,7 @@ final class ToaPuzzleRooms {
             sealHp = sealMax;
             weakenedUntil = -1;
             nextBeam = now() + 6;
+            warnedPath = null;
             RaidBuilder.set(world(), at(SEAL_AT[0], SEAL_AT[1]), RaidBuilder.module(RaidsContent.HET_SEAL));
             RaidBuilder.set(world(), at(SEAL_AT[0], SEAL_AT[1]).above(), Blocks.GOLD_BLOCK.defaultBlockState());
             say("Het's seal is shielded. Lead the caster statue's beam to the shielded statue: use a movable mirror to rotate it, "
@@ -957,9 +958,22 @@ final class ToaPuzzleRooms {
             return now() < weakenedUntil;
         }
 
+        /** The beam path shown before it fires (round 43): cells from the caster on, or null while none is shown. */
+        private List<int[]> warnedPath;
+        /** Self-test: beams fired, how many game ticks the last one's path glowed first, and players burnt. */
+        int beamsFired;
+        long lastBeamLead = -1;
+        private long beamWarnedAt;
+        int beamBurns;
+        private static final DustParticleOptions BEAM_WARN = new DustParticleOptions(new Vector3f(1.0f, 0.75f, 0.2f), 1.0f);
+
         @Override
         public void gameTick(long tick) {
             returnStrandedMirrors();
+            int lead = com.runecraft.osrs.content.raids.RaidRealtime.HET_BEAM_LEAD_TICKS;
+            if (warnedPath == null && now() >= nextBeam - lead) {
+                warnBeam(lead);
+            }
             if (now() >= nextBeam) {
                 fireBeam();
                 nextBeam = now() + ToaPuzzles.BEAM_CYCLE_TICKS;
@@ -978,7 +992,9 @@ final class ToaPuzzleRooms {
                 int side = rnd().nextBoolean() ? 1 : -1;
                 int n = rnd().nextInt(6) == 0 ? 2 : 1;
                 for (int k = 0; k < n; k++) {
-                    orbs.add(alongX ? new double[]{-side * RaidBuilder.HALF, lane, side, 0} : new double[]{lane, -side * RaidBuilder.HALF, 0, side});
+                    double[] o = alongX ? new double[]{-side * RaidBuilder.HALF, lane, side, 0} : new double[]{lane, -side * RaidBuilder.HALF, 0, side};
+                    orbs.add(o);
+                    drawOrb(o);
                 }
             }
             moveOrbs();
@@ -1078,23 +1094,81 @@ final class ToaPuzzleRooms {
             }
         }
 
+        /** The beam's cells as it would fire now: the one in front of the caster, then its traced path. */
+        private List<int[]> beamPath(ToaPuzzles.Beam beam) {
+            List<int[]> cells = new ArrayList<>();
+            cells.add(new int[]{-HALF - 1, puzzle.startZ()});
+            cells.addAll(beam.cells());
+            return cells;
+        }
+
+        /**
+         * Whether a player at {@code p} stands on a beam path: within {@link com.runecraft.osrs.content.raids.RaidRealtime#HET_BEAM_HALF_WIDTH}
+         * of the line through its cells' centres. // playability: OSRS burns the tiles it crosses
+         */
+        private boolean onBeam(Vec3 p, List<int[]> cells) {
+            double cx = center().getX() + 0.5;
+            double cz = center().getZ() + 0.5;
+            for (int i = 0; i < cells.size(); i++) {
+                int[] a = cells.get(i);
+                int[] b = cells.get(Math.min(cells.size() - 1, i + 1));
+                if (com.runecraft.osrs.content.raids.RaidRealtime.inLane(p.x, p.z, cx + a[0], cz + a[1], cx + b[0], cz + b[1],
+                        com.runecraft.osrs.content.raids.RaidRealtime.HET_BEAM_HALF_WIDTH)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /**
+         * The caster statue charges: the path its beam will take glows along the floor for {@code lead} game ticks before it
+         * fires (round 43; it fired with no warning). // playability: OSRS shows the statue's animation
+         */
+        private void warnBeam(int lead) {
+            List<int[]> path = beamPath(ToaPuzzles.trace(puzzle, broken));
+            warnedPath = path;
+            beamWarnedAt = now();
+            BlockPos caster = cell(-HALF - 2, puzzle.startZ());
+            world().playSound(null, caster, SoundEvents.BEACON_AMBIENT, SoundSource.BLOCKS, 0.8f, 1.8f);
+            double y = center().getY() + 1.05;
+            RaidEffects.cue(lead, center().getCenter(), () -> {
+                if (warnedPath != path || done) {
+                    return false;
+                }
+                for (int i = 0; i + 1 < path.size(); i++) {
+                    int[] a = path.get(i);
+                    int[] b = path.get(i + 1);
+                    for (double f = 0; f < 1; f += 0.34) {
+                        world().sendParticles(BEAM_WARN, center().getX() + 0.5 + a[0] + (b[0] - a[0]) * f, y,
+                                center().getZ() + 0.5 + a[1] + (b[1] - a[1]) * f, 1, 0, 0, 0, 0);
+                    }
+                }
+                return true;
+            });
+        }
+
         private void fireBeam() {
             ToaPuzzles.Beam beam = ToaPuzzles.trace(puzzle, broken);
             double y = center().getY() + 1.6;
             BlockPos caster = cell(-HALF - 2, puzzle.startZ());
             world().playSound(null, caster, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.6f, 1.6f);
             DustParticleOptions gold = new DustParticleOptions(new Vector3f(1.0f, 0.85f, 0.3f), 1.2f);
-            List<int[]> cells = new ArrayList<>();
-            cells.add(new int[]{-HALF - 1, puzzle.startZ()});
-            cells.addAll(beam.cells());
+            List<int[]> cells = beamPath(beam);
+            List<int[]> warned = warnedPath == null ? cells : warnedPath;
+            lastBeamLead = warnedPath == null ? 0 : now() - beamWarnedAt;
+            warnedPath = null;
+            beamsFired++;
             for (int[] c : cells) {
                 world().sendParticles(gold, center().getX() + 0.5 + c[0], y, center().getZ() + 0.5 + c[1], 4, 0.2, 0.05, 0.2, 0);
-                for (ServerPlayer p : players()) {
-                    if (p.blockPosition().getX() == center().getX() + c[0] && p.blockPosition().getZ() == center().getZ() + c[1]) {
-                        Msg.red(p, "The beam of light burns you!");
-                        hurtByRoom = true;
-                        hurt(p, 4 + rnd().nextInt(5)); // approx: "lower than the orbs"
-                    }
+            }
+            // It burns whoever stands on its path, as long as that path glowed before it fired (a mirror turned meanwhile can't
+            // burn anyone on a tile that never glowed).
+            for (ServerPlayer p : players()) {
+                if (onBeam(p.position(), cells) && onBeam(p.position(), warned)) {
+                    Msg.red(p, "The beam of light burns you!");
+                    hurtByRoom = true;
+                    beamBurns++;
+                    hurt(p, 4 + rnd().nextInt(5)); // approx: "lower than the orbs"
                 }
             }
             if (beam.hit()) {
@@ -1103,6 +1177,29 @@ final class ToaPuzzleRooms {
                 say("The shielded statue absorbs the beam - Het's seal is weakened! Mine it now.");
             }
         }
+
+        /**
+         * An orb of darkness drawn between game ticks, gliding along its line with a short trail ahead showing where it heads
+         * (round 43; it was drawn once a game tick, jumping a block at a time). // playability
+         */
+        private void drawOrb(double[] o) {
+            RaidEffects.cue(2 * RaidBuilder.HALF + 4, center().getCenter(), () -> {
+                if (!orbs.contains(o) || done) {
+                    return false;
+                }
+                double f = (RaidEffects.clockMc() - RaidEffects.now() * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK)
+                        / (double) com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK;
+                Vec3 at = vec(o[0] + o[2] * f, o[1] + o[3] * f);
+                world().sendParticles(ParticleTypes.SQUID_INK, at.x, at.y + 0.8, at.z, 3, 0.12, 0.12, 0.12, 0);
+                for (int k = 1; k <= 3; k++) {
+                    Vec3 ahead = vec(o[0] + o[2] * (f + k), o[1] + o[3] * (f + k));
+                    world().sendParticles(ORB_AHEAD, ahead.x, ahead.y + 0.15, ahead.z, 1, 0, 0, 0, 0);
+                }
+                return true;
+            });
+        }
+
+        private static final DustParticleOptions ORB_AHEAD = new DustParticleOptions(new Vector3f(0.35f, 0.1f, 0.45f), 0.9f);
 
         private void moveOrbs() {
             java.util.Iterator<double[]> it = orbs.iterator();
@@ -1436,7 +1533,11 @@ final class ToaPuzzleRooms {
                     }
                 }
                 RaidSelfTest.expect(done, "Het: the seal did not break (" + sealHp + "/" + sealMax + " left)");
-                note = "Het: " + plan.size() + " mirror(s) placed, seal broken in " + exposures + " exposure(s), the statue keeps a pickaxe";
+                // round 43: every beam's path glowed for at least the strike floor before it fired
+                RaidSelfTest.expect(beamsFired > 0 && lastBeamLead >= com.runecraft.osrs.content.raids.RaidRealtime.HET_BEAM_LEAD_TICKS,
+                        "Het: the beam fired " + lastBeamLead + " game ticks after its path glowed (" + beamsFired + " fired)");
+                note = "Het: " + plan.size() + " mirror(s) placed, seal broken in " + exposures + " exposure(s), the statue keeps a pickaxe, "
+                        + beamsFired + " beam(s) shown " + lastBeamLead + " ticks ahead";
             } finally {
                 p.setShiftKeyDown(false);
                 // A pickaxe left in the statue by a failed step goes back to the player before the statue is restored.
