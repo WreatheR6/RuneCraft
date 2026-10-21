@@ -56,6 +56,8 @@ public final class ThreatTiming {
     public static final double MELEE_REACH_DY = 1.5;
     /** A melee monster keeps closing in until the gap is at most this (blocks). */
     public static final double CHASE_GAP = 0.8;
+    /** A melee monster its path left short of its target walks the rest straight in from at most this gap (blocks). // approx */
+    public static final double CLOSE_IN_MAX_GAP = 4.0;
     /** Extra gap (blocks) a wound-up melee hit still lands across (the target stepped back a little). */
     public static final double MELEE_LAND_SLACK = 1.0;
     /** Largest height difference (blocks) a wound-up melee hit still lands across. */
@@ -165,6 +167,14 @@ public final class ThreatTiming {
         return Math.max(0, Math.sqrt(dx * dx + dz * dz) - w1 / 2 - w2 / 2);
     }
 
+    /**
+     * {@link #gap} for two bounding boxes whose feet are {@code sqrt(distanceSq)} apart, {@code dy} of it in height (a squared
+     * distance shorter than the height difference is a gap of 0).
+     */
+    public static double gapAcross(double distanceSq, double dy, double w1, double w2) {
+        return Math.max(0, Math.sqrt(Math.max(0, distanceSq - dy * dy)) - w1 / 2 - w2 / 2);
+    }
+
     /** Whether a monster can start a melee attack across this gap and height difference. */
     public static boolean inMeleeReach(double gap, double dy) {
         return gap <= MELEE_REACH && Math.abs(dy) <= MELEE_REACH_DY;
@@ -173,6 +183,84 @@ public final class ThreatTiming {
     /** Whether a melee monster should keep walking at its target. */
     public static boolean keepChasing(double gap) {
         return gap > CHASE_GAP;
+    }
+
+    /**
+     * Whether {@code attack} can only be started in melee reach: a melee-styled attack, except the specials made to reach a target
+     * from range, which {@code Mechanics} delivers anywhere in their range: BLINK (the monster appears beside its target before the
+     * hit: the abyssal demon's teleport, which makes "safespotting not viable"), SKY_STRIKE (it lands on the target's tile: the
+     * lizardman shaman's jump "targets a small area where the player was previously standing", Brutus's charge) and PULL (the
+     * target is dragged beside the monster: the Fragment of Seren's "Come closer!"). The attack goal starts the others only in melee
+     * reach, and walks in for every melee-styled one.
+     */
+    public static boolean needsMeleeReach(AttackDef attack) {
+        AttackDef.Special sp = attack.special();
+        return attack.melee() && sp != AttackDef.Special.BLINK && sp != AttackDef.Special.SKY_STRIKE && sp != AttackDef.Special.PULL;
+    }
+
+    /**
+     * Whether a monster's attack goal can start {@code attack} now, {@code gap} blocks from its target: one that needs melee reach
+     * ({@link #needsMeleeReach}) only in melee reach ({@code inMeleeReach}: {@link #inMeleeReach} on the horizontal gap and height
+     * difference, where the goal starts it), whatever its nominal range; any other attack within its range. OSRS: an NPC uses its
+     * melee attack only from a tile next to its target and attacks from further away only with ranged, magic or a special made for
+     * it (Skotizo "does not approach to use melee attacks").
+     */
+    public static boolean usable(AttackDef attack, double gap, boolean inMeleeReach) {
+        return needsMeleeReach(attack) ? inMeleeReach : gap <= attack.range();
+    }
+
+    /** Whether every one of {@code attacks} is melee-styled (a creature with nothing to cast or shoot). */
+    public static boolean meleeOnly(java.util.List<AttackDef> attacks) {
+        for (AttackDef a : attacks) {
+            if (!a.melee()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Whether a monster's attack goal may roll {@code attack} now: one it can start from here ({@link #usable}) or, for a melee-only
+     * creature ({@code meleeOnly}, {@link #meleeOnly}) out of melee reach, a melee attack it walks in for. So a melee creature's
+     * specials made for range are rolled against its melee attacks by weight, as in OSRS (Brutus charges about one attack in five,
+     * an abyssal demon now and then teleports beside a player standing back), not made on every attack while its target stays out
+     * of reach; a creature that also casts or shoots attacks from range with those and its specials.
+     */
+    public static boolean pickable(AttackDef attack, double gap, boolean inMeleeReach, boolean meleeOnly) {
+        return usable(attack, gap, inMeleeReach) || meleeOnly && needsMeleeReach(attack);
+    }
+
+    /**
+     * Whether a monster keeps the attack it rolled ({@code kept}, one of {@code attacks}) until it makes it: while it may still roll
+     * it ({@link #pickable}), or while it may roll none of them and {@code kept} is still within its nominal range (the fallback
+     * roll by nominal range it walks in with). // playability: the attack goal asks every Minecraft tick, and rolling afresh every
+     * tick made a mixed creature stop and start walking and churned the fallback among the attacks in range.
+     */
+    public static boolean keeps(AttackDef kept, java.util.List<AttackDef> attacks, double gap, boolean inMeleeReach) {
+        boolean meleeOnly = meleeOnly(attacks);
+        if (pickable(kept, gap, inMeleeReach, meleeOnly)) {
+            return true;
+        }
+        if (gap > kept.range()) {
+            return false;
+        }
+        for (AttackDef a : attacks) {
+            if (pickable(a, gap, inMeleeReach, meleeOnly)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Whether a melee monster whose path has reached its target's block should walk the rest straight at it: still farther than
+     * {@value #CHASE_GAP} (it keeps closing in), at most {@value #CLOSE_IN_MAX_GAP} and on its level. // playability: Minecraft's path
+     * follower counts a node reached within half the mob's width of it, and a mob two or more blocks wide stands on the corner of
+     * its node, so a 2-3 block wide boss coming from the east or south "arrived" 1.6-2 blocks from its target, out of melee reach,
+     * and every new path ended there again (OSRS: it walks onto the tile next to its target).
+     */
+    public static boolean closeInDirectly(double gap, double dy) {
+        return keepChasing(gap) && gap <= CLOSE_IN_MAX_GAP && Math.abs(dy) <= MELEE_REACH_DY;
     }
 
     /** Whether a wound-up melee hit of reach {@code reach} (a gap) lands on a target that is now this far away. */

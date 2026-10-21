@@ -109,6 +109,134 @@ class ThreatTimingTest {
     }
 
     @Test
+    void styleChoiceUsesTheAttackGoalsMeleeReach() {
+        // Skotizo summoned 3 blocks from a player (the self-test's boss:fight:skotizo): his claws' nominal range is 3.5, but the gap
+        // between the bodies is 1.6, out of melee reach, so only his shadow bolt can be picked there (OSRS: he "does not approach
+        // to use melee attacks"); picking the claws there left him waiting for melee reach that never came, never attacking.
+        BossDef skotizo = ContentRegistry.boss("skotizo");
+        double gap = ThreatTiming.gap(3.0, 0, skotizo.width * skotizo.scale, 0.6);
+        assertEquals(1.62, gap, 0.01);
+        assertFalse(ThreatTiming.inMeleeReach(gap, 0));
+        int melee = 0;
+        for (AttackDef a : skotizo.attacks) {
+            assertTrue(a.melee() || a.range() >= gap, a.name() + " is out of range");
+            assertEquals(!a.melee(), ThreatTiming.usable(a, gap, false), a.name() + " 1.6 blocks away");
+            assertTrue(ThreatTiming.usable(a, 0.5, true), a.name() + " beside the player");
+            melee += a.melee() ? 1 : 0;
+        }
+        assertEquals(1, melee, "Skotizo's melee attack");
+        // in melee reach a melee attack is usable whatever its nominal range; out of it, never
+        AttackDef bite = AttackDef.of("bite", AttackType.STAB, 5, 1.0, 1);
+        assertTrue(ThreatTiming.usable(bite, 1.4, true));
+        assertFalse(ThreatTiming.usable(AttackDef.of("claws", AttackType.SLASH, 5, 4.0, 1), 1.6, false));
+        assertTrue(ThreatTiming.usable(AttackDef.of("bolt", AttackType.MAGIC, 5, 10, 1), 10, false));
+        assertFalse(ThreatTiming.usable(AttackDef.of("bolt", AttackType.MAGIC, 5, 10, 1), 10.1, true));
+        // a creature that casts never rolls its melee attack out of reach (it isn't melee-only)
+        assertFalse(ThreatTiming.meleeOnly(skotizo.attacks));
+        for (AttackDef a : skotizo.attacks) {
+            assertEquals(!a.melee(), ThreatTiming.pickable(a, gap, false, false), a.name() + " rolled 1.6 blocks away");
+        }
+    }
+
+    @Test
+    void meleeSpecialsMadeForRangeStartFromRange() {
+        // BLINK, SKY_STRIKE and PULL reach their target from range (Mechanics blinks the monster beside it, lands on its tile or
+        // drags it in), so the attack goal starts them there and the chooser rolls them there
+        for (Special sp : Special.values()) {
+            boolean forRange = sp == Special.BLINK || sp == Special.SKY_STRIKE || sp == Special.PULL;
+            AttackDef melee = AttackDef.of("melee", AttackType.CRUSH, 10, 12, 1).special(sp, 0);
+            assertEquals(!forRange, ThreatTiming.needsMeleeReach(melee), sp.name());
+            assertFalse(ThreatTiming.needsMeleeReach(AttackDef.of("spell", AttackType.MAGIC, 10, 12, 1).special(sp, 0)), sp.name());
+        }
+        assertTrue(ThreatTiming.needsMeleeReach(AttackDef.idle(AttackType.CRUSH)), "a driven script's walk-in placeholder");
+        // the abyssal demon teleports beside a player who stands back ("safespotting is not viable"), about one roll in 11
+        MonsterDef demon = ContentRegistry.monster("abyssal_demon");
+        assertTrue(ThreatTiming.meleeOnly(demon.attacks));
+        int rolled = 0;
+        int teleports = 0;
+        for (AttackDef a : demon.attacks) {
+            assertTrue(ThreatTiming.pickable(a, 5, false, true), a.name() + " 5 blocks away");
+            assertEquals(a.special() == Special.BLINK, ThreatTiming.usable(a, 5, false), a.name() + " started 5 blocks away");
+            rolled += a.weight();
+            teleports += a.special() == Special.BLINK ? a.weight() : 0;
+        }
+        assertEquals(1, teleports);
+        assertEquals(11, rolled, "the teleport against the stab, by weight");
+        assertFalse(ThreatTiming.pickable(demon.attacks.get(1), 12.5, false, true), "out of the teleport's range");
+        // the lizardman shaman jumps on a player standing at range, among its acid spits; its stab waits for melee reach
+        MonsterDef shaman = ContentRegistry.monster("lizardman_shaman");
+        assertFalse(ThreatTiming.meleeOnly(shaman.attacks));
+        for (AttackDef a : shaman.attacks) {
+            assertEquals(!a.name().equals("melee"), ThreatTiming.pickable(a, 5, false, false), a.name() + " 5 blocks away");
+        }
+        // Brutus walks in for his headbutt and charges about one attack in five, from wherever he is (OSRS: he charges a
+        // safespotted player), not on every attack while the player stands back
+        BossDef brutus = ContentRegistry.boss("brutus");
+        assertTrue(ThreatTiming.meleeOnly(brutus.attacks));
+        int total = 0;
+        int charges = 0;
+        for (AttackDef a : brutus.attacks) {
+            assertTrue(ThreatTiming.pickable(a, 6, false, true), a.name() + " 6 blocks away");
+            total += a.weight();
+            charges += ThreatTiming.needsMeleeReach(a) ? 0 : a.weight();
+        }
+        assertEquals(1, charges);
+        assertEquals(5, total);
+        // the Fragment of Seren's "Come closer!" pulls a player from range
+        AttackDef pull = ContentRegistry.boss("fragment_of_seren").attacks.stream().filter(a -> a.special() == Special.PULL)
+                .findFirst().orElseThrow();
+        assertTrue(ThreatTiming.usable(pull, 8, false));
+    }
+
+    @Test
+    void aRolledAttackIsKeptUntilItCanNoLongerBeRolled() {
+        // a melee-only creature out of reach keeps the melee attack it walks in with (it was rolled afresh every tick, churning
+        // between its stab and slash until it arrived)
+        AttackDef stab = AttackDef.of("stab", AttackType.STAB, 5, 2.5, 5);
+        AttackDef slash = AttackDef.of("slash", AttackType.SLASH, 5, 3.0, 5);
+        AttackDef teleport = AttackDef.of("teleport", AttackType.STAB, 5, 12, 1).special(Special.BLINK, 0);
+        List<AttackDef> melee = List.of(stab, slash, teleport);
+        assertTrue(ThreatTiming.keeps(stab, melee, 2.0, false));
+        assertTrue(ThreatTiming.keeps(slash, melee, 20, false));
+        assertTrue(ThreatTiming.keeps(teleport, melee, 11, false));
+        assertFalse(ThreatTiming.keeps(teleport, melee, 13, false), "out of its range: rolled again");
+        // a creature that casts gives up a melee pick out of reach for its spell (Skotizo), and keeps its spell
+        AttackDef bolt = AttackDef.of("bolt", AttackType.MAGIC, 5, 10, 5);
+        List<AttackDef> mixed = List.of(slash, bolt);
+        assertFalse(ThreatTiming.keeps(slash, mixed, 1.6, false));
+        assertTrue(ThreatTiming.keeps(slash, mixed, 1.4, true));
+        assertTrue(ThreatTiming.keeps(bolt, mixed, 1.6, false));
+        assertFalse(ThreatTiming.keeps(bolt, mixed, 10.5, false), "out of its range");
+        // with nothing it may roll from here, it keeps the fallback roll while within that one's nominal range
+        AttackDef spit = AttackDef.of("spit", AttackType.RANGED, 5, 2.0, 5);
+        List<AttackDef> shortSpit = List.of(slash, spit);
+        assertTrue(ThreatTiming.keeps(slash, shortSpit, 2.5, false));
+        assertFalse(ThreatTiming.keeps(slash, shortSpit, 3.5, false));
+        assertFalse(ThreatTiming.keeps(spit, shortSpit, 2.5, false));
+    }
+
+    @Test
+    void meleeReachFromASquaredDistance() {
+        // chooseStyle judges melee reach on the squared distance it is given (with the real height difference), as the goal does
+        double dx = 3.0;
+        double dz = 0.4;
+        double dy = 1.0;
+        assertEquals(ThreatTiming.gap(dx, dz, 2.16, 0.6), ThreatTiming.gapAcross(dx * dx + dy * dy + dz * dz, dy, 2.16, 0.6), 1e-9);
+        assertEquals(0, ThreatTiming.gapAcross(0.5, 1.0, 1.0, 0.6), 1e-9, "shorter than the height difference");
+        assertEquals(0, ThreatTiming.gapAcross(1.0, 0, 2.0, 0.6), 1e-9, "overlapping");
+    }
+
+    @Test
+    void aWideMeleeMonsterTheNavigationLeftShortWalksIn() {
+        // the path follower let Skotizo (2.16 wide) stop 1.62 from a player to his east: he steps the rest straight in
+        assertTrue(ThreatTiming.closeInDirectly(1.62, 0));
+        assertTrue(ThreatTiming.closeInDirectly(1.2, 0.5), "in reach, still closing to 0.8");
+        assertFalse(ThreatTiming.closeInDirectly(0.8, 0), "close enough");
+        assertFalse(ThreatTiming.closeInDirectly(4.5, 0), "a real path's job");
+        assertFalse(ThreatTiming.closeInDirectly(2.0, 2.0), "another level");
+    }
+
+    @Test
     void areaTestsAreHorizontal() {
         assertTrue(ThreatTiming.inSkyStrike(1.5, 1.9));
         assertFalse(ThreatTiming.inSkyStrike(1.51, 0));

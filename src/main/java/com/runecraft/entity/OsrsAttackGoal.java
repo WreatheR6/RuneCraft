@@ -15,7 +15,8 @@ import net.minecraft.world.entity.ai.goal.Goal;
  * <p>Real-time adaptations (// playability, round 41): melee reach is the horizontal gap between the two bounding boxes (at most
  * 1.5 blocks, 1.5 in height; OSRS: an adjacent tile) instead of a 3D centre distance that grew with the monster's width, and a
  * melee monster closes in until the gap is 0.8. A newly engaged target, or one that just came into melee reach, is never hit
- * sooner than 10 MC later (OSRS can hit on the tick a monster arrives).
+ * sooner than 10 MC later (OSRS can hit on the tick a monster arrives). A melee-styled special made to reach from range (BLINK,
+ * SKY_STRIKE, PULL: {@code ThreatTiming.needsMeleeReach}) starts from range; its creature keeps walking in meanwhile.
  */
 public class OsrsAttackGoal extends Goal {
     private final OsrsMonsterEntity mob;
@@ -68,18 +69,21 @@ public class OsrsAttackGoal extends Goal {
         }
         double distSq = mob.distanceToSqr(target);
         AttackType style = mob.chooseStyle(target, distSq);
-        boolean melee = style.isMelee() || mob.meleeRangeOnly;
+        // started only in melee reach (chooseStyle rolls by the same rule and reach); a melee special made for range (BLINK,
+        // SKY_STRIKE, PULL) starts from range like a spell, but its creature keeps walking in while it waits
+        boolean melee = mob.needsMeleeReach(style) || mob.meleeRangeOnly;
+        boolean closing = melee || style.isMelee();
         double gap = ThreatTiming.gap(target.getX() - mob.getX(), target.getZ() - mob.getZ(), mob.getBbWidth(), target.getBbWidth());
         double ranged = mob.rangedReach > 0 ? mob.rangedReach : 10.0;
-        boolean inRange = melee ? ThreatTiming.inMeleeReach(gap, target.getY() - mob.getY()) : distSq <= ranged * ranged;
+        boolean inRange = melee ? mob.inMeleeReach(target, distSq) : distSq <= ranged * ranged;
         mob.getLookControl().setLookAt(target, 30.0f, 30.0f);
         boolean canSee = mob.getSensing().hasLineOfSight(target);
         if (!inRange || !canSee) {
-            chase(target);
-        } else if (!melee) {
+            chase(target, melee && canSee, gap);
+        } else if (!closing) {
             mob.getNavigation().stop();
         } else if (ThreatTiming.keepChasing(gap)) {
-            chase(target);
+            chase(target, true, gap);
         }
         boolean inReach = melee && inRange;
         if (inReach && !wasInReach) {
@@ -90,14 +94,31 @@ public class OsrsAttackGoal extends Goal {
         tryAttack(target, style, inRange && canSee, now, speedTicks, earliest);
     }
 
-    /** Path-finds to the target, or walks straight at it for a creature with OSRS direct ("dumb") pathing. */
-    private void chase(ServerPlayer target) {
+    /**
+     * Path-finds to the target, or walks straight at it for a creature with OSRS direct ("dumb") pathing, or a melee one
+     * ({@code closeIn}: it sees its target) whose path reached the target's block but left it short ({@link #arrivedShort}).
+     */
+    private void chase(ServerPlayer target, boolean closeIn, double gap) {
         if (mob.directPathing) {
             mob.getNavigation().stop();
+            mob.getMoveControl().setWantedPosition(target.getX(), target.getY(), target.getZ(), 1.0);
+        } else if (closeIn && arrivedShort(target, gap)) {
+            // the done path stays, so the navigation leaves this straight step alone until the target moves to another block
             mob.getMoveControl().setWantedPosition(target.getX(), target.getY(), target.getZ(), 1.0);
         } else {
             mob.getNavigation().moveTo(target, 1.0);
         }
+    }
+
+    /**
+     * Whether the navigation reached {@code target}'s block (its path is done and got there) with the creature still short of
+     * it ({@link ThreatTiming#closeInDirectly}: a wide creature's path ends up to 2 blocks out of melee reach, and a new path to
+     * the same block ends there again, so Skotizo summoned east of a player stood 1.6 blocks away for good).
+     */
+    private boolean arrivedShort(ServerPlayer target, double gap) {
+        net.minecraft.world.level.pathfinder.Path path = mob.getNavigation().getPath();
+        return path != null && path.isDone() && path.canReach() && target.blockPosition().equals(path.getTarget())
+                && ThreatTiming.closeInDirectly(gap, target.getY() - mob.getY());
     }
 
     private void tryAttack(ServerPlayer target, AttackType style, boolean ready, long now, int speedTicks, long earliest) {

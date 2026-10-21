@@ -986,32 +986,57 @@ public final class Mechanics {
         hits.forEach(Runnable::run);
     }
 
-    /** Picks a weighted attack usable at this distance (falls back to the closest-range attack). */
+    /** Picks a weighted attack usable at this distance (falls back to the longest-range attack). */
     public static AttackDef choose(List<AttackDef> attacks, double distance, net.minecraft.util.RandomSource random) {
+        AttackDef picked = pick(attacks, a -> distance <= a.range(), random);
+        if (picked != null) {
+            return picked;
+        }
+        AttackDef best = null;
+        for (AttackDef a : attacks) {
+            if (best == null || a.range() > best.range()) {
+                best = a;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * A monster attack goal's pick ({@code OsrsMonsterEntity.chooseStyle}): a weighted attack it can start from here, a plain melee
+     * one only in melee reach ({@link ThreatTiming#usable}, the reach the goal starts melee at), whatever its nominal range, a
+     * melee special made for range (BLINK, SKY_STRIKE, PULL) within its range; out of melee reach a melee-only creature also rolls
+     * the melee attacks it walks in for ({@link ThreatTiming#pickable}). When it may roll none (every attack out of range) it is
+     * the plain pick above. Before, a melee attack counted from its nominal range (Skotizo's claws: 3.5 blocks): picked 1.6 blocks
+     * out, it was kept while the goal waited for melee reach, and Skotizo never cast his shadow bolt.
+     */
+    public static AttackDef choose(List<AttackDef> attacks, double distance, boolean inMeleeReach,
+            net.minecraft.util.RandomSource random) {
+        boolean meleeOnly = ThreatTiming.meleeOnly(attacks);
+        AttackDef picked = pick(attacks, a -> ThreatTiming.pickable(a, distance, inMeleeReach, meleeOnly), random);
+        return picked != null ? picked : choose(attacks, distance, random);
+    }
+
+    /** A weighted pick among the attacks {@code usable} accepts; null when it accepts none with any weight. */
+    private static AttackDef pick(List<AttackDef> attacks, java.util.function.Predicate<AttackDef> usable,
+            net.minecraft.util.RandomSource random) {
         int total = 0;
         for (AttackDef a : attacks) {
-            if (distance <= a.range()) {
+            if (usable.test(a)) {
                 total += a.weight();
             }
         }
         if (total <= 0) {
-            AttackDef best = null;
-            for (AttackDef a : attacks) {
-                if (best == null || a.range() > best.range()) {
-                    best = a;
-                }
-            }
-            return best;
+            return null;
         }
         int r = random.nextInt(total);
         for (AttackDef a : attacks) {
-            if (distance <= a.range()) {
+            if (usable.test(a)) {
                 r -= a.weight();
                 if (r < 0) {
                     return a;
                 }
             }
         }
-        return attacks.get(0);
+        return null;
     }
 }
