@@ -57,6 +57,7 @@ public final class SystemsClientHooks implements ClientModuleHooks {
             }
         });
         HudRenderCallback.EVENT.register(SystemsHud::render);
+        com.runecraft.client.AttackClient.init();
         ItemTooltipCallback.EVENT.register((stack, context, lines) -> {
             ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
             if (!id.getNamespace().equals("runecraft")) {

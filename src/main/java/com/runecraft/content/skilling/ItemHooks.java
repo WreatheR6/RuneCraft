@@ -585,18 +585,28 @@ public final class ItemHooks {
 
     private static void throwItem(ServerPlayer player, ItemStack stack, String id) {
         ItemDef def = ItemCatalog.get(id);
+        boolean javelin = id.endsWith("_javelin");
+        // playability (round 41): thrown weapons share the player's attack clock at their OSRS speed (Rapid a tick faster);
+        // an early throw does nothing and the held use key repeats it once ready (was a fixed 3 / 6 tick item cooldown).
+        int ticks = def.equipment() != null && def.equipment().attackSpeed() > 0 ? def.equipment().attackSpeed() : javelin ? 6 : 3;
+        int period = com.runecraft.osrs.AttackClock.periodMc(com.runecraft.osrs.AttackClock.rangedSpeed(ticks,
+                Players.data(player).style().forRanged() == com.runecraft.osrs.CombatStyle.RAPID));
+        if (!com.runecraft.combat.AttackTimer.ready(player)) {
+            return;
+        }
+        com.runecraft.combat.AttackTimer.accept(player, com.runecraft.osrs.AttackClock.Kind.THROWN, period);
         Arrow arrow = new Arrow(player.level(), player, new ItemStack(Items.ARROW), null);
         arrow.addTag(OsrsEquipmentItems.RANGED_STRENGTH_TAG + def.rangedStrength());
         arrow.addTag("runecraft_arrow_" + id);
         arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
-        boolean javelin = id.endsWith("_javelin");
         arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f, javelin ? 2.2f : 2.6f, 1.0f);
         player.level().addFreshEntity(arrow);
+        net.minecraft.world.item.Item thrown = stack.getItem(); // before the last one is used up (an empty stack is air)
         if (!player.getAbilities().instabuild) {
             stack.shrink(1);
         }
         player.swing(InteractionHand.MAIN_HAND, true);
-        player.getCooldowns().addCooldown(stack.getItem(), (javelin ? 6 : 3) * ActionManager.MC_TICKS_PER_GAME_TICK);
+        player.getCooldowns().addCooldown(thrown, period);
         player.level().playSound(null, player.blockPosition(), SoundEvents.ARROW_SHOOT, SoundSource.PLAYERS, 0.6f, 1.4f);
     }
 

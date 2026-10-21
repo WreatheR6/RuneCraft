@@ -348,7 +348,7 @@ public final class SpellService {
             SysNet.sendState(p);
             return true;
         }
-        castCombat(p, s, SysCombat.lookTarget(p, RANGE));
+        castCombat(p, s, SysCombat.aimTarget(p, RANGE)); // playability: aim assist (OSRS casts at the clicked NPC)
         return true;
     }
 
@@ -376,7 +376,7 @@ public final class SpellService {
     static void castCombat(ServerPlayer p, Spell s, LivingEntity target) {
         PlayerData data = Players.data(p);
         if (target == null) {
-            Msg.action(p, "No target.");
+            com.runecraft.combat.AttackTimer.noTarget(p);
             return;
         }
         if (target instanceof ServerPlayer other && !CombatHandler.canAttackPlayer(p, other)
@@ -391,8 +391,8 @@ public final class SpellService {
             Msg.game(p, "You can only cast Tele Block on other players.");
             return;
         }
-        long now = ActionManager.mcTick();
-        if (now - data.lastAttackTick < 5L * ActionManager.MC_TICKS_PER_GAME_TICK) {
+        // playability: an early cast is buffered on the attack clock and goes off on the exact ready tick (was dropped)
+        if (!com.runecraft.combat.AttackTimer.gate(p, target, com.runecraft.osrs.AttackClock.Kind.SPELL, (pl, t) -> castCombat(pl, s, t))) {
             return;
         }
         if (s.effect() == Effect.UNDEAD && !SysCombat.isUndead(target)) {
@@ -406,7 +406,7 @@ public final class SpellService {
         if (!canCast(p, s, false)) {
             return;
         }
-        data.lastAttackTick = now;
+        com.runecraft.combat.AttackTimer.accept(p, com.runecraft.osrs.AttackClock.Kind.SPELL, com.runecraft.osrs.AttackClock.periodMc(5));
         pay(p, s);
         for (CombatCast l : COMBAT_CASTS) {
             l.cast(p, s.id(), target);

@@ -172,11 +172,15 @@ public final class MinigameCombat {
         PlayerData data = Players.data(attacker);
         SkillSet skills = data.skills();
         int speed = Equipment.weaponSpeed(attacker, skills);
-        long now = ActionManager.mcTick();
-        if (now - data.lastAttackTick < (long) speed * ActionManager.MC_TICKS_PER_GAME_TICK) {
+        // playability: an early click is buffered on the shared attack clock and lands on the exact ready tick (was dropped)
+        if (!com.runecraft.combat.AttackTimer.gate(attacker, target, com.runecraft.osrs.AttackClock.Kind.MELEE, (p, t) -> {
+            if (t instanceof ServerPlayer victim && MinigameManager.session(p) == session && session.canAttackPlayer(p, victim)) {
+                pvpMelee(p, victim, session);
+            }
+        })) {
             return;
         }
-        data.lastAttackTick = now;
+        com.runecraft.combat.AttackTimer.accept(attacker, com.runecraft.osrs.AttackClock.Kind.MELEE, speed * ActionManager.MC_TICKS_PER_GAME_TICK);
         CombatStyle style = data.style().forMelee();
         AttackType type = Equipment.meleeType(attacker, skills);
         // Same calculation as every other player attack (PlayerHitCalc / NpcHitCalc through HitCalcBridge).

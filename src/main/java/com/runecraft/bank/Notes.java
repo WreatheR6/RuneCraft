@@ -49,8 +49,9 @@ public final class Notes {
         if (damageable) {
             n.putInt(DAMAGE, stack.getDamageValue());
         }
+        // A Damage component on an item that no longer takes damage (bows before round 41) means nothing: dropped.
         DataComponentPatch rest = stack.getComponentsPatch()
-                .forget(t -> t == DataComponents.CUSTOM_DATA || (damageable && t == DataComponents.DAMAGE));
+                .forget(t -> t == DataComponents.CUSTOM_DATA || t == DataComponents.DAMAGE);
         if (!rest.isEmpty()) {
             DataComponentPatch.CODEC.encodeStart(registries.createSerializationContext(NbtOps.INSTANCE), rest)
                     .resultOrPartial(e -> RuneCraft.LOGGER.warn("Bank key of {} drops data: {}", stack, e))
@@ -80,9 +81,11 @@ public final class Notes {
                             .resultOrPartial(e -> RuneCraft.LOGGER.warn("Bad bank item components for {}: {}", item, e))
                             .ifPresent(s::applyComponents);
                 }
-                if (damageable && n.contains(DAMAGE, Tag.TAG_ANY_NUMERIC)) {
-                    s.setDamageValue(n.getInt(DAMAGE));
-                    n.remove(DAMAGE);
+                if (n.contains(DAMAGE, Tag.TAG_ANY_NUMERIC)) {
+                    if (damageable) {
+                        s.setDamageValue(n.getInt(DAMAGE));
+                    }
+                    n.remove(DAMAGE); // a bow banked while bows still took damage
                 }
                 StackData.set(s, n);
             } catch (CommandSyntaxException e) {
