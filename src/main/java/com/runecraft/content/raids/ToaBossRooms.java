@@ -1210,6 +1210,7 @@ final class ToaBossRooms {
                     });
                     later(ICE_TICKS, () -> {
                         if (ICED.remove(p.getUUID(), until)) {
+                            ICED_AT.remove(p.getUUID()); // the thawed player's last slowed attack is forgotten too
                             Msg.game(p, "The ice around you melts away.");
                         }
                     });
@@ -1660,11 +1661,12 @@ final class ToaBossRooms {
 
         /**
          * Self-test: one two-hit attack at Akkha resolved the way a ready swing is (stamped on the attack clock, then each hit's
-         * after-hit hooks; misses here), and the MC until the next attack is ready. Puts the player's attack clock back.
+         * after-hit hooks; misses here), and the MC until the next attack is ready. The swing runs on a fresh attack clock and
+         * the player's own is put back whole afterwards (lastAttackTick, its period, a buffered click; the client is told), so
+         * the rest of the walk never sees this attack.
          */
         private long selfTestSwing(ServerPlayer p, int periodMc) {
-            PlayerData d = Players.data(p);
-            long last = d.lastAttackTick;
+            com.runecraft.combat.AttackTimer.Saved clock = com.runecraft.combat.AttackTimer.saveForSelfTest(p);
             try {
                 com.runecraft.combat.AttackTimer.accept(p, com.runecraft.osrs.AttackClock.Kind.MELEE, periodMc);
                 for (int hit = 0; hit < 2; hit++) {
@@ -1672,7 +1674,7 @@ final class ToaBossRooms {
                 }
                 return com.runecraft.combat.AttackTimer.remaining(p);
             } finally {
-                d.lastAttackTick = last;
+                clock.restore();
             }
         }
 

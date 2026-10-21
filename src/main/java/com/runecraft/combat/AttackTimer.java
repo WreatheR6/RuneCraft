@@ -146,12 +146,50 @@ public final class AttackTimer {
         }
         Players.data(player).lastAttackTick += mc;
         com.runecraft.network.HudNet.foodDelay(player, mc); // round 43: the timer draws it as a food delay (before the clock packet)
+        sendClock(player);
+        return mc;
+    }
+
+    /** Tells the client the clock as it stands: the wait left, the stamping attack's period, a buffered click. */
+    private static void sendClock(ServerPlayer player) {
         State s = STATES.get(player.getUUID());
         int period = s == null ? fallbackPeriod(player) : s.buffer.periodMc(fallbackPeriod(player));
         long left = remaining(player);
         boolean queued = s != null && s.buffer.hasPending();
         send(player, left, (int) Math.max(period, left), queued ? s.buffer.pendingKind() : kindFor(player), queued);
-        return mc;
+    }
+
+    /**
+     * Self-test: takes the player's whole attack clock aside (lastAttackTick, the stamping attack's period, a buffered click
+     * and its resolver) and leaves a fresh one, for a check that makes attacks of its own in the middle of a walk;
+     * {@link Saved#restore} puts it back untouched and tells the client, so the walk goes on with the clock it had.
+     */
+    public static Saved saveForSelfTest(ServerPlayer player) {
+        return new Saved(player, Players.data(player).lastAttackTick, STATES.remove(player.getUUID()));
+    }
+
+    /** A player's attack clock taken aside by {@link #saveForSelfTest}. */
+    public static final class Saved {
+        private final ServerPlayer player;
+        private final long lastAttackTick;
+        private final State state;
+
+        private Saved(ServerPlayer player, long lastAttackTick, State state) {
+            this.player = player;
+            this.lastAttackTick = lastAttackTick;
+            this.state = state;
+        }
+
+        /** Puts the clock back as it was taken, dropping whatever the check's own attacks stamped meanwhile. */
+        public void restore() {
+            Players.data(player).lastAttackTick = lastAttackTick;
+            if (state == null) {
+                STATES.remove(player.getUUID());
+            } else {
+                STATES.put(player.getUUID(), state);
+            }
+            sendClock(player);
+        }
     }
 
     /** A click on {@code target} resolved with the kind's own resolver. Returns true when it resolved now. */
