@@ -1873,7 +1873,9 @@ final class TobRooms {
                 startMaze();
                 return;
             }
-            if (t % TobRules.SOTETSEG_ATTACK_SPEED == 0) {
+            if (quietTicks > 0) {
+                quietTicks--;
+            } else if (t % TobRules.SOTETSEG_ATTACK_SPEED == 0) {
                 attack();
             }
         }
@@ -1930,8 +1932,11 @@ final class TobRooms {
             RaidEffects.projectile(world(), sotetseg.getEyePosition(), target, style, ORB_TICKS,
                     () -> alive(sotetseg) && current.getAsBoolean() && inside(target.position()), () -> {
                         if (!RaidEffects.protectedFrom(target, style)) {
+                            orbHits++;
                             nonBallHit |= hurt(sotetseg, target, 1 + rnd().nextInt(TobRules.SOTETSEG_ORB_MAX), null, true) > 0;
                             dropOverheads(target, "Sotetseg's orb knocks out your protection prayers!");
+                        } else {
+                            orbBlocks++;
                         }
                         if (split) {
                             List<ServerPlayer> others = new ArrayList<>(players());
@@ -1944,8 +1949,12 @@ final class TobRooms {
                     });
         }
 
-        /** Orbs fired (self-test). */
+        /** Orbs fired, and those that landed unblocked or blocked (self-test). */
         int orbs;
+        int orbHits;
+        int orbBlocks;
+        /** Self-test: game ticks Sotetseg holds his attacks (a check isolating one mechanic). */
+        int quietTicks;
 
         private void deathBall(ServerPlayer target) {
             balls++;
@@ -2297,6 +2306,18 @@ final class TobRooms {
 
         @Override
         public String walk(CoxTobWalk w) {
+            // Round 43: an orb named mid-screen ("Red orb (magic) - pray Magic!") is answered through the prayer keys' path a
+            // game tick later and blocked (his other attacks hold meanwhile, so none knocks the prayer off first).
+            quietTicks = 12;
+            int blocked = orbBlocks;
+            int unblocked = orbHits;
+            orb(w.player(), AttackType.MAGIC, false);
+            w.pray(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC, true);
+            w.until(() -> orbBlocks > blocked || orbHits > unblocked, ORB_TICKS + 6, "Sotetseg's orb never landed");
+            w.expect(orbBlocks == blocked + 1 && orbHits == unblocked, "a red orb answered with Protect from Magic a tick after its cue "
+                    + "was not blocked");
+            w.pray(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC, false);
+            quietTicks = 0;
             // OSRS wiki: its Defence can't be drained below 100.
             com.runecraft.content.systems.SysCombat.drainDefence(sotetseg, 500);
             w.tick(1);
