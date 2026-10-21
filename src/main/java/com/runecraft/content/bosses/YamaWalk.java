@@ -42,7 +42,9 @@ public final class YamaWalk {
         ServerPlayer p = d.player();
         ServerLevel world = (ServerLevel) boss.level();
         List<String> log = new ArrayList<>();
-        ServerPlayer partner = com.runecraft.platform.FakePlayer.get(world);
+        // The partner is a second fake player: FakePlayer.get is the walking player itself when no real player runs the
+        // self-test, and a partner who is the killer too would get the killer's drop on the floor, not a roll of their own.
+        ServerPlayer partner = com.runecraft.platform.FakePlayer.partner(world);
         DataBossEntity second = null;
         DataBossEntity third = null;
         partner.getInventory().clearContent(); // room for the partner's own loot
@@ -154,6 +156,7 @@ public final class YamaWalk {
                 third.discard();
             }
             partner.getInventory().clearContent();
+            Players.state(world.getServer()).remove(partner.getUUID()); // no fake partner's kill count left in the save
         }
     }
 
