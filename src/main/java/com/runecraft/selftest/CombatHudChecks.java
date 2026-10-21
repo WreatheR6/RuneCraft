@@ -1012,6 +1012,10 @@ final class CombatHudChecks {
     /**
      * Food eaten during a running weapon delay adds to it (3 ticks, OSRS) and tells the client, whose attack timer then shows
      * that wait as a food delay instead of restarting; eaten with the weapon ready it adds nothing.
+     * <p>The client's timer is read only once the accepted attack has cleared any earlier food segment: earlier checks set
+     * the server's clock back without a clock packet (feedback:shared_supply_delay leaves the bandage and paddlefish, 72 MC of
+     * food on an 84 MC wait), so the client may still be counting that wait down, and its snapshot from before this check's
+     * packets reached it once showed 49 MC of it (84 less 35 client ticks).
      */
     private String foodDelay() {
         ServerPlayer p = p();
@@ -1027,6 +1031,11 @@ final class CombatHudChecks {
             data().lastAttackTick = ActionManager.mcTick() - 10_000;
             expect(com.runecraft.combat.AttackTimer.addDelay(p, 36) == 0 && told.isEmpty(), "food with the weapon ready added a delay");
             com.runecraft.combat.AttackTimer.accept(p, com.runecraft.osrs.AttackClock.Kind.MELEE, 48);
+            if (client()) {
+                // an accepted attack ends any food wait on the client's timer (its clock packet clears the segment): a food
+                // segment seen after this is the one this check adds
+                expect(awaitClient(x -> x.foodDelayMc() == 0) != null, "the client's timer kept an earlier food delay after an accepted attack");
+            }
             int added = com.runecraft.combat.AttackTimer.addDelay(p, 36);
             expect(added == 36 && told.equals(List.of(36)), "food during the weapon delay added " + added + ", told " + told);
             long left = com.runecraft.combat.AttackTimer.remaining(p);
@@ -1035,7 +1044,7 @@ final class CombatHudChecks {
             if (client()) {
                 HudProbe.Snapshot s = awaitClient(x -> x.foodDelayMc() > 0);
                 expect(s != null, "the client's attack timer never showed the food delay");
-                expect(s.foodDelayMc() <= 36, "the client shows " + s.foodDelayMc() + " MC of food delay, more than the 36 added");
+                expect(s.foodDelayMc() == 36, "the client shows " + s.foodDelayMc() + " MC of food delay, not the 36 added");
                 note += "; client timer shows " + s.foodDelayMc() + " MC of food delay";
             }
             return note;
