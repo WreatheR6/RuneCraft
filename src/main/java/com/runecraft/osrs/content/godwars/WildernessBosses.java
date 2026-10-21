@@ -143,8 +143,8 @@ public final class WildernessBosses {
                 .at("silk_chasm").arena(11, "crypt"), 1.8f, 1.0f, 1.5f));
 
         // --- Vet'ion & Calvar'ion (two forms and hellhounds are handled by the script) ---
-        list.add(trio(BossDef.of("vetion", "Vet'ion").level(454).stats(255, 234, 270, 395, 300, 1).speed(4)
-                .defenceBonus(201, 200, 200, 250, 270)
+        list.add(trio(BossDef.of("vetion", "Vet'ion").level(454).stats(255, 430, 430, 395, 300, 1).speed(4)
+                .defenceBonus(201, 200, -10, 250, 270)
                 .attack(VETION_LIGHTNING).attack(VETION_BASH)
                 .drops(trioCommons)
                 .drops(Drop.always("big_bones"), Drop.of("ring_of_the_gods", 1, 1, 512), Drop.of("dragon_pickaxe", 1, 1, 256),
@@ -152,8 +152,8 @@ public final class WildernessBosses {
                         Drop.of("skull_of_vetion", 1, 1, 618), Drop.of("clue_scroll_elite", 1, 1, 100))
                 .pet("vetion_jr").minion("skeleton_hellhound", 2)
                 .at("vetion_ruins").arena(13, "crypt"), 0.8f, 2.2f, 1.7f));
-        list.add(trio(BossDef.of("calvarion", "Calvar'ion").level(264).stats(255, 160, 180, 250, 200, 1).speed(4)
-                .defenceBonus(140, 140, 140, 170, 190)
+        list.add(trio(BossDef.of("calvarion", "Calvar'ion").level(264).stats(150, 250, 250, 225, 178, 1).speed(4)
+                .defenceBonus(130, 128, -10, 198, 211)
                 .attack(CALVARION_LIGHTNING).attack(CALVARION_BASH)
                 .drops(Drop.always("big_bones"), Drop.of("coins", 5000, 12000, 4), Drop.of("runite_ore", 5, 8, 16),
                         Drop.of("ring_of_the_gods", 1, 1, 716), Drop.of("dragon_pickaxe", 1, 1, 358),

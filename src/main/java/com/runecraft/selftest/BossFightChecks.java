@@ -362,7 +362,7 @@ final class BossFightChecks {
         int cleared = 0;
         Set<String> assists = new LinkedHashSet<>();
         Vec3 deathAt = boss.position();
-        AttackType[] styles = {AttackType.SLASH, AttackType.MAGIC, AttackType.RANGED};
+        AttackType[] styles = {AttackType.SLASH, AttackType.CRUSH, AttackType.MAGIC, AttackType.RANGED};
         int playerAttacks = 0;
         // A player attack rolled damage that the boss's own rules took to nothing (Bryophyta behind her growthlings, the
         // Abyssal Sire's first phase): it can't be hurt yet even when its script calls it vulnerable.
@@ -423,7 +423,7 @@ final class BossFightChecks {
                 boolean hurtable = !(boss instanceof DataBossEntity d) || d.script().isVulnerable(d);
                 // the player's own attacks, cycling melee, magic and ranged, until one has taken hitpoints off it
                 if (firstHitTick < 0 && (tick % PLAYER_SPEED == 0 || heavyLanded)) {
-                    AttackType style = styles[playerAttacks++ % styles.length];
+                    AttackType style = playerStyle(boss, styles, playerAttacks++);
                     float hp = boss.getHealth();
                     rec.lastRoll = -1;
                     int carried = inventoryCount(p);
@@ -645,6 +645,28 @@ final class BossFightChecks {
         return sb.toString();
     }
 
+    /**
+     * The style of the player's {@code n}th attack: every other one in the style the boss defends worst against (Vet'ion's
+     * 395 Defence with +200 slash, +250 magic and +270 ranged left the whip, Fire Surge and magic shortbow about a 7% hit
+     * chance, so 28 misses in a row came up; his crush defence is -10), the rest cycling through the others in case that
+     * style can't hurt it (a form immune to it).
+     */
+    private static AttackType playerStyle(LivingEntity boss, AttackType[] styles, int n) {
+        com.runecraft.combat.MonsterStats stats = com.runecraft.combat.MonsterStats.of(boss);
+        AttackType weakest = styles[0];
+        for (AttackType s : styles) {
+            if (stats.defenceBonus(s) < stats.defenceBonus(weakest)) {
+                weakest = s;
+            }
+        }
+        if (n % 2 == 0) {
+            return weakest;
+        }
+        List<AttackType> rest = new ArrayList<>(List.of(styles));
+        rest.remove(weakest);
+        return rest.get((n / 2) % rest.size());
+    }
+
     /** One player attack through the real combat path of a style (the weapon for it is put in the main hand). */
     private void playerAttack(ServerPlayer p, LivingEntity boss, AttackType style) {
         PlayerData data = Players.data(p);
@@ -673,6 +695,10 @@ final class BossFightChecks {
                             .getHolderOrThrow(CombatHandler.OSRS_HIT);
                     boss.hurt(new DamageSource(hit, arrow, p), 1f);
                 }
+            }
+            case CRUSH -> {
+                p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("dragon_mace", 1));
+                boss.hurt(CombatHandler.source(p), 1f);
             }
             default -> {
                 p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("abyssal_whip", 1));
