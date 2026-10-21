@@ -70,6 +70,9 @@ final class SlayerCommands {
                         .then(Commands.argument("item", StringArgumentType.word())
                                 .executes(ctx -> run(ctx, p -> craft(p, StringArgumentType.getString(ctx, "item")), true))))
                 .then(Commands.literal("store").executes(ctx -> run(ctx, SlayerService::storeTask, true)))
+                .then(Commands.literal("choose").then(Commands.argument("n", IntegerArgumentType.integer(1, 3))
+                        .executes(ctx -> run(ctx, p -> SlayerService.chooseMortimer(p, IntegerArgumentType.getInteger(ctx, "n")),
+                                false))))
                 .then(Commands.literal("unstore").executes(ctx -> run(ctx, SlayerService::unstoreTask, true)))
                 // Disassembling a helmet and using the rune pouch need no master (OSRS: item options).
                 .then(Commands.literal("disassemble").then(Commands.argument("helmet", StringArgumentType.word())
@@ -126,10 +129,12 @@ final class SlayerCommands {
         SlayerState.Profile p = SlayerService.profile(player);
         if (!p.hasTask()) {
             Msg.game(player, "You don't have a task to cancel.");
-        } else if (p.points < SlayerRewards.SKIP_COST) {
-            Msg.game(player, "You need " + SlayerRewards.SKIP_COST + " slayer points to cancel a task.");
+        } else if (p.points < SlayerRewards.skipCost(p.master)) {
+            Msg.game(player, "You need " + SlayerRewards.skipCost(p.master) + " slayer points to cancel this task.");
         } else {
-            p.points -= SlayerRewards.SKIP_COST;
+            p.points -= SlayerRewards.skipCost(p.master);
+            p.modifier = null;
+            p.modifierValue = 0;
             Msg.game(player, "Your task (" + SlayerTasks.displayName(p.task) + ") has been cancelled. Your streak is kept.");
             p.task = null;
             p.remaining = 0;
@@ -142,9 +147,9 @@ final class SlayerCommands {
         SlayerState.Profile p = SlayerService.profile(player);
         if (!p.hasTask()) {
             Msg.game(player, "You don't have a task to block.");
-        } else if (SlayerRewards.blockedFor(p.blocked, p.master).size() >= blockSlots(player)) {
-            Msg.game(player, blockSlots(player) == 0 ? "You need 50 quest points to block a task."
-                    : "That master's block list is full (" + blockSlots(player) + " slots: one per 50 quest points, one for the"
+        } else if (SlayerRewards.blockedFor(p.blocked, p.master).size() >= blockSlots(player, p.master)) {
+            Msg.game(player, blockSlots(player, p.master) == 0 ? "You need 50 quest points to block a task."
+                    : "That master's block list is full (" + blockSlots(player, p.master) + " slots: one per 50 quest points, one for the"
                     + " elite Lumbridge & Draynor Diary). Unblock something first: "
                     + String.join(", ", SlayerRewards.blockedFor(p.blocked, p.master)));
         } else if (p.points < SlayerRewards.blockCost(p.master)) {
@@ -153,6 +158,8 @@ final class SlayerCommands {
             p.points -= SlayerRewards.blockCost(p.master);
             // Each master keeps their own block list (OSRS, August 2025); Turael and Spria share one.
             p.blocked.add(SlayerRewards.blockKey(p.master, p.task));
+            p.modifier = null;
+            p.modifierValue = 0;
             Msg.game(player, "You will no longer be assigned " + SlayerTasks.displayName(p.task) + " by "
                     + masterName(p.master) + ".");
             p.task = null;
@@ -164,10 +171,15 @@ final class SlayerCommands {
 
     /** Block slots on each master's list: one per 50 quest points (6 at 300) plus one for the elite Lumbridge diary. */
     static int blockSlots(ServerPlayer player) {
+        return blockSlots(player, null);
+    }
+
+    /** Block slots on the list of the master {@code masterId} (Mortimer: two at most). */
+    static int blockSlots(ServerPlayer player, String masterId) {
         boolean elite = com.runecraft.osrs.content.systems.Diaries.tierComplete(
                 com.runecraft.content.systems.SysState.of(player).diaryDone, "lumbridge",
                 com.runecraft.osrs.content.systems.Diaries.Tier.ELITE);
-        return SlayerRewards.blockSlots(Players.data(player).questPoints(), elite);
+        return SlayerRewards.blockSlots(masterId, Players.data(player).questPoints(), elite);
     }
 
     private static String masterName(String masterId) {

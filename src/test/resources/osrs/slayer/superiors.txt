@@ -30,3 +30,8 @@ greater_abyssal_demon|Greater abyssal demon|Abyssal demon|342|400|85|4200
 night_beast|Night beast|Dark beast|374|550|90|6462
 nuclear_smoke_devil|Nuclear smoke devil|Smoke devil|280|240|93|2400
 colossal_hydra|Colossal Hydra|Hydra|309|750|95|8625
+infernal_pyrelord|Infernal pyrelord|Pyrelord|134|184|30|1840
+vitreous_chilled_jelly|Vitreous Chilled Jelly|Chilled jelly|241|220|52|2200
+magma_strykewyrm|Magma strykewyrm|Lava strykewyrm|249|340|62|3655
+ancient_custodian|Ancient Custodian|Elder custodian stalker|239|330|76|3382
+dreadborn_araxyte|Dreadborn Araxyte|Araxyte|281|350|92|4462.5

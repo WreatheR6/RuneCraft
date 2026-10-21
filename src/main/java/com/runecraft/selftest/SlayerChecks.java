@@ -63,6 +63,7 @@ final class SlayerChecks {
                     () -> g.taskOnlyArea(spot)));
         }
         checks.add(new SelfTest.Check("slayer:konar_location", g::konarLocation));
+        checks.add(new SelfTest.Check("slayer:mortimer", g::mortimer));
         checks.add(new SelfTest.Check("slayer:task_storage", g::taskStorage));
         checks.add(new SelfTest.Check("slayer:duly_noted_and_rune_pouch", g::dulyNotedAndPouch));
         return checks;
@@ -292,6 +293,63 @@ final class SlayerChecks {
             }
         }
         return com.runecraft.osrs.world.TaskRegions.at(at.getX(), at.getY(), at.getZ()).name();
+    }
+
+    // ------------------------------------------------------------------ Mortimer (round 44)
+
+    /**
+     * Mortimer offers two tasks with modifiers (three after 100 of his tasks); the player picks one, and completing it pays
+     * only the points modifier's points.
+     */
+    private String mortimer() {
+        c.completeQuests(null);
+        SlayerState.Profile prof = profile();
+        SlayerMasters.Master mortimer = SlayerMasters.get(com.runecraft.osrs.content.slayer.Mortimer.ID);
+        int doneBefore = prof.mortimerTasks;
+        int pointsBefore = prof.points;
+        try {
+            prof.task = null;
+            prof.remaining = 0;
+            prof.mortimerTasks = 0;
+            SlayerService.talk(p(), mortimer);
+            List<com.runecraft.osrs.content.slayer.Mortimer.Offer> offers = SlayerService.mortimerOffers(p());
+            if (prof.hasTask() || offers.size() != 2 || offers.get(0).category().equals(offers.get(1).category())) {
+                throw failure("Mortimer should offer two different tasks, offered " + offers + (prof.hasTask() ? " and assigned "
+                        + prof.task : ""));
+            }
+            com.runecraft.osrs.content.slayer.Mortimer.Offer pick = offers.get(1);
+            if (!SlayerService.chooseMortimer(p(), 2) || !pick.category().equals(prof.task) || prof.amount != pick.amount()
+                    || !pick.modifier().name().equals(prof.modifier) || !com.runecraft.osrs.content.slayer.Mortimer.ID.equals(prof.master)) {
+                throw failure("picking Mortimer's second offer " + pick + " gave " + prof.task + " x" + prof.amount + " ("
+                        + prof.modifier + ")");
+            }
+            // Finish it with a points modifier: only that pays.
+            prof.modifier = com.runecraft.osrs.content.slayer.Mortimer.Modifier.POINTS.name();
+            prof.modifierValue = 20;
+            prof.points = 0;
+            SlayerService.completeTask(p());
+            if (prof.points != 20 || prof.mortimerTasks != 1 || prof.modifier != null) {
+                throw failure("a Mortimer task with +20 points paid " + prof.points + " (tasks " + prof.mortimerTasks
+                        + ", modifier " + prof.modifier + ")");
+            }
+            prof.mortimerTasks = 100;
+            prof.task = null;
+            prof.remaining = 0;
+            SlayerService.talk(p(), mortimer);
+            int third = SlayerService.mortimerOffers(p()).size();
+            if (third != 3) {
+                throw failure("after 100 of his tasks Mortimer offered " + third + " tasks, not 3");
+            }
+            return "offered " + offers.get(0).category() + " / " + pick.category() + ", took " + pick.category() + " ("
+                    + pick.modifier().describe(pick.value()) + "); +20 points modifier paid 20; 3 offers at 100 tasks";
+        } finally {
+            prof.task = null;
+            prof.remaining = 0;
+            prof.modifier = null;
+            prof.modifierValue = 0;
+            prof.mortimerTasks = doneBefore;
+            prof.points = pointsBefore;
+        }
     }
 
     // ------------------------------------------------------------------ Konar's locations (round 44)

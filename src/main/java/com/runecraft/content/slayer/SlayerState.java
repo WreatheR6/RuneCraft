@@ -47,6 +47,13 @@ public final class SlayerState extends SavedData {
         public String storedMaster;
         public String storedRegion;
         public boolean storedChooseAmount;
+        /** Mortimer's modifier on the current task (Mortimer.Modifier name) and its value, or null. */
+        public String modifier;
+        public int modifierValue;
+        public String storedModifier;
+        public int storedModifierValue;
+        /** Mortimer's tasks completed (they unlock his modifiers and a third choice). */
+        public int mortimerTasks;
 
         public boolean hasTask() {
             return task != null && remaining > 0;
@@ -64,6 +71,10 @@ public final class SlayerState extends SavedData {
             String m = master;
             String g = region;
             boolean c = chooseAmount;
+            String mod = modifier;
+            int modValue = modifierValue;
+            modifier = storedModifier;
+            modifierValue = storedModifierValue;
             task = storedTask;
             remaining = storedRemaining;
             amount = storedAmount;
@@ -76,6 +87,8 @@ public final class SlayerState extends SavedData {
             storedMaster = storedTask == null ? null : m;
             storedRegion = storedTask == null ? null : g;
             storedChooseAmount = storedTask != null && c;
+            storedModifier = storedTask == null ? null : mod;
+            storedModifierValue = storedTask == null ? 0 : modValue;
         }
 
         CompoundTag toNbt() {
@@ -91,6 +104,9 @@ public final class SlayerState extends SavedData {
             nbt.putInt("Completed", completed);
             nbt.putBoolean("Migrated", migrated);
             nbt.putBoolean("ChooseAmount", chooseAmount);
+            nbt.putString("Modifier", modifier == null ? "" : modifier);
+            nbt.putInt("ModifierValue", modifierValue);
+            nbt.putInt("MortimerTasks", mortimerTasks);
             if (hasStoredTask()) {
                 nbt.putString("StoredTask", storedTask);
                 nbt.putInt("StoredRemaining", storedRemaining);
@@ -98,6 +114,8 @@ public final class SlayerState extends SavedData {
                 nbt.putString("StoredMaster", storedMaster == null ? "" : storedMaster);
                 nbt.putString("StoredRegion", storedRegion == null ? "" : storedRegion);
                 nbt.putBoolean("StoredChooseAmount", storedChooseAmount);
+                nbt.putString("StoredModifier", storedModifier == null ? "" : storedModifier);
+                nbt.putInt("StoredModifierValue", storedModifierValue);
             }
             nbt.put("Unlocks", list(unlocks));
             nbt.put("Blocked", list(blocked));
@@ -123,6 +141,11 @@ public final class SlayerState extends SavedData {
             p.storedMaster = emptyToNull(nbt.getString("StoredMaster"));
             p.storedRegion = emptyToNull(nbt.getString("StoredRegion"));
             p.storedChooseAmount = nbt.getBoolean("StoredChooseAmount");
+            p.modifier = emptyToNull(nbt.getString("Modifier"));
+            p.modifierValue = nbt.getInt("ModifierValue");
+            p.mortimerTasks = nbt.getInt("MortimerTasks");
+            p.storedModifier = emptyToNull(nbt.getString("StoredModifier"));
+            p.storedModifierValue = nbt.getInt("StoredModifierValue");
             ListTag unlocks = nbt.getList("Unlocks", Tag.TAG_STRING);
             for (int i = 0; i < unlocks.size(); i++) {
                 p.unlocks.add(unlocks.getString(i));

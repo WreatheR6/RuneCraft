@@ -137,6 +137,9 @@ public final class SlayerContent implements ContentModule {
                 NpcDef.of("duradel", "Duradel", "SHILO_VILLAGE", 34, -54, // in his hut (OSRS 2869, 2982)
                         0x6A4A3A, 0x8A2A2A, 0x5A1A1A, 0x202020),
                 NpcDef.of("konar", "Konar quo Maten", "mount_karuulm", 6, -6, 0x8AA080, 0x6A4A6A, 0x4A2A4A, 0xC0A040),
+                // approx: Mortimer lives on Wyrmscraig (the quests module's Auchrie, Fallen From Grace); the wiki has no
+                // map of him yet.
+                NpcDef.of(Mortimer.ID, "Mortimer", "quest_wyrmscraig", 10, 8, 0xC8A888, 0x2A2A3A, 0x1A1A2A, 0x6A2A2A),
                 // By the Edgeville jailhouse, north-east of the bank (OSRS 3109, 3514).
                 NpcDef.of("krystilia", "Krystilia", "EDGEVILLE", 32, -42, 0xE0C0A0, 0x2A2A2A, 0x1A1A1A, 0xC03030));
     }

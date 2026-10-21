@@ -131,7 +131,73 @@ public final class SlayerService {
             menu(player, p);
             return;
         }
+        if (master.id().equals(com.runecraft.osrs.content.slayer.Mortimer.ID)) {
+            offerMortimer(player, master, p, combat, slayer);
+            return;
+        }
         assign(player, master, p, combat, slayer);
+    }
+
+    /** Mortimer's offers waiting for the player's pick (lost on logout: talk to him again). */
+    private static final java.util.Map<java.util.UUID, List<com.runecraft.osrs.content.slayer.Mortimer.Offer>> MORTIMER_OFFERS = new java.util.HashMap<>();
+
+    /**
+     * Mortimer offers two tasks (three after 100 of his), each with a modifier, and the player picks one
+     * ({@code /slayer choose <n>}; OSRS Wiki "Mortimer").
+     */
+    private static void offerMortimer(ServerPlayer player, SlayerMasters.Master master, SlayerState.Profile p, int combat,
+                                      int slayer) {
+        Random random = new Random(player.getRandom().nextLong());
+        List<String> blocked = SlayerRewards.blockedFor(p.blocked, master.id());
+        String previous = p.task;
+        List<com.runecraft.osrs.content.slayer.Mortimer.Offer> offers = com.runecraft.osrs.content.slayer.Mortimer.offers(random,
+                x -> SlayerTasks.eligible(x, slayer, combat, p.unlocks, blocked, previous, q -> questMet(player, q)), p.unlocks,
+                p.mortimerTasks, x -> {
+                    SlayerRewards.Unlock ext = SlayerRewards.extensionFor(x.category());
+                    return ext != null && p.unlocks.contains(ext.id());
+                });
+        if (offers.isEmpty()) {
+            say(player, master, "I have nothing for you right now.");
+            return;
+        }
+        MORTIMER_OFFERS.put(player.getUUID(), offers);
+        say(player, master, "Choose your quarry. Each of these comes with a little something extra.");
+        for (int i = 0; i < offers.size(); i++) {
+            com.runecraft.osrs.content.slayer.Mortimer.Offer o = offers.get(i);
+            String text = o.amount() + " " + SlayerTasks.displayName(o.category()) + ": " + o.modifier().describe(o.value());
+            player.displayClientMessage(Component.literal("  ").append(button("[" + (i + 1) + "] " + text,
+                    "/slayer choose " + (i + 1), "Take this task")), false);
+        }
+    }
+
+    /** Takes Mortimer's offer number {@code n} (1-based). Returns false (and says why) when there is none. */
+    public static boolean chooseMortimer(ServerPlayer player, int n) {
+        SlayerState.Profile p = profile(player);
+        List<com.runecraft.osrs.content.slayer.Mortimer.Offer> offers = MORTIMER_OFFERS.get(player.getUUID());
+        if (p.hasTask() || offers == null || n < 1 || n > offers.size()) {
+            Msg.game(player, p.hasTask() ? "You already have a task." : "Mortimer hasn't offered you that task.");
+            return false;
+        }
+        MORTIMER_OFFERS.remove(player.getUUID());
+        com.runecraft.osrs.content.slayer.Mortimer.Offer o = offers.get(n - 1);
+        SlayerMasters.Master master = SlayerMasters.get(com.runecraft.osrs.content.slayer.Mortimer.ID);
+        p.task = o.category();
+        p.amount = o.amount();
+        p.remaining = o.amount();
+        p.master = master.id();
+        p.region = null;
+        p.chooseAmount = false;
+        p.modifier = o.modifier().name();
+        p.modifierValue = o.value();
+        say(player, master, "Your new task is to kill " + p.amount + " " + describe(p) + ". This one "
+                + o.modifier().describe(o.value()) + ".");
+        SlayerNet.sync(player);
+        return true;
+    }
+
+    /** The offers Mortimer is waiting on the player to pick from (self-tests). */
+    public static List<com.runecraft.osrs.content.slayer.Mortimer.Offer> mortimerOffers(ServerPlayer player) {
+        return MORTIMER_OFFERS.getOrDefault(player.getUUID(), List.of());
     }
 
     /** "How many would you like to slay?": clickable boss-task amounts from 3 to the player's maximum. */
@@ -224,6 +290,8 @@ public final class SlayerService {
         p.chooseAmount = boss != null;
         p.remaining = p.amount;
         p.master = master.id();
+        p.modifier = null;
+        p.modifierValue = 0;
         p.region = null;
         if (master.locationRestricted() && boss == null) {
             // Konar names one of the task's locations the player may enter, each as likely (OSRS Wiki); a task none of
@@ -341,7 +409,8 @@ public final class SlayerService {
     /** Clickable task-management options shown by masters. */
     static void menu(ServerPlayer player, SlayerState.Profile p) {
         MutableComponent line = Component.literal("Options: ").withStyle(ChatFormatting.GRAY);
-        line.append(button("[Skip " + SlayerRewards.SKIP_COST + "pts]", "/slayer skip", "Cancel this task for 30 points"));
+        int skip = SlayerRewards.skipCost(p.master);
+        line.append(button("[Skip " + skip + "pts]", "/slayer skip", "Cancel this task for " + skip + " points"));
         line.append(Component.literal(" "));
         line.append(button("[Block " + SlayerRewards.blockCost(p.master) + "pts]", "/slayer block", "Never be assigned this task again"));
         line.append(Component.literal(" "));
@@ -629,8 +698,10 @@ public final class SlayerService {
         Superiors.Superior superior = prof == null ? null : Superiors.byId(prof.id);
         // OSRS: a kill gives its hitpoints in Slayer XP unless the wiki lists another value (bosses, dragons, dream bosses...).
         double dream = prof == null ? -1 : dreamSlayerXp(entity, prof.id);
-        XpService.add(player, Skill.SLAYER, superior != null ? superior.xp() : dream >= 0 ? dream
-                : com.runecraft.osrs.data.MonsterTraits.slayerXp(stats.traitsKey(), stats.hitpoints()));
+        // Mortimer's experience modifier adds its percentage to every kill of the task.
+        XpService.add(player, Skill.SLAYER, com.runecraft.osrs.content.slayer.Mortimer.xp(superior != null ? superior.xp() : dream >= 0 ? dream
+                : com.runecraft.osrs.data.MonsterTraits.slayerXp(stats.traitsKey(), stats.hitpoints()),
+                com.runecraft.osrs.content.slayer.Mortimer.modifier(p.modifier), p.modifierValue));
         // "Double Trouble": each Grotesque Guardians kill counts twice.
         // Expeditious bracelet / bracelet of slaughter (systems module): 25% chance to double or void the credit.
         String killed = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath();
@@ -684,6 +755,13 @@ public final class SlayerService {
             streak = ++p.streak;
         }
         int points = master == null ? 0 : master.pointsFor(streak, eliteDiary);
+        if (master != null && master.id().equals(com.runecraft.osrs.content.slayer.Mortimer.ID)) {
+            // Mortimer gives no points but through a points modifier (OSRS Wiki); his tasks unlock more modifiers.
+            points = com.runecraft.osrs.content.slayer.Mortimer.points(com.runecraft.osrs.content.slayer.Mortimer.modifier(p.modifier), p.modifierValue);
+            p.mortimerTasks++;
+        }
+        p.modifier = null;
+        p.modifierValue = 0;
         p.points += points;
         Msg.red(player, "You have completed your task! You've completed " + streak + " tasks in a row"
                 + (points > 0 ? " and received " + points + " points, giving you a total of " + p.points : "")

@@ -82,6 +82,13 @@ public final class Superiors {
         add("dark_beast", "night_beast", "Night beast", 374, 90, 550, 6462, 1.5f);
         add("smoke_devil", "nuclear_smoke_devil", "Nuclear smoke devil", 280, 93, 240, 2400, 1.5f);
         add("hydra", "colossal_hydra", "Colossal Hydra", 309, 95, 750, 8625, 1.4f);
+        // Round 44: the superiors of the wiki's table that were missing (infobox values). The mutated terrorbird and
+        // tortoise are still missing: their warped bases belong to the dungeons module and nothing here looks like them.
+        add("pyrelord", "infernal_pyrelord", "Infernal pyrelord", 134, 30, 184, 1840, 1.5f);
+        add("chilled_jelly", "vitreous_chilled_jelly", "Vitreous Chilled Jelly", 241, 52, 220, 2200, 1.6f);
+        add("lava_strykewyrm", "wyrm", "magma_strykewyrm", "Magma strykewyrm", 249, 62, 340, 3655, 1.5f);
+        add("elder_custodian_stalker", "ancient_custodian", "Ancient Custodian", 239, 76, 330, 3382, 1.3f);
+        add("araxyte", "dreadborn_araxyte", "Dreadborn Araxyte", 281, 92, 350, 4462.5, 1.4f);
     }
 
     public static Superior forBase(String baseId) {

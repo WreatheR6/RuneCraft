@@ -23,6 +23,17 @@ public final class SlayerRewards {
     public static int blockSlots(int questPoints, boolean eliteLumbridgeDiary) {
         return Math.min(6, Math.max(0, questPoints) / 50) + (eliteLumbridgeDiary ? 1 : 0);
     }
+
+    /** Block slots on a master's list: Mortimer has only two (OSRS Wiki "Mortimer"). */
+    public static int blockSlots(String masterId, int questPoints, boolean eliteLumbridgeDiary) {
+        int slots = blockSlots(questPoints, eliteLumbridgeDiary);
+        return Mortimer.ID.equals(masterId) ? Math.min(Mortimer.BLOCK_SLOTS, slots) : slots;
+    }
+
+    /** Points to cancel a task of the master's: 30, Mortimer's 100 (OSRS Wiki "Mortimer"). */
+    public static int skipCost(String masterId) {
+        return Mortimer.ID.equals(masterId) ? Mortimer.SKIP_COST : SKIP_COST;
+    }
     /** Superior slayer creatures spawn at 1/200 on task once "Bigger and Badder" is unlocked. */
     public static final int SUPERIOR_CHANCE = 200;
 
@@ -399,6 +410,7 @@ public final class SlayerRewards {
             case "chaeldar" -> 70;
             case "konar" -> 80;
             case "nieve", "steve" -> 90;
+            case Mortimer.ID -> Mortimer.BLOCK_COST;
             default -> BLOCK_COST;
         };
     }
