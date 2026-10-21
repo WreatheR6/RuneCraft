@@ -149,6 +149,33 @@ class WaveMinigameRealtimeTest {
         assertTrue(TzHaarWaves.glyphShields(gx + half - 0.01, gz + 8, gx, gz, w, zukZ), "inside the shadow's edge");
         assertFalse(TzHaarWaves.glyphShields(gx + half + 0.01, gz + 3, gx, gz, w, zukZ), "beside the shadow");
         assertFalse(TzHaarWaves.glyphShields(gx, gz - 1, gx, gz, w, zukZ), "between Zuk and the glyph");
+        // the cyan shadow (review repair): only blocks covered all over, so no point on a cyan block takes the blast; the old
+        // centre test marked edge blocks whose outer half lies beyond the half width
+        java.util.Random rnd = new java.util.Random(43);
+        for (int i = 0; i < 200; i++) {
+            double x = rnd.nextDouble() * 20 - 10;
+            double z = rnd.nextDouble() * 20 - 10;
+            double zuk = z + (rnd.nextBoolean() ? -5 : 5);
+            java.util.List<int[]> cols = TzHaarWaves.glyphShadowColumns(x, z, w, zuk, 9.0);
+            assertFalse(cols.isEmpty(), "the shadow shows no blocks");
+            for (int[] c : cols) {
+                for (int k = 0; k < 16; k++) {
+                    double px = c[0] + rnd.nextDouble();
+                    double pz = c[1] + rnd.nextDouble();
+                    assertTrue(TzHaarWaves.glyphShields(px, pz, x, z, w, zuk), "a point on cyan block " + c[0] + "," + c[1]
+                            + " isn't covered by the glyph at " + x + "," + z);
+                }
+            }
+        }
+        // a glyph centred on a block's edge (x = 2.0, half width 1.7): blocks 1 and 2 either side are wholly covered (0.3..3.7
+        // holds 1..3), block 0 isn't (its west half lies beyond 0.3) and neither is 3 (3..4 runs past 3.7)
+        java.util.List<int[]> s = TzHaarWaves.glyphShadowColumns(gx, gz, w, zukZ, 9.0);
+        java.util.Set<Integer> xs = new java.util.TreeSet<>();
+        for (int[] c : s) {
+            xs.add(c[0]);
+            assertTrue(c[1] >= gz, "a shadow block between Zuk and the glyph");
+        }
+        assertEquals(java.util.Set.of(1, 2), xs);
     }
 
     /** Pillars: the warning ring's radius is the collapse's reach; wave 66's collapse warns for the strike floor. */

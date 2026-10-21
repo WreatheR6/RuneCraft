@@ -429,6 +429,30 @@ public final class TzHaarWaves {
     }
 
     /**
+     * The floor columns {@code {x, z}} the glyph's shadow shows (round 43 floor markers, // playability): every column out to
+     * {@code length} blocks behind the glyph (away from Zuk) that {@link #glyphShields} covers all over (at all four corners),
+     * so a player anywhere on one is covered.
+     */
+    public static List<int[]> glyphShadowColumns(double glyphX, double glyphZ, double glyphWidth, double zukZ, double length) {
+        double half = glyphShadowHalfWidth(glyphWidth);
+        double dir = Math.signum(glyphZ - zukZ);
+        if (dir == 0) {
+            dir = 1;
+        }
+        List<int[]> cols = new ArrayList<>();
+        for (int x = (int) Math.floor(glyphX - half - 1); x <= (int) Math.floor(glyphX + half + 1); x++) {
+            for (int d = 0; d <= (int) length + 1; d++) {
+                int z = (int) Math.floor(glyphZ + dir * d);
+                double along = (z + 0.5 - glyphZ) * dir;
+                if (along > 0 && along <= length) {
+                    cols.add(new int[]{x, z});
+                }
+            }
+        }
+        return com.runecraft.osrs.FloorShapes.inside(cols, (x, z) -> glyphShields(x, z, glyphX, glyphZ, glyphWidth, zukZ));
+    }
+
+    /**
      * Blocks from a pillar's centre within which its collapse hurts (horizontal): its 3x3 body, the tile around it, and the
      * width of a player. The ring drawn while it is about to fall has exactly this radius.
      */

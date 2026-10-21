@@ -63,6 +63,8 @@ public abstract class GwdScript implements BossScript {
         /** The real Minecraft tick it was last drawn on (redraws every {@link ArenaTiming#REDRAW_MC}). */
         long lastDrawMc;
         int draws;
+        /** The floor blocks marking its tiles until it lands (round 43), or null. */
+        com.runecraft.boss.FloorMarkers.Layer floor;
 
         Strike(ServerLevel world, Vec3 pos, long due, int maxHit, double radius, ParticleOptions warning, ParticleOptions blast,
                BiConsumer<ServerPlayer, Integer> onHit, String name, long createdMc) {
@@ -208,6 +210,9 @@ public abstract class GwdScript implements BossScript {
         }
         redrawStrikes(); // for drivers that only run game ticks
         for (Strike s : due) {
+            if (s.floor != null) {
+                s.floor.clear(); // its tiles' marker goes as it lands
+            }
             if (s.blast != null) {
                 s.world.sendParticles(s.blast, s.pos.x, s.pos.y + 0.5, s.pos.z, 12, s.radius / 2, 0.4, s.radius / 2, 0.02);
             }
@@ -280,7 +285,20 @@ public abstract class GwdScript implements BossScript {
             com.runecraft.network.HudNet.groundCast(s.world, pos, radius, boss, null,
                     com.runecraft.osrs.CastBar.landInMc(due, base, into), com.runecraft.osrs.CastBar.strikeLabel(name));
         }
+        com.runecraft.boss.HazardKind kind = s.damaging ? strikeFloor(name, warning) : null;
+        if (kind != null) {
+            s.floor = com.runecraft.boss.FloorMarkers.show(
+                    new com.runecraft.boss.FloorMarkers.Shape(s.world).disc(pos, radius, kind), boss);
+        }
         return due;
+    }
+
+    /**
+     * The floor marker a strike puts on its tiles until it lands (round 43, as ScriptedBoss's strikes): its warning particle's
+     * kind by default ({@link com.runecraft.boss.HazardKind#forParticle}), null for none. // playability: OSRS tints the tiles
+     */
+    protected com.runecraft.boss.HazardKind strikeFloor(String name, ParticleOptions warning) {
+        return com.runecraft.boss.HazardKind.forParticle(warning);
     }
 
     /** Whether any strike is still pending. */

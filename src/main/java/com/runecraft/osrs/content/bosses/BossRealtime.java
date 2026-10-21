@@ -246,4 +246,24 @@ public final class BossRealtime {
     public static int muspahSpikeEruptTicks() {
         return Math.max(MuspahRules.SPIKE_ERUPT_TICKS, STRIKE_FLOOR_TICKS);
     }
+
+    // ------------------------------------------------------------------ Vardorvis's swinging axes (round 43)
+
+    /** Steps of an axe's path: nine 1.5-block steps, the player's spot the middle one. */
+    public static final int AXE_PATH_STEPS = 9;
+    /**
+     * Path steps (1.5 blocks, three quarters of a tile) an axe sweeps a game tick. // approx: about 1.5 tiles a tick, from the
+     * wiki's axe skip (an axe from the adjacent quadrant passes about 2 ticks after it swings, one from the opposite quadrant
+     * about 5)
+     */
+    public static final int AXE_STEPS_PER_TICK = 2;
+
+    /**
+     * Game ticks from an axe set's swing to the axe reaching step {@code step} of its path (0: where it appears): the first on
+     * the strike floor, each later one as the axe sweeps on. // playability: every step used to land on the same tick; OSRS
+     * moves the axe across the arena tile by tile
+     */
+    public static int axeStepDelay(int step) {
+        return STRIKE_FLOOR_TICKS + Math.max(0, Math.min(AXE_PATH_STEPS - 1, step)) / AXE_STEPS_PER_TICK;
+    }
 }

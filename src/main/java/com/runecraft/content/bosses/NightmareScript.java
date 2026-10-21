@@ -190,6 +190,8 @@ final class NightmareScript extends ScriptedBoss {
     /** Phosani's Prayer Deactivation (phase three): game ticks until one of her standard attacks can switch a prayer off. */
     int deactivateTimer;
     private boolean cleanedUp;
+    /** The spores, the corpse flowers' rows and the surge's path as floor blocks (round 43). */
+    private com.runecraft.boss.FloorMarkers.Layer floorMarks;
     /** Self-test: only standard attacks (the phase walk performs her specials itself). */
     boolean selfTestQuiet;
 
@@ -939,6 +941,52 @@ final class NightmareScript extends ScriptedBoss {
         clawChain = phosani ? NightmareRules.PHOSANI_CLAW_CHAIN : NightmareRules.NIGHTMARE_CLAW_CHAIN;
         BossFx.warn(boss, "Corpse flowers split the arena! Stand between the white blossoms.");
         drawFlowers(boss); // drawn as they sprout: 60 MC before they bloom
+        showFloor(boss);
+    }
+
+    /**
+     * Round 43 floor markers, refreshed every game tick and as each special starts: every spore's burst square (a tile either
+     * way of it, the test in {@link #tickSpores}) grey; the corpse flowers' rows, blood red along the two berry rows and cyan one
+     * block inside the safe quadrant beside the two blossom rows (each blossom row's own border blocks are half in the
+     * quadrant next door, so they stay plain), from sprouting to wilting; the surge's path at its true width purple until
+     * she surges. Put back as each ends, when she dies or is reset, and when the server stops. // playability: OSRS shows the
+     * spores, the flowers and her charge only as models and animations
+     */
+    private void showFloor(DataBossEntity boss) {
+        if (floorMarks == null) {
+            floorMarks = new com.runecraft.boss.FloorMarkers.Layer(boss);
+        }
+        ServerLevel w = BossFx.world(boss);
+        com.runecraft.boss.FloorMarkers.Shape shape = new com.runecraft.boss.FloorMarkers.Shape(w);
+        for (Vec3 sp : spores) {
+            shape.box(sp, 1.5, com.runecraft.boss.HazardKind.GAS);
+        }
+        if (flowerSafe >= 0 && flowerTicks > 0 && flowerCentre != null) {
+            double[][] dirs = {{0, -1}, {-1, 0}, {0, 1}, {1, 0}};
+            int from = NightmareRules.FLOWER_ROW_FROM;
+            int to = NightmareRules.FLOWER_ROW_TO;
+            for (int d = 0; d < 4; d++) {
+                if (borders(d, flowerSafe)) {
+                    // a blossom row runs along the border, half of it in the quadrant next door: cyan one block into the safe
+                    // quadrant instead, only blocks wholly in it
+                    shape.columns(NightmareRules.blossomFloor(flowerSafe, d, flowerCentre.x, flowerCentre.z), flowerCentre.y,
+                            com.runecraft.boss.HazardKind.SAFE);
+                } else {
+                    // a berry row: both quadrants it splits take berry damage, so the whole row is red
+                    shape.line(flowerCentre.add(dirs[d][0] * from, 0, dirs[d][1] * from),
+                            flowerCentre.add(dirs[d][0] * to, 0, dirs[d][1] * to), 0.3, com.runecraft.boss.HazardKind.BLOOD);
+                }
+            }
+        }
+        if (surgeIn > 0 && surgeFrom != null && surgeTo != null) {
+            shape.line(surgeFrom, surgeTo, boss.getBbWidth() / 2 + 0.6, com.runecraft.boss.HazardKind.SHADOW);
+        }
+        floorMarks.show(shape);
+    }
+
+    /** Self-test: the floor blocks her spores, flowers and surge mark now. */
+    int floorMarked() {
+        return floorMarks == null ? 0 : floorMarks.size();
     }
 
     /** Half-lines north, west, south, east of her: blossoms (white) border the safe quadrant, berries (red) the others. */
@@ -991,12 +1039,7 @@ final class NightmareScript extends ScriptedBoss {
 
     /** Whether half-line {@code line} (0 north, 1 west, 2 south, 3 east) is a side of quadrant {@code q} (0 NE, 1 NW, 2 SW, 3 SE). */
     static boolean borders(int line, int q) {
-        return switch (q) {
-            case 0 -> line == 0 || line == 3;
-            case 1 -> line == 0 || line == 1;
-            case 2 -> line == 2 || line == 1;
-            default -> line == 2 || line == 3;
-        };
+        return NightmareRules.rowBorders(line, q);
     }
 
     // ---------------- Curse
@@ -1200,6 +1243,7 @@ final class NightmareScript extends ScriptedBoss {
         BossFx.warn(boss, (phosani ? "Phosani's Nightmare" : "The Nightmare") + " prepares to surge across the arena!");
         BossFx.cast(boss, "Surge", null, NightmareRules.SURGE_WIND_UP * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK, 24); // round 43
         drawSurge(boss); // drawn as it is made, then every 4 MC (tick): 36 MC before she surges
+        showFloor(boss);
     }
 
     /** The surge's path: its edges in orange dust at its true width and portal motes along it. */
@@ -1340,6 +1384,7 @@ final class NightmareScript extends ScriptedBoss {
         }
         sporesLeft = 30; // approx: how long they stay
         BossFx.warn(boss, "Spores sprout around the arena! Don't stand next to them.");
+        showFloor(boss);
         // drawn as they sprout; they burst from her next game tick (12 MC on), as hazards arm
         for (Vec3 sp : spores) {
             BossFx.world(boss).sendParticles(ParticleTypes.SPORE_BLOSSOM_AIR, sp.x, sp.y + 0.4, sp.z, 4, 0.2, 0.2, 0.2, 0);
@@ -1442,6 +1487,7 @@ final class NightmareScript extends ScriptedBoss {
         tickSurge(boss, target);
         tickFlowers(boss, target);
         tickSpores(boss);
+        showFloor(boss);
         tickHusks(boss);
         tickParasites(boss, target);
         tickWalkers(boss, target);
@@ -1533,6 +1579,9 @@ final class NightmareScript extends ScriptedBoss {
 
     private void cleanUp(DataBossEntity boss) {
         spores.clear();
+        if (floorMarks != null) {
+            floorMarks.clear();
+        }
         weary.keySet().forEach(SLOWED::remove);
         weary.clear();
         totems.forEach(Mob::discard);

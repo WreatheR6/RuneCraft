@@ -229,6 +229,7 @@ final class GameplayChecks {
         checks.addAll(BossWalkChecks.all(context));
         checks.addAll(ArenaCueChecks.all(context));
         checks.addAll(BossRealtimeChecks.all(context));
+        checks.addAll(FloorMarkerChecks.all(context)); // round 43: floor markers (boss:playability_floor_*)
         // Treasure Trails as the real player: a trail of each tier through every step type, its casket, the Mimic and Watson
         // (named minigame:* so the client walkthrough's real-player run includes them).
         for (com.runecraft.osrs.content.systems.ClueScrolls.Tier t : com.runecraft.osrs.content.systems.ClueScrolls.Tier.values()) {

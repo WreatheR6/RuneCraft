@@ -58,6 +58,8 @@ public class ZukScript implements BossScript, DataBossEntity.HpScaled {
     private AttackDef chargeAttack;
     private long lastShadowMc = -1_000_000L;
     private LivingEntity glyphCache;
+    /** The glyph's shadow as cyan floor blocks (round 43): the columns {@code glyphShields} covers all over, near the glyph. */
+    private com.runecraft.boss.FloorMarkers.Layer shadowFloor;
     private long glyphLookedMc = -1_000_000L;
 
     static LivingEntity glyph(DataBossEntity boss) {
@@ -201,7 +203,11 @@ public class ZukScript implements BossScript, DataBossEntity.HpScaled {
             glyphLookedMc = now;
         }
         LivingEntity glyph = glyphCache;
+        if (shadowFloor == null) {
+            shadowFloor = new com.runecraft.boss.FloorMarkers.Layer(boss);
+        }
         if (glyph == null || !glyph.isAlive()) {
+            shadowFloor.clear();
             return;
         }
         ServerLevel world = (ServerLevel) boss.level();
@@ -210,6 +216,7 @@ public class ZukScript implements BossScript, DataBossEntity.HpScaled {
         if (dir == 0) {
             dir = 1;
         }
+        showShadow(world, boss, glyph);
         double y = glyph.getY() + 0.12;
         boolean bright = charging && chargeDueMc - now <= ThreatTiming.FINAL_NOTE_MC;
         DustParticleOptions edge = ThreatCues.dust(SHADOW_RGB, charging ? (bright ? 1.8f : 1.4f) : 1.0f);
@@ -226,6 +233,24 @@ public class ZukScript implements BossScript, DataBossEntity.HpScaled {
                 ThreatCues.ring(world, t.position(), 0.8, ThreatCues.AREA_RGB, null, bright);
             }
         }
+    }
+
+    /**
+     * The glyph's shadow as cyan floor blocks (round 43), following it as it slides: every block column the cover counts all
+     * over ({@link TzHaarWaves#glyphShadowColumns}: {@link TzHaarWaves#glyphShields} at all four corners, lined up within the
+     * half width and further from Zuk than the glyph), out to the drawn length, so a player anywhere on a cyan block is
+     * covered. Put back as it moves on, when the glyph shatters, when Zuk dies or the run ends, and when the server stops.
+     * // playability: OSRS players learn where its model lags its true position
+     */
+    private void showShadow(ServerLevel world, DataBossEntity boss, LivingEntity glyph) {
+        java.util.List<int[]> cols = TzHaarWaves.glyphShadowColumns(glyph.getX(), glyph.getZ(), glyph.getBbWidth(), boss.getZ(),
+                SHADOW_LENGTH);
+        shadowFloor.show(new com.runecraft.boss.FloorMarkers.Shape(world).columns(cols, glyph.getY(), com.runecraft.boss.HazardKind.SAFE));
+    }
+
+    /** Self-test: floor blocks the glyph's shadow marks now. */
+    public int shadowMarked() {
+        return shadowFloor == null ? 0 : shadowFloor.size();
     }
 
     /** Self-test: whether a blast is charging, and when it lands (Minecraft tick, -1 for none). */

@@ -255,6 +255,42 @@ public final class NightmareRules {
         return d == 0 ? 0 : d == 2 ? 2 : 1;
     }
 
+    /** Whether half-line {@code line} (0 north, 1 west, 2 south, 3 east of her) is a side of quadrant {@code q} (0 NE, 1 NW, 2 SW, 3 SE). */
+    public static boolean rowBorders(int line, int q) {
+        return switch (q) {
+            case 0 -> line == 0 || line == 3;
+            case 1 -> line == 0 || line == 1;
+            case 2 -> line == 2 || line == 1;
+            default -> line == 2 || line == 3;
+        };
+    }
+
+    /** The corpse flower rows' reach from her centre (blocks): they sprout from 2 to 13 out. // approx: drawn length */
+    public static final int FLOWER_ROW_FROM = 2;
+    public static final int FLOWER_ROW_TO = 13;
+
+    /**
+     * The floor columns {@code {x, z}} shown safe beside blossom row {@code line} (0 north, 1 west, 2 south, 3 east of her
+     * centre ({@code cx}, {@code cz})) when quadrant {@code safe} is the safe one (round 43 floor markers, // playability):
+     * the row itself runs along the quadrant border, half of its blocks in the quadrant next door, so the safe row is one
+     * block into the safe quadrant and keeps only blocks lying wholly in it ({@link #quadrant} at all four corners, the test
+     * the bloom uses). Empty for a berry row (one that doesn't border the safe quadrant).
+     */
+    public static List<int[]> blossomFloor(int safe, int line, double cx, double cz) {
+        if (!rowBorders(line, safe)) {
+            return new ArrayList<>();
+        }
+        int[][] dirs = {{0, -1}, {-1, 0}, {0, 1}, {1, 0}};
+        int sx = safe == 0 || safe == 3 ? 1 : -1; // the safe quadrant's side: east for NE/SE
+        int sz = safe == 2 || safe == 3 ? 1 : -1; // south (+z) for SW/SE
+        double ox = dirs[line][0] == 0 ? sx : 0;
+        double oz = dirs[line][1] == 0 ? sz : 0;
+        List<int[]> row = com.runecraft.osrs.FloorShapes.line(cx + dirs[line][0] * FLOWER_ROW_FROM + ox,
+                cz + dirs[line][1] * FLOWER_ROW_FROM + oz, cx + dirs[line][0] * FLOWER_ROW_TO + ox,
+                cz + dirs[line][1] * FLOWER_ROW_TO + oz, 0.3);
+        return com.runecraft.osrs.FloorShapes.inside(row, (x, z) -> quadrant(x - cx, z - cz) == safe);
+    }
+
     // ------------------------------------------------------------ Sleepwalkers
     /** Sleepwalkers of The Nightmare (start of phases 2 and 3): 1 to 24 with the party size (approx: one per player). */
     public static int nightmareSleepwalkers(int players) {

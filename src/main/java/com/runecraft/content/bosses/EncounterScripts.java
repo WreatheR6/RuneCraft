@@ -70,6 +70,8 @@ final class EncounterScripts {
         private long floorOrangeAt;
         private long floorEndAt;
         private long nextFloorAt = -1;
+        /** The lit tiles and the tornadoes' hit circles as coloured floor blocks (round 43), or null before the first. */
+        private com.runecraft.boss.FloorMarkers.Layer floorMarks;
 
         Hunllef(boolean corrupted) {
             this.corrupted = corrupted;
@@ -304,6 +306,7 @@ final class EncounterScripts {
                     }
                 }
             }
+            showFloor(boss);
             long mc = com.runecraft.action.ActionManager.mcTick();
             if (mc - lastCueMc < com.runecraft.osrs.ArenaTiming.REDRAW_MC) {
                 return;
@@ -336,6 +339,62 @@ final class EncounterScripts {
                     }
                 }
             }
+        }
+
+        /**
+         * The lit tiles and the tornadoes as coloured floor blocks, every Minecraft tick (round 43): each 2x2-block tile light
+         * blue (corrupted: blood red) while it warns and orange while it burns, exactly the blocks {@code onBurningFloor} tests;
+         * a red circle under each tornado at its hit radius, following it as it glides. Put back as the tiles go out, the
+         * tornadoes vanish, the Hunllef dies or leaves, or the server stops. // playability: OSRS colours the tiles themselves
+         */
+        private void showFloor(DataBossEntity boss) {
+            if (floorMarks == null) {
+                floorMarks = new com.runecraft.boss.FloorMarkers.Layer(boss);
+            }
+            com.runecraft.boss.FloorMarkers.Shape shape = new com.runecraft.boss.FloorMarkers.Shape(BossFx.world(boss));
+            if (tornadoLife > 0) {
+                for (Mob m : tornadoes) {
+                    if (m.isAlive()) {
+                        shape.disc(m.position(), com.runecraft.osrs.content.minigames.Gauntlet.TORNADO_HIT_RADIUS,
+                                com.runecraft.boss.HazardKind.STRIKE);
+                    }
+                }
+            }
+            if (!floor.isEmpty()) {
+                com.runecraft.boss.HazardKind k = now >= floorOrangeAt ? com.runecraft.boss.HazardKind.FIRE
+                        : corrupted ? com.runecraft.boss.HazardKind.BLOOD : com.runecraft.boss.HazardKind.ICE;
+                int size = com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_TILE_BLOCKS;
+                for (BlockPos t : floor) {
+                    shape.columns(com.runecraft.osrs.FloorShapes.square(t.getX(), t.getZ(), t.getX() + size - 1, t.getZ() + size - 1),
+                            t.getY(), k);
+                }
+            }
+            floorMarks.show(shape);
+        }
+
+        /** Self-test: the floor blocks the tiles and tornadoes mark now. */
+        int floorMarked() {
+            return floorMarks == null ? 0 : floorMarks.size();
+        }
+
+        /** Self-test: whether the floor block under a tile's block is marked now. */
+        boolean floorMarks(BlockPos floorBlock) {
+            return floorMarks != null && floorMarks.marks(floorBlock);
+        }
+
+        /** Self-test: the lit tiles now (north-west blocks at the feet level). */
+        List<BlockPos> floorTiles() {
+            return floor;
+        }
+
+        /** Self-test: whether the lit tiles burn now (orange). */
+        boolean floorBurning() {
+            return !floor.isEmpty() && now >= floorOrangeAt;
+        }
+
+        /** Self-test: the floor lights up on the Hunllef's next game tick. */
+        void floorNow() {
+            nextFloorAt = Math.max(0, now);
         }
 
         /**
@@ -388,12 +447,18 @@ final class EncounterScripts {
             tornadoes.forEach(Mob::discard);
             tornadoes.clear();
             floor.clear();
+            if (floorMarks != null) {
+                floorMarks.clear();
+            }
         }
 
         @Override
         public void onRemoved(DataBossEntity boss) {
             tornadoes.forEach(Mob::discard);
             tornadoes.clear();
+            if (floorMarks != null) {
+                floorMarks.clear();
+            }
         }
     }
 
@@ -605,6 +670,15 @@ final class EncounterScripts {
             return out;
         }
 
+        /**
+         * His gas flares mark their vents grey as they are spat (round 43; the gas hazard they leave keeps grey blocks while it
+         * lasts), the Orb of Darkness purple. // playability: OSRS shows the flare landing on the vent
+         */
+        @Override
+        protected com.runecraft.boss.HazardKind strikeFloor(String name, net.minecraft.core.particles.ParticleOptions particle) {
+            return particle == ParticleTypes.SNEEZE ? com.runecraft.boss.HazardKind.GAS : super.strikeFloor(name, particle);
+        }
+
         /** Discarded, killed or reset away from his arena: the pillars raised around him go too. */
         @Override
         public void onRemoved(DataBossEntity boss) {
@@ -734,6 +808,9 @@ final class EncounterScripts {
          * Swinging axes: each axe hits a player once for up to 35 (awakened 96; Protect from Melee halves it) and
          * starts a bleed (3 every 3 ticks for 14 ticks, every tick while running; awakened 5 a hit). Awakened axes also hit
          * whoever stands where they appear, and that hit does not bleed (OSRS Wiki "Vardorvis/Strategies").
+         * Round 43: an axe's whole path is marked on the floor as it appears, and it sweeps along it a step at a time
+         * ({@link BossRealtime#axeStepDelay}), each step's blocks going back as the axe passes. // playability: the steps all
+         * landed together; OSRS moves the axe across the arena tile by tile
          */
         private void axes(DataBossEntity boss, ServerPlayer target) {
             int n = BossMechanics.vardorvisAxes(hp(boss), boss.awakened());
@@ -757,7 +834,7 @@ final class EncounterScripts {
                     if (appearing) {
                         BossFx.world(boss).sendParticles(ParticleTypes.SWEEP_ATTACK, at.x, p.y + 1.0, at.z, 3, 0.4, 0.3, 0.4, 0);
                     }
-                    namedStrike("swinging_axe", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, 0, 1.1,
+                    namedStrike("swinging_axe", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), BossRealtime.axeStepDelay(i + 4), 0, 1.1,
                             ParticleTypes.SWEEP_ATTACK, (hit, pos) -> {
                                 for (ServerPlayer h : hit) {
                                     if (!struck.add(h.getUUID())) {
@@ -846,6 +923,11 @@ final class EncounterScripts {
         // self-test walk
         void walkStrangle(DataBossEntity boss, ServerPlayer p) {
             strangle(boss, p);
+        }
+
+        /** Self-test: a set of swinging axes now, aimed at {@code p}. */
+        void walkAxes(DataBossEntity boss, ServerPlayer p) {
+            axes(boss, p);
         }
 
         List<Mob> walkSpores() {
@@ -1451,6 +1533,8 @@ final class EncounterScripts {
         private long chargeUntil = -1;
         private int chargeId;
         private int blastsLeft;
+        /** Forming wall cells, the Elemental Blast's safe spot and elementals about to explode on the floor (round 43). */
+        private com.runecraft.boss.FloorMarkers.Layer titanFloor;
         private long nextBlast;
         private int blastCycle = 10;
         private Vec3 safe;
@@ -1761,6 +1845,7 @@ final class EncounterScripts {
             }
             tickWalls(boss, w);
             tickElementals(boss, w);
+            showTitanFloor(boss, w);
             if (target == null || subdued) {
                 return;
             }
@@ -1847,6 +1932,7 @@ final class EncounterScripts {
                 chargeId++;
                 chargeUntil = now + 8;
                 safe = around(boss, homeVec().add(2.5, 0, 0), 5);
+                showTitanFloor(boss, w);
                 BossFx.warn(boss, "The Royal Titans charge an Elemental Blast! Find the safe spot!");
                 // round 43: the first blast lands on chargeUntil (blasts armed on chargeUntil - 1, fired the game tick after)
                 BossFx.cast(boss, "Elemental Blast", null, (int) (chargeUntil - now) * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK, 24);
@@ -1866,6 +1952,48 @@ final class EncounterScripts {
             }
             wall.gone = new boolean[wall.cells.size()];
             walls.add(wall);
+            showTitanFloor(boss, w);
+        }
+
+        /**
+         * Round 43 floor markers, refreshed every game tick: a forming wall's tiles (2x2 blocks, the cells a player standing on
+         * gets hit and stops) orange for fire, light blue for icicles, until the wall stands; an elemental's 3-block blast
+         * circle in its element's colour for its last 3 ticks; the blocks wholly inside the Elemental Blast's 1.5-block safe
+         * circle cyan while it charges and fires (added last, so it shows through the rest). // playability: OSRS shows the forming wall and the safe tile's glow
+         */
+        private void showTitanFloor(DataBossEntity boss, ServerLevel w) {
+            if (titanFloor == null) {
+                titanFloor = new com.runecraft.boss.FloorMarkers.Layer(boss);
+            }
+            com.runecraft.boss.FloorMarkers.Shape shape = new com.runecraft.boss.FloorMarkers.Shape(w);
+            for (Elemental e : elementals) {
+                if (e.mob().isAlive() && e.explodeAt() - now <= 3) {
+                    shape.disc(e.mob().position(), 3.0, e.fire() ? com.runecraft.boss.HazardKind.FIRE : com.runecraft.boss.HazardKind.ICE);
+                }
+            }
+            for (Wall wall : walls) {
+                if (wall.formed) {
+                    continue;
+                }
+                for (int i = 0; i < wall.cells.size(); i++) {
+                    if (wall.gone[i]) {
+                        continue;
+                    }
+                    Vec3 c = wall.cells.get(i);
+                    shape.columns(com.runecraft.osrs.FloorShapes.square((int) Math.floor(c.x - 0.5), (int) Math.floor(c.z - 0.5),
+                            (int) Math.floor(c.x + 0.5), (int) Math.floor(c.z + 0.5)), c.y,
+                            wall.fire ? com.runecraft.boss.HazardKind.FIRE : com.runecraft.boss.HazardKind.ICE);
+                }
+            }
+            if (safe != null && (charging() || blastsLeft > 0)) {
+                shape.discInside(safe, 1.5, com.runecraft.boss.HazardKind.SAFE);
+            }
+            titanFloor.show(shape);
+        }
+
+        /** Self-test: the floor blocks the Titans' walls, safe spot and elementals mark now. */
+        int walkFloorMarked() {
+            return titanFloor == null ? 0 : titanFloor.size();
         }
 
         private void tickWalls(DataBossEntity boss, ServerLevel w) {
@@ -2042,6 +2170,9 @@ final class EncounterScripts {
         }
 
         private void cleanUp(DataBossEntity boss) {
+            if (titanFloor != null) {
+                titanFloor.clear();
+            }
             elementals.forEach(e -> e.mob().discard());
             elementals.clear();
             if (watcher != null) {

@@ -301,7 +301,8 @@ final class ClassicBossWalks {
             // all a hazard sees, so the walk lends it to the hazards for the phase.
             java.util.function.Function<net.minecraft.server.level.ServerLevel, List<ServerPlayer>> extraBefore = Mechanics.extraPlayers;
             Mechanics.extraPlayers = w -> w == p.level() ? List.of(p) : List.of();
-            int marked = com.runecraft.boss.FloorMarkers.live();
+            // the acid's own (lime) blocks: Vorkath's other strikes mark their own tiles meanwhile (round 43)
+            int marked = com.runecraft.boss.FloorMarkers.live(com.runecraft.boss.HazardKind.ACID);
             try {
                 for (int i = 0; i < ZulrahVorkath.RAPID_FIRE_SHOTS + 2 && v.acidPhase(); i++) {
                     now = realTick(boss, p, now);
@@ -321,8 +322,9 @@ final class ClassicBossWalks {
                 now = realTick(boss, p, now);
             }
             expect(Mechanics.hazardsOf(boss) == 0, "acid pools outlived the acid phase");
-            expect(com.runecraft.boss.FloorMarkers.live() <= marked, "the acid's lime floor blocks weren't put back ("
-                    + com.runecraft.boss.FloorMarkers.live() + " marked, " + marked + " before)");
+            expect(com.runecraft.boss.FloorMarkers.live(com.runecraft.boss.HazardKind.ACID) <= marked, "the acid's lime floor blocks"
+                    + " weren't put back (" + com.runecraft.boss.FloorMarkers.live(com.runecraft.boss.HazardKind.ACID) + " marked, "
+                    + marked + " before)");
             expect(acid[2] <= ZulrahVorkath.ACID_MAX && acid[0] >= acid[1], "an acid hit outside 1-" + ZulrahVorkath.ACID_MAX
                     + " (" + acid[0] + " in " + acid[1] + " hits, biggest " + acid[2] + ")");
             float leeched = boss.getHealth() - bossHp;

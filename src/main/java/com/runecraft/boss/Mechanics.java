@@ -130,6 +130,8 @@ public final class Mechanics {
         boolean impactShown;
         boolean done;
         Threat threat;
+        /** A sky strike's floor marker until it lands (round 43), or null. */
+        FloorMarkers.Layer floor;
 
         Pending(Kind kind, LivingEntity from, OsrsMonsterEntity mob, ServerPlayer target, AttackDef attack, AttackType style,
                 double multiplier, Vec3 marked, long createdMc, long dueMc, double reach, Runnable resolve, Runnable after,
@@ -335,6 +337,9 @@ public final class Mechanics {
                     null, null, extra, attack.melee(), false);
             add(p);
             drawTelegraph(p, now);
+            if (sp == AttackDef.Special.SKY_STRIKE) {
+                p.floor = skyStrikeFloor(mob, attack, marked);
+            }
             ThreatCues.castBar(mob, target, attack, attack.style(), (int) (due - now)); // round 42: the HUD cast bar
             return;
         }
@@ -504,6 +509,10 @@ public final class Mechanics {
 
     private static void finish(Pending p, long now, boolean landed) {
         p.done = true;
+        if (p.floor != null) {
+            p.floor.clear(); // a sky strike's tiles go back as it lands or is cancelled
+            p.floor = null;
+        }
         if (landed && (p.attack == null || singleTarget(p.attack.special()))) {
             LANDED.add(new Landed(p.target, now, p.style));
         }
@@ -938,7 +947,7 @@ public final class Mechanics {
                 pullNextTo(mob, target);
                 com.runecraft.combat.FreezeRules.moved(target); // a frozen player stays where the pull put them
             }
-            case HAZARD -> addHazard((ServerLevel) mob.level(), target.position(), Math.max(1, a.param()), 10, mob);
+            case HAZARD -> addHazard((ServerLevel) mob.level(), target.position(), Math.max(1, a.param()), 10, mob, hazardKind(mob, a));
             case DRAIN_STAT -> {
                 Skill skill = Skill.byIndex(Math.max(0, Math.min(Skill.count() - 1, a.param())));
                 int drain = Math.max(1, data.skills().currentLevel(skill) / 10);
@@ -987,6 +996,37 @@ public final class Mechanics {
     }
 
     // ------------------------------------------------------------------ ground hazards
+
+    /**
+     * The floor kind of an attack's ground pool (round 43): its particle's ({@link HazardKind#forParticleId}; acid lime by
+     * default, the plain hazard ring's colour), so every HAZARD attack's pool is a coloured floor block while it lasts. None
+     * inside a raid (its rooms are another system's, rebuilt between raids). // playability: OSRS tints the pool's tile
+     */
+    private static HazardKind hazardKind(LivingEntity mob, AttackDef a) {
+        if (!floorMarked(mob)) {
+            return null;
+        }
+        HazardKind k = HazardKind.forParticleId(a.particle());
+        return k == null || k == HazardKind.STRIKE ? HazardKind.ACID : k;
+    }
+
+    /** Whether a monster's ground mechanics get floor markers: everywhere but inside a raid instance. */
+    private static boolean floorMarked(LivingEntity mob) {
+        return mob == null || com.runecraft.content.raids.RaidManager.at(mob) == null;
+    }
+
+    /**
+     * A sky strike's floor marker (round 43): the blocks under its 1.5-block ring in its particle's colour (red by default),
+     * from the cue until it lands; none inside a raid. // playability: OSRS shows the falling object's shadow on the tiles
+     */
+    private static FloorMarkers.Layer skyStrikeFloor(LivingEntity mob, AttackDef a, Vec3 marked) {
+        if (!floorMarked(mob) || !(mob.level() instanceof ServerLevel world)) {
+            return null;
+        }
+        HazardKind k = HazardKind.forParticleId(a.particle());
+        return FloorMarkers.show(new FloorMarkers.Shape(world).disc(marked, ThreatTiming.SKY_STRIKE_RADIUS,
+                k == null ? HazardKind.STRIKE : k), mob);
+    }
 
     /** Places a damaging ground hazard (e.g. acid pool, lava splat) for a number of game ticks; it arms 12 MC later. */
     public static void addHazard(ServerLevel world, Vec3 pos, int damage, int gameTicks, LivingEntity owner) {
@@ -1054,7 +1094,15 @@ public final class Mechanics {
      * (style spacing), so a projectile from a boss killed at the end of one check doesn't land in the next.
      */
     public static void clearPendingForSelfTest(ServerLevel world, AABB box) {
-        PENDING.removeIf(p -> p.level == world && box.contains(p.target.position()));
+        PENDING.removeIf(p -> {
+            if (p.level == world && box.contains(p.target.position())) {
+                if (p.floor != null) {
+                    p.floor.clear();
+                }
+                return true;
+            }
+            return false;
+        });
         LANDED.removeIf(l -> l.target().level() == world && box.contains(l.target().position()));
     }
 

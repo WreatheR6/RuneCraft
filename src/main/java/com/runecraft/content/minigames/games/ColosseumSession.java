@@ -110,6 +110,8 @@ public class ColosseumSession extends MinigameSession {
     // Monster mechanics
     private final Map<Integer, Integer> javelinAttacks = new HashMap<>();
     private final List<Javelin> javelins = new ArrayList<>();
+    /** Volatility squares, sky javelin tiles and Solarflare tiles as floor blocks (round 43); the session releases them. */
+    private final com.runecraft.boss.FloorMarkers.Layer floorMarks = new com.runecraft.boss.FloorMarkers.Layer(null);
     private final Map<Integer, List<AttackType>> manticorePatterns = new HashMap<>();
     private final Map<Integer, Long> manticoreVolleys = new HashMap<>();
     /** Manticore orbs still to land. */
@@ -322,6 +324,7 @@ public class ColosseumSession extends MinigameSession {
         com.runecraft.boss.Mechanics.clearHazards(world, box()); // Sol Heredit's molten sand subsides
         javelins.clear();
         orbs.clear();
+        floorMarks.clear();
         for (LivingEntity e : spawned) {
             e.discard();
         }
@@ -807,6 +810,7 @@ public class ColosseumSession extends MinigameSession {
         explosions.add(new Explosion(entity.blockPosition(), FortisColosseum.size(creatureId), tier,
                 ticks + FortisColosseum.VOLATILITY_DELAY_TICKS, wave));
         drawExplosions();
+        showFloor();
         world.playSound(null, entity.blockPosition(), net.minecraft.sounds.SoundEvents.TNT_PRIMED, net.minecraft.sounds.SoundSource.HOSTILE,
                 0.8f, 1.2f);
     }
@@ -859,6 +863,49 @@ public class ColosseumSession extends MinigameSession {
         }
     }
 
+    /**
+     * Round 43 floor markers, redrawn with the dust ones and as each is made: a pending Volatility blast's square (exactly the
+     * tiles {@code volatilityHits} tests) and a sky javelin's tile red; each Solarflare orb's tile orange and the tile it moves
+     * to next red. Put back as they land or move on, when the wave or run ends, and when the server stops; molten sand (magma)
+     * is never covered. // playability: OSRS shows the javelin's shadow, the blast and the orb itself
+     */
+    private void showFloor() {
+        com.runecraft.boss.FloorMarkers.Shape shape = new com.runecraft.boss.FloorMarkers.Shape(world);
+        if (!isEnded()) {
+            for (Explosion e : explosions) {
+                int r = FortisColosseum.volatilityRadius(e.size(), e.tier());
+                shape.columns(com.runecraft.osrs.FloorShapes.square(e.at().getX() - r, e.at().getZ() - r, e.at().getX() + r,
+                        e.at().getZ() + r), e.at().getY(), com.runecraft.boss.HazardKind.STRIKE);
+            }
+            for (Javelin j : javelins) {
+                BlockPos t = j.target();
+                shape.disc(new net.minecraft.world.phys.Vec3(t.getX() + 0.5, t.getY(), t.getZ() + 0.5), FortisColosseum.TILE_STRIKE_RADIUS,
+                        com.runecraft.boss.HazardKind.STRIKE);
+            }
+            int tier = active.getOrDefault(Modifier.SOLARFLARE, 0);
+            if (tier > 0 && state == State.FIGHTING) {
+                boolean solWave = wave >= FortisColosseum.WAVES;
+                for (int o = 0; o < FortisColosseum.solarflareOrbs(solWave); o++) {
+                    List<int[]> path = FortisColosseum.solarflarePath(solWave, o);
+                    int[] next = path.get((flareIndex[o] + 1) % path.size());
+                    int[] now = path.get(flareIndex[o] % path.size());
+                    BlockPos to = rel(next[0], 1, next[1]);
+                    shape.block(com.runecraft.boss.FloorMarkers.floorAt(world, to.getX(), to.getZ(), to.getY()),
+                            com.runecraft.boss.HazardKind.STRIKE);
+                    BlockPos at = rel(now[0], 1, now[1]);
+                    shape.block(com.runecraft.boss.FloorMarkers.floorAt(world, at.getX(), at.getZ(), at.getY()),
+                            com.runecraft.boss.HazardKind.FIRE);
+                }
+            }
+        }
+        floorMarks.show(shape);
+    }
+
+    /** Self-test: the floor blocks the Colosseum's Volatility squares, javelins and Solarflare orbs mark now. */
+    public int floorMarked() {
+        return floorMarks.size();
+    }
+
     /** A dust outline round the floor area from block ({@code x0}, {@code z0}) to ({@code x1}, {@code z1}). */
     private void drawSquare(double x0, double z0, double x1, double z1, int floorY, boolean landing) {
         var dust = landing ? com.runecraft.boss.StrikeMarkers.OUTLINE_LANDING : com.runecraft.boss.StrikeMarkers.OUTLINE;
@@ -885,6 +932,7 @@ public class ColosseumSession extends MinigameSession {
             return;
         }
         drawExplosions();
+        showFloor();
         for (Javelin j : javelins) {
             BlockPos t = j.target();
             boolean landing = (j.lands() - ticks) * 12 <= com.runecraft.osrs.ArenaTiming.FINAL_CUE_MC;
@@ -925,6 +973,7 @@ public class ColosseumSession extends MinigameSession {
         }
         mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
         javelins.add(new Javelin(mob, target.blockPosition(), ticks + FortisColosseum.JAVELIN_FLIGHT_TICKS));
+        showFloor();
         Msg.telegraph(target, "The Javelin Colossus launches a javelin high into the air!", ChatFormatting.GOLD);
         return true;
     }
@@ -1895,6 +1944,8 @@ public class ColosseumSession extends MinigameSession {
         removeWall();
         orbs.clear();
         javelins.clear();
+        explosions.clear();
+        floorMarks.clear();
         com.runecraft.boss.Mechanics.clearHazards(world, box()); // Sol Heredit's molten sand
         // A run ended mid-wave (a death, a logout) leaves its creatures, swarms and totems: discarded from the session's own
         // lists, which an area sweep of a chunk that isn't entity-ticking yet would miss (see spawned).
