@@ -193,8 +193,18 @@ final class NightmareScript extends ScriptedBoss {
     /** Self-test: only standard attacks (the phase walk performs her specials itself). */
     boolean selfTestQuiet;
 
-    /** A standard attack winding up: lands at {@code due} on whoever is still in its reach. */
-    private record Pending(AttackDef attack, long due, Vec3 facing, List<ServerPlayer> victims) {
+    /**
+     * A standard attack winding up: lands at {@code due} on whoever is still in its reach. Its cue is redrawn every 4 Minecraft
+     * ticks from {@code createdMc} until {@code dueMc}.
+     */
+    private record Pending(AttackDef attack, long due, Vec3 facing, List<ServerPlayer> victims, long createdMc, long dueMc) {
+    }
+
+    /** Self-test: sees each standard attack as it winds up (its style, wind-up start and landing in Minecraft ticks). */
+    static WindUpListener windUpListener;
+
+    interface WindUpListener {
+        void windUp(AttackDef attack, long createdMc, long dueMc);
     }
 
     /** A parasite out of its host. */
@@ -702,15 +712,46 @@ final class NightmareScript extends ScriptedBoss {
             }
         }
         if (a.message() != null) {
-            BossFx.warn(boss, a.message());
+            // named in its style's colour: "(melee)", "(magic)", "(ranged)"
+            BossFx.warn(boss, a.message() + " (" + (a.style().isMelee() ? "melee" : a.style() == AttackType.MAGIC ? "magic" : "ranged") + ")");
         }
         Vec3 facing = target.position().subtract(boss.position()).multiply(1, 0, 1);
         facing = facing.lengthSqr() < 1e-6 ? new Vec3(0, 0, 1) : facing.normalize();
         List<ServerPlayer> victims = a.style().isMelee() ? List.of() : new ArrayList<>(fighters(boss, target));
-        int windUp = a.style().isMelee() ? NightmareRules.MELEE_WIND_UP : NightmareRules.RANGED_WIND_UP;
-        pending.add(new Pending(a, now + windUp, facing, victims));
+        // playability: never under 3 game ticks from the wind-up (OSRS melee 2), and 3/4 in Phosani's phase three, where a
+        // protection prayer must only go up after the wind-up shows (BossRealtime.nightmareWindUp)
+        int windUp = com.runecraft.osrs.content.bosses.BossRealtime.nightmareWindUp(phosani, phase, desperate, a.style().isMelee());
+        long createdMc = com.runecraft.action.ActionManager.mcTick();
+        long dueMc = createdMc + (long) windUp * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK;
+        pending.add(new Pending(a, now + windUp, facing, victims, createdMc, dueMc));
+        if (windUpListener != null) {
+            windUpListener.windUp(a, createdMc, dueMc);
+        }
         BossFx.world(boss).sendParticles(a.style() == AttackType.MAGIC ? ParticleTypes.WITCH : a.style() == AttackType.RANGED
                 ? ParticleTypes.SOUL : ParticleTypes.CRIT, boss.getX(), boss.getY() + boss.getBbHeight(), boss.getZ(), 20, 0.6, 0.4, 0.6, 0.05);
+        com.runecraft.boss.ThreatCues.halo(boss, com.runecraft.boss.ThreatCues.rgb(a.style()), null, false);
+    }
+
+    /**
+     * Every Minecraft tick: her standard attacks' wind-ups redrawn every 4 MC as a halo of their style's colour (bright in their
+     * last 10 MC, with the rising note), the surge's path, and the corpse flowers' rows. // playability: OSRS shows each once
+     */
+    @Override
+    public void tick(DataBossEntity boss) {
+        super.tick(boss);
+        long mc = com.runecraft.action.ActionManager.mcTick();
+        for (Pending p : pending) {
+            if (mc < p.dueMc() && (mc - p.createdMc()) % com.runecraft.osrs.ThreatTiming.REDRAW_MC == 0) {
+                boolean bright = p.dueMc() - mc <= com.runecraft.osrs.ThreatTiming.FINAL_NOTE_MC;
+                com.runecraft.boss.ThreatCues.halo(boss, com.runecraft.boss.ThreatCues.rgb(p.attack().style()), null, bright);
+            }
+            com.runecraft.boss.ThreatCues.finalNote(boss, com.runecraft.osrs.ThreatTiming.finalNotePitch(mc, p.dueMc()));
+        }
+        if (mc % com.runecraft.osrs.ThreatTiming.REDRAW_MC == 0) {
+            if (surgeIn > 0 && surgeFrom != null) {
+                drawSurge(boss);
+            }
+        }
     }
 
     private void tickPending(DataBossEntity boss, ServerPlayer target) {
@@ -861,19 +902,26 @@ final class NightmareScript extends ScriptedBoss {
         Random r = new Random(boss.getRandom().nextLong());
         for (int i = 0; i < husks.size(); i++) {
             Mob h = husks.get(i);
-            // The magic husk hits a tick before the ranged one; each every 4 ticks.
-            if (!h.isAlive() || (huskTick - 1 - i) % NightmareRules.HUSK_SPEED != 0) {
+            // Each every 4 ticks, the ranged one 2 ticks after the magic one (BossRealtime.huskAttacks). // playability: OSRS one
+            // tick after (a one-tick prayer flick)
+            if (!h.isAlive() || !com.runecraft.osrs.content.bosses.BossRealtime.huskAttacks(i, huskTick)) {
                 continue;
             }
             AttackType style = i == 0 ? AttackType.MAGIC : AttackType.RANGED;
             long roll = CombatFormulas.npcRoll(NightmareRules.HUSK_LEVEL, NightmareRules.huskAttackBonus(phosani));
-            int d = BossHits.roll(bound, style, NightmareRules.huskMaxHit(phosani), roll, false, r);
-            if (BossHits.protectedFrom(bound, style)) {
-                d = 0; // their hits are negated by the right protection prayer
-            }
+            int max = NightmareRules.huskMaxHit(phosani);
+            long seed = r.nextLong();
+            ServerPlayer victim = bound;
             BossFx.world(boss).sendParticles(style == AttackType.MAGIC ? ParticleTypes.WITCH : ParticleTypes.CRIT,
                     h.getX(), h.getY() + 1.2, h.getZ(), 6, 0.2, 0.2, 0.2, 0.02);
-            BossHits.deal(h, bound, "husk", style, d);
+            // a visible projectile of its style, rolled and prayed against when it lands (round 41's delivery)
+            Mechanics.deliverProjectile(h, victim, style, false, 16, () -> {
+                int d = BossHits.roll(victim, style, max, roll, false, new Random(seed));
+                if (BossHits.protectedFrom(victim, style)) {
+                    d = 0; // their hits are negated by the right protection prayer
+                }
+                BossHits.deal(h, victim, "husk", style, d);
+            });
         }
     }
 
@@ -887,6 +935,22 @@ final class NightmareScript extends ScriptedBoss {
         flowerTicks = NightmareRules.FLOWER_BLOOM_TICKS + NightmareRules.FLOWER_TICKS;
         clawChain = phosani ? NightmareRules.PHOSANI_CLAW_CHAIN : NightmareRules.NIGHTMARE_CLAW_CHAIN;
         BossFx.warn(boss, "Corpse flowers split the arena! Stand between the white blossoms.");
+        drawFlowers(boss); // drawn as they sprout: 60 MC before they bloom
+    }
+
+    /** Half-lines north, west, south, east of her: blossoms (white) border the safe quadrant, berries (red) the others. */
+    private void drawFlowers(DataBossEntity boss) {
+        ServerLevel w = BossFx.world(boss);
+        double[][] dirs = {{0, -1}, {-1, 0}, {0, 1}, {1, 0}};
+        for (int d = 0; d < 4; d++) {
+            // half-line d (N, W, S, E) borders quadrants d and d-1 (NE=0 N|E, NW=1 N|W, SW=2 S|W, SE=3 S|E)
+            boolean blossom = borders(d, flowerSafe);
+            ParticleOptions particle = blossom ? ParticleTypes.END_ROD : ParticleTypes.CRIMSON_SPORE;
+            for (double s = 2; s <= 13; s += 1.5) {
+                w.sendParticles(particle, flowerCentre.x + dirs[d][0] * s, flowerCentre.y + 0.2, flowerCentre.z + dirs[d][1] * s,
+                        1, 0.05, 0.05, 0.05, 0);
+            }
+        }
     }
 
     boolean flowersBloomed() {
@@ -901,19 +965,8 @@ final class NightmareScript extends ScriptedBoss {
             flowerSafe = -1;
             return;
         }
-        ServerLevel w = BossFx.world(boss);
         if (flowerTicks % 2 == 0) {
-            // Half-lines north, west, south, east of her: blossoms (white) border the safe quadrant, berries (red) the others.
-            double[][] dirs = {{0, -1}, {-1, 0}, {0, 1}, {1, 0}};
-            for (int d = 0; d < 4; d++) {
-                // half-line d (N, W, S, E) borders quadrants d and d-1 (NE=0 N|E, NW=1 N|W, SW=2 S|W, SE=3 S|E)
-                boolean blossom = borders(d, flowerSafe);
-                ParticleOptions particle = blossom ? ParticleTypes.END_ROD : ParticleTypes.CRIMSON_SPORE;
-                for (double s = 2; s <= 13; s += 1.5) {
-                    w.sendParticles(particle, flowerCentre.x + dirs[d][0] * s, flowerCentre.y + 0.2, flowerCentre.z + dirs[d][1] * s,
-                            1, 0.05, 0.05, 0.05, 0);
-                }
-            }
+            drawFlowers(boss);
         }
         flowerTicks--;
         if (!flowersBloomed()) {
@@ -1116,11 +1169,18 @@ final class NightmareScript extends ScriptedBoss {
         AttackType style = parasite.magicNext()[0] ? AttackType.MAGIC : AttackType.RANGED;
         parasite.magicNext()[0] = !parasite.magicNext()[0];
         long roll = CombatFormulas.npcRoll(60, NightmareRules.parasiteAttackBonus(phosani, parasite.weakened()));
-        int d = BossHits.roll(host, style, NightmareRules.parasiteMaxHit(phosani, parasite.weakened()), roll, false, r);
-        if (BossHits.protectedFrom(host, style)) {
-            d = 0;
-        }
-        BossHits.deal(parasite.mob(), host, "parasite", style, d);
+        int max = NightmareRules.parasiteMaxHit(phosani, parasite.weakened());
+        long seed = r.nextLong();
+        ServerPlayer victim = host;
+        // a visible projectile of its style, rolled and prayed against when it lands (round 41's delivery). // playability: OSRS
+        // the parasite's animation, its hit read on the tick
+        Mechanics.deliverProjectile(parasite.mob(), victim, style, false, 20, () -> {
+            int d = BossHits.roll(victim, style, max, roll, false, new Random(seed));
+            if (BossHits.protectedFrom(victim, style)) {
+                d = 0;
+            }
+            BossHits.deal(parasite.mob(), victim, "parasite", style, d);
+        });
     }
 
     // ---------------- Surge
@@ -1135,21 +1195,34 @@ final class NightmareScript extends ScriptedBoss {
         boss.teleportTo(surgeFrom.x, surgeFrom.y, surgeFrom.z);
         surgeIn = NightmareRules.SURGE_WIND_UP;
         BossFx.warn(boss, (phosani ? "Phosani's Nightmare" : "The Nightmare") + " prepares to surge across the arena!");
+        drawSurge(boss); // drawn as it is made, then every 4 MC (tick): 36 MC before she surges
+    }
+
+    /** The surge's path: its edges in orange dust at its true width and portal motes along it. */
+    private void drawSurge(DataBossEntity boss) {
+        ServerLevel w = BossFx.world(boss);
+        Vec3 path = surgeTo.subtract(surgeFrom);
+        Vec3 dir = path.multiply(1, 0, 1);
+        dir = dir.lengthSqr() < 1e-6 ? new Vec3(1, 0, 0) : dir.normalize();
+        Vec3 side = new Vec3(-dir.z, 0, dir.x).scale(boss.getBbWidth() / 2 + 0.6);
+        var edge = com.runecraft.boss.ThreatCues.dust(com.runecraft.boss.ThreatCues.AREA_RGB, 1.4f);
+        for (double s = 0; s <= 1; s += 0.05) {
+            Vec3 p = surgeFrom.add(path.scale(s));
+            w.sendParticles(ParticleTypes.PORTAL, p.x, p.y + 0.3, p.z, 1, 0.6, 0.1, 0.6, 0);
+            w.sendParticles(edge, p.x + side.x, p.y + 0.15, p.z + side.z, 1, 0, 0, 0, 0);
+            w.sendParticles(edge, p.x - side.x, p.y + 0.15, p.z - side.z, 1, 0, 0, 0, 0);
+        }
     }
 
     private void tickSurge(DataBossEntity boss, ServerPlayer target) {
         if (surgeIn <= 0 || surgeFrom == null) {
             return;
         }
-        ServerLevel w = BossFx.world(boss);
-        Vec3 path = surgeTo.subtract(surgeFrom);
-        for (double s = 0; s <= 1; s += 0.05) {
-            Vec3 p = surgeFrom.add(path.scale(s));
-            w.sendParticles(ParticleTypes.PORTAL, p.x, p.y + 0.3, p.z, 1, 0.6, 0.1, 0.6, 0);
-        }
         if (--surgeIn > 0) {
             return;
         }
+        ServerLevel w = BossFx.world(boss);
+        Vec3 path = surgeTo.subtract(surgeFrom);
         double half = boss.getBbWidth() / 2 + 0.6;
         double len = path.horizontalDistance();
         Vec3 dir = path.multiply(1, 0, 1).normalize();
@@ -1263,6 +1336,10 @@ final class NightmareScript extends ScriptedBoss {
         }
         sporesLeft = 30; // approx: how long they stay
         BossFx.warn(boss, "Spores sprout around the arena! Don't stand next to them.");
+        // drawn as they sprout; they burst from her next game tick (12 MC on), as hazards arm
+        for (Vec3 sp : spores) {
+            BossFx.world(boss).sendParticles(ParticleTypes.SPORE_BLOSSOM_AIR, sp.x, sp.y + 0.4, sp.z, 4, 0.2, 0.2, 0.2, 0);
+        }
     }
 
     /** Spores burst when a player comes within a tile; weary players can't run and their yawns drain prayer (Phosani). */

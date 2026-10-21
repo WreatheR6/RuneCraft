@@ -9,6 +9,7 @@ import com.runecraft.osrs.Prayer;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.bosses.BossMechanics;
+import com.runecraft.osrs.content.bosses.BossRealtime;
 import com.runecraft.osrs.content.bosses.SlayerBosses;
 import com.runecraft.osrs.content.bosses.SlayerBosses.HydraPhase;
 import com.runecraft.util.Inv;
@@ -201,11 +202,25 @@ final class SlayerScripts {
      * summoned souls every seventh (they appear in a random order and attack west to east: unprotected 30, 22 with an
      * elysian; protected a 30 prayer drain, 15 with a spectral); under 200 three lava pools every fifth (one under the player,
      * 10 as they form and 15 every two ticks on them). Auto attacks bite in melee range, else ranged or magic.
+     *
+     * <p>Real time (round 42, // playability): the triple attack's order (magic, ranged, bite) shows as three coloured orbs over
+     * her from the attack before it, each going out as its attack starts, and the delivery spaces its three hits 20+ MC apart;
+     * each summoned soul glows in its style's colour, with its place in the order on screen, {@value BossRealtime#CERB_SOUL_CUE_TICKS}
+     * game ticks before it attacks (OSRS: the soul's animation on the tick it hits), the souls still attacking 2 ticks apart.
      */
     static final class Cerberus extends ScriptedBoss {
         private static final String[] SOUL_IDS = {"summoned_soul_ranged", "summoned_soul_magic", "summoned_soul_melee"};
         private static final Prayer[] SOUL_PRAYERS = {Prayer.PROTECT_FROM_MISSILES, Prayer.PROTECT_FROM_MAGIC, Prayer.PROTECT_FROM_MELEE};
+        private static final AttackType[] SOUL_STYLES = {AttackType.RANGED, AttackType.MAGIC, AttackType.STAB};
         private static final String[] SOUL_NAMES = {"ranged", "magic", "melee"};
+        /** The triple attack's styles in order (OSRS Wiki: magic, ranged, then the bite). */
+        private static final AttackType[] TRIPLE_STYLES = {AttackType.MAGIC, AttackType.RANGED, AttackType.STAB};
+        /** Self-test: sees each soul's cue ({@code attack} false) and attack (true), with the soul's place and style index. */
+        static SoulListener soulListener;
+
+        interface SoulListener {
+            void soul(int place, int style, boolean attack, long mc);
+        }
 
         private record LavaPool(Vec3 pos, long until) {
         }
@@ -215,8 +230,13 @@ final class SlayerScripts {
         /** Her attacks so far in her pattern (the triple attack counts as one). */
         private int pattern;
         private int soulStep = -1;
-        private int soulWait;
+        /** Game ticks since the souls were summoned. */
+        private int soulTicks;
         private final Mob[] soulMobs = new Mob[3];
+        /** The triple attack's styles still to come, shown over her (the next at the bottom). */
+        private final List<AttackType> tripleShown = new ArrayList<>();
+        /** Whether she has had a target yet (her opening triple attack is announced before it starts). */
+        private boolean engaged;
         /** The style (index into SOUL_IDS) of the soul in each place, west to east. */
         private final int[] soulStyle = {0, 1, 2};
 
@@ -233,13 +253,29 @@ final class SlayerScripts {
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (!queue.isEmpty()) {
+                if (!tripleShown.isEmpty()) {
+                    tripleShown.remove(0); // its orb goes out as it starts
+                }
                 return queue.remove(0);
             }
             pattern++;
+            AttackDef next = move(boss, target, distance);
+            if (queue.isEmpty() && SlayerBosses.cerberusMove(pattern + 1, (int) Math.ceil(boss.getHealth()), true)
+                    == SlayerBosses.CerberusMove.TRIPLE) {
+                cueTriple(boss); // her next attack is the triple: its order shows from now (6 ticks ahead)
+            }
+            return next;
+        }
+
+        private AttackDef move(DataBossEntity boss, ServerPlayer target, double distance) {
             SlayerBosses.CerberusMove move = SlayerBosses.cerberusMove(pattern, (int) Math.ceil(boss.getHealth()),
                     boss.getRandom().nextInt(10) == 0);
             switch (move) {
                 case TRIPLE -> {
+                    if (tripleShown.isEmpty()) {
+                        cueTriple(boss);
+                    }
+                    tripleShown.remove(0); // the magic attack starts now
                     queue.add(SlayerBosses.CERB_RANGED);
                     queue.add(SlayerBosses.CERB_TRIPLE_MELEE);
                     return SlayerBosses.CERB_MAGIC;
@@ -267,6 +303,68 @@ final class SlayerScripts {
             return boss.getRandom().nextBoolean() ? SlayerBosses.CERB_RANGED : SlayerBosses.CERB_MAGIC;
         }
 
+        /**
+         * The triple attack's order, ahead of it: a centre-screen line naming the three styles in their colours and three orbs over
+         * her (redrawn every 4 MC, the next at the bottom). // playability: OSRS shows the attacks only as they come
+         */
+        private void cueTriple(DataBossEntity boss) {
+            tripleShown.clear();
+            java.util.Collections.addAll(tripleShown, TRIPLE_STYLES);
+            net.minecraft.network.chat.MutableComponent line = net.minecraft.network.chat.Component.literal("Cerberus' triple attack: ")
+                    .withStyle(net.minecraft.ChatFormatting.GOLD);
+            String[] names = {"magic", "ranged", "melee"};
+            for (int i = 0; i < TRIPLE_STYLES.length; i++) {
+                int rgb = com.runecraft.boss.ThreatCues.rgb(TRIPLE_STYLES[i]);
+                line.append(net.minecraft.network.chat.Component.literal((i == 0 ? "" : ", ") + names[i])
+                        .withStyle(st -> st.withColor(rgb)));
+            }
+            List<ServerPlayer> near = BossFx.players(boss, 32);
+            for (ServerPlayer p : near) {
+                Msg.telegraph(p, line);
+            }
+            if (boss.getTarget() instanceof ServerPlayer t && !near.contains(t)) {
+                Msg.telegraph(t, line);
+            }
+            drawTriple(boss);
+        }
+
+        private void drawTriple(DataBossEntity boss) {
+            var world = BossFx.world(boss);
+            for (int i = 0; i < tripleShown.size(); i++) {
+                var dust = com.runecraft.boss.ThreatCues.dust(com.runecraft.boss.ThreatCues.rgb(tripleShown.get(i)), 2.2f);
+                world.sendParticles(dust, boss.getX(), boss.getY() + boss.getBbHeight() + 0.5 + i * 0.6, boss.getZ(), 4, 0.08, 0.08, 0.08, 0);
+            }
+        }
+
+        /** Every Minecraft tick: the triple attack's orbs and the cued souls' glow, redrawn every 4 MC. */
+        @Override
+        public void tick(DataBossEntity boss) {
+            super.tick(boss);
+            if (com.runecraft.action.ActionManager.mcTick() % com.runecraft.osrs.ThreatTiming.REDRAW_MC != 0) {
+                return;
+            }
+            if (!tripleShown.isEmpty()) {
+                drawTriple(boss);
+            }
+            if (soulStep >= 0) {
+                for (int i = soulStep; i < 3; i++) {
+                    if (soulTicks >= BossRealtime.soulCueTick(i)) {
+                        glowSoul(i);
+                    }
+                }
+            }
+        }
+
+        /** Self-test: the triple attack's styles shown over her now (the next first). */
+        List<AttackType> selfTestTripleShown() {
+            return List.copyOf(tripleShown);
+        }
+
+        /** Self-test: summons her souls now, whatever her pattern and hitpoints. */
+        void selfTestSummonSouls(DataBossEntity boss) {
+            summonSouls(boss);
+        }
+
         @Override
         protected int attackDelay(DataBossEntity boss, AttackDef attack) {
             // Auto-attacks every 6 ticks (wiki attack speed); the triple attack fires its three styles 2 ticks apart.
@@ -275,6 +373,14 @@ final class SlayerScripts {
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
+            if (!engaged && target != null) {
+                engaged = true;
+                if (pattern == 0 && cooldown <= 0) {
+                    // her opening triple attack: its order shows first (a short engage pause before her first attack)
+                    cueTriple(boss);
+                    cooldown = BossRealtime.CERB_SOUL_CUE_TICKS;
+                }
+            }
             if (soulStep >= 0 && target != null) {
                 tickSouls(boss, target);
             }
@@ -296,17 +402,44 @@ final class SlayerScripts {
             BossFx.warn(boss, "Summoned souls: " + SOUL_NAMES[soulStyle[0]] + ", " + SOUL_NAMES[soulStyle[1]] + ", "
                     + SOUL_NAMES[soulStyle[2]] + " (west to east)");
             soulStep = 0;
-            soulWait = 6;
+            soulTicks = 0;
         }
 
+        /** A cued soul's glow: a halo of its style's colour, brighter in its last game tick. */
+        private void glowSoul(int place) {
+            Mob soul = soulMobs[place];
+            if (soul != null && soul.isAlive()) {
+                com.runecraft.boss.ThreatCues.halo(soul, com.runecraft.boss.ThreatCues.rgb(SOUL_STYLES[soulStyle[place]]), ParticleTypes.SOUL,
+                        soulTicks >= BossRealtime.soulAttackTick(place) - 1);
+            }
+        }
+
+        /**
+         * The souls on their schedule ({@link BossRealtime#soulAttackTick}): each glows {@value BossRealtime#CERB_SOUL_CUE_TICKS}
+         * game ticks before its attack, its place and style on screen; its attack reads the protection prayer as it lands.
+         */
         private void tickSouls(DataBossEntity boss, ServerPlayer target) {
-            if (--soulWait > 0) {
+            soulTicks++;
+            for (int i = soulStep; i < 3; i++) {
+                if (soulTicks == BossRealtime.soulCueTick(i)) {
+                    Msg.telegraph(target, "Soul " + (i + 1) + "/3: " + SOUL_NAMES[soulStyle[i]] + "!", null);
+                    glowSoul(i);
+                    if (soulListener != null) {
+                        soulListener.soul(i, soulStyle[i], false, com.runecraft.action.ActionManager.mcTick());
+                    }
+                }
+            }
+            if (soulTicks < BossRealtime.soulAttackTick(soulStep)) {
                 return;
             }
             int style = soulStyle[soulStep];
             Mob soul = soulMobs[soulStep];
+            if (soulListener != null) {
+                soulListener.soul(soulStep, style, true, com.runecraft.action.ActionManager.mcTick());
+            }
             if (soul != null && soul.isAlive()) {
                 BossFx.world(boss).sendParticles(ParticleTypes.SOUL, soul.getX(), soul.getY() + 1, soul.getZ(), 15, 0.3, 0.5, 0.3, 0.05);
+                trail(BossFx.world(boss), soul.position().add(0, 1, 0), target.position().add(0, 1, 0), SOUL_STYLES[style]);
                 if (BossFx.protects(target, SOUL_PRAYERS[style])) {
                     boolean spectral = "spectral_spirit_shield".equals(Inv.idOf(target.getOffhandItem()));
                     BossFx.drainPrayer(target, spectral ? SlayerBosses.CERB_SOUL_DRAIN_SPECTRAL : SlayerBosses.CERB_SOUL_DRAIN);
@@ -321,9 +454,18 @@ final class SlayerScripts {
                 soul.discard();
             }
             soulStep++;
-            soulWait = 2;
             if (soulStep >= 3) {
                 soulStep = -1;
+            }
+        }
+
+        /** A soul's attack flying to the player: a line of its style's colour. */
+        private static void trail(net.minecraft.server.level.ServerLevel world, Vec3 from, Vec3 to, AttackType style) {
+            var dust = com.runecraft.boss.ThreatCues.dust(com.runecraft.boss.ThreatCues.rgb(style), 1.4f);
+            int steps = (int) Math.max(4, from.distanceTo(to) * 2);
+            for (int i = 0; i <= steps; i++) {
+                Vec3 at = from.add(to.subtract(from).scale(i / (double) steps));
+                world.sendParticles(dust, at.x, at.y, at.z, 1, 0, 0, 0, 0);
             }
         }
 
@@ -874,7 +1016,8 @@ final class SlayerScripts {
                             for (ServerPlayer h : hit) {
                                 com.runecraft.combat.PoisonService.poison(h, aimed ? 6 : 4, now);
                             }
-                            com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, SlayerBosses.HYDRA_POOL_MAX, 10, boss);
+                            com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, SlayerBosses.HYDRA_POOL_MAX, 10, boss,
+                                    com.runecraft.boss.HazardKind.POISON);
                         });
                     }
                 }
@@ -1615,9 +1758,10 @@ final class SlayerScripts {
             return BossFx.protects(player, prayer) ? SlayerBosses.araxxorThroughPrayer(a, damage) : damage;
         }
 
-        /** An acid pool (venom, 4 a tick) on a tile. */
+        /** An acid pool (venom, 4 a tick) on a tile, marked by a lime floor block while it lasts. */
         private void pool(DataBossEntity boss, Vec3 at) {
-            com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), at, SlayerBosses.ARAXXOR_POOL_DAMAGE, 15, boss);
+            com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), at, SlayerBosses.ARAXXOR_POOL_DAMAGE, 15, boss,
+                    com.runecraft.boss.HazardKind.ACID);
         }
 
         private void venomed(List<ServerPlayer> hit) {
@@ -1638,7 +1782,9 @@ final class SlayerScripts {
                     int length = 12;
                     for (int i = 2; i <= length; i++) {
                         Vec3 at = from.add(dir.scale(i));
-                        namedStrike("acid_ball", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, from.y), 1 + i / 3,
+                        // playability: the whole travel shifted 2 ticks later (OSRS tile i after 1 + i/3), so the strike floor
+                        // doesn't land tiles 2-8 together: the ball still sweeps out a tile group a tick (approx)
+                        namedStrike("acid_ball", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, from.y), BossRealtime.acidBallDelay(i),
                                 SlayerBosses.ARAXXOR_ACID_BALL_MAX, 1.5, ParticleTypes.SNEEZE, (hit, pos) -> {
                                     venomed(hit);
                                     pool(boss, pos);
@@ -1646,7 +1792,8 @@ final class SlayerScripts {
                     }
                     Vec3 end = from.add(dir.scale(length));
                     for (int i = 0; i < 6; i++) {
-                        namedStrike("acid_ball", boss, around(boss, end, 3.5), 2 + length / 3, SlayerBosses.ARAXXOR_SPLATTER_MAX, 1.0,
+                        namedStrike("acid_ball", boss, around(boss, end, 3.5), BossRealtime.acidBallSplatterDelay(length),
+                                SlayerBosses.ARAXXOR_SPLATTER_MAX, 1.0,
                                 ParticleTypes.SNEEZE, (hit, pos) -> {
                                     venomed(hit);
                                     pool(boss, pos);
@@ -1666,11 +1813,16 @@ final class SlayerScripts {
                 }
                 default -> {
                     // Acid drip: a homing blob; the player then drips venom for 6 ticks, leaving a pool wherever they stand.
+                    // It flies to the player as a typeless projectile, drawn on its way, and lands on arrival (round 42).
+                    // // playability: OSRS a homing projectile; here it hit on the tick it was spat, with nothing on screen
                     BossFx.warn(boss, "Araxxor's venom drips onto you - keep moving!");
-                    com.runecraft.combat.CombatHooks.nameAttack("acid_ball", null);
-                    CombatHandler.applyDamage(boss, target, boss.getRandom().nextInt(SlayerBosses.ARAXXOR_DRIP_MAX + 1));
-                    com.runecraft.combat.PoisonService.venom(target, now);
-                    dripTicks = SlayerBosses.ARAXXOR_DRIP_TICKS;
+                    int roll = boss.getRandom().nextInt(SlayerBosses.ARAXXOR_DRIP_MAX + 1);
+                    com.runecraft.boss.Mechanics.deliverProjectile(boss, target, null, true, 32, () -> {
+                        com.runecraft.combat.CombatHooks.nameAttack("acid_ball", null);
+                        CombatHandler.applyDamage(boss, target, roll);
+                        com.runecraft.combat.PoisonService.venom(target, now);
+                        dripTicks = SlayerBosses.ARAXXOR_DRIP_TICKS;
+                    });
                 }
             }
         }

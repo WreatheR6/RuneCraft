@@ -150,4 +150,12 @@ public final class QuestBossRules {
     /** Dragon Slayer I (wiki): Elvarg's dragonfire hits up to 70 (10 behind an anti-dragon shield) and drains 10% of Prayer. */
     public static final int ELVARG_DRAGONFIRE_MAX = 70;
     public static final int ELVARG_PRAYER_DRAIN_PERCENT = 10;
+
+    /** Song of the Elves (wiki): the Fragment of Seren makes one of her specials every fourth attack (three normal ones first). */
+    public static final int FRAGMENT_ATTACKS_PER_SPECIAL = 4;
+
+    /** Whether the Fragment of Seren's next attack, after {@code attacksMade} attacks, is one of her specials. */
+    public static boolean fragmentSpecialNext(int attacksMade) {
+        return (attacksMade + 1) % FRAGMENT_ATTACKS_PER_SPECIAL == 0;
+    }
 }

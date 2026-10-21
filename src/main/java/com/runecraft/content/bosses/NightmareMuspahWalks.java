@@ -485,7 +485,10 @@ final class NightmareMuspahWalks {
             check(m.form != first && m.swapped, "no swap after " + need + " damage in its " + first + " form");
             long under = BossMechanics.tile(p.getBlockX(), p.getBlockZ());
             check(m.erupting.containsKey(under), "no spike marked under the player on the swap");
-            step(boss, p, MuspahRules.SPIKE_ERUPT_TICKS);
+            // round 42: a spike erupts 3 ticks after its marker (the strike floor; OSRS 2), not sooner
+            step(boss, p, com.runecraft.osrs.content.bosses.BossRealtime.muspahSpikeEruptTicks() - 1);
+            check(!m.spikes.contains(under), "the marked spike erupted before the 3-tick floor");
+            step(boss, p, 1);
             check(m.spikes.contains(under), "the marked spike didn't erupt");
             m.spikes.remove(under); // the player stands there; the walk goes on without the spike
             // Its second swap needs four separate hits as well.

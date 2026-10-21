@@ -481,6 +481,9 @@ final class DoomDelveService {
         private final List<Mob> earth = new ArrayList<>();
         private final List<Vec3> earthBroken = new ArrayList<>();
         private Vec3 earthenShield;
+        /** Where the earthen shield stood before its last step, and the Minecraft tick it stepped on (drawn sliding between). */
+        private Vec3 earthenPrev;
+        private long earthenMovedMc;
         private Vec3 earthenTarget;
         private int cleared;
 
@@ -1069,6 +1072,8 @@ final class DoomDelveService {
             }
             if (earthenShield == null && earthBroken.size() >= 2) {
                 earthenShield = earthBroken.get(1);
+                earthenPrev = earthenShield;
+                earthenMovedMc = com.runecraft.action.ActionManager.mcTick();
                 earthenTarget = earthBroken.get(0);
                 for (Mob e : earth) {
                     e.discard();
@@ -1083,6 +1088,8 @@ final class DoomDelveService {
                 if (len <= 0.05) {
                     earthenShield = null; // it dissipates on reaching its destination
                 } else {
+                    earthenPrev = earthenShield;
+                    earthenMovedMc = com.runecraft.action.ActionManager.mcTick();
                     earthenShield = earthenShield.add(d.x / len * Math.min(step, len), 0, d.z / len * Math.min(step, len));
                     Iterator<Vec3> a = acid.iterator();
                     while (a.hasNext()) {
@@ -1094,6 +1101,11 @@ final class DoomDelveService {
                     }
                     BossFx.ring(BossFx.world(boss), earthenShield, DoomDelves.EARTHEN_SHIELD_BLOCKS, ParticleTypes.WAX_ON);
                 }
+            }
+            if (shockwaveDue - now == com.runecraft.osrs.content.bosses.BossRealtime.DOOM_SHOCKWAVE_CUE_TICKS) {
+                // the countdown: 36 MC before the first shockwave (its ring closing on the floor from now, tick())
+                BossFx.warn(boss, "The shockwave is coming! Stand in the earthen shield"
+                        + (shockwavesLeft > 1 ? " (" + shockwavesLeft + " shockwaves)" : "") + "!");
             }
             if (now >= shockwaveDue && (now - shockwaveDue) % DoomDelves.SHOCKWAVE_GAP == 0 && shockwavesLeft > 0) {
                 shockwavesLeft--;
@@ -1127,8 +1139,48 @@ final class DoomDelveService {
             }
         }
 
+        /**
+         * Whether a player stands in the earthen shield: within its reach of where it stands now or anywhere along the step it
+         * just took. // playability: OSRS moves it tile by tile with the player on the same tick; here it jumps once a game tick
+         * while the player walks smoothly beside its drawn (sliding) ring
+         */
         private boolean inEarthenShield(Vec3 pos) {
-            return earthenShield != null && flat(pos, earthenShield) <= DoomDelves.EARTHEN_SHIELD_BLOCKS;
+            if (earthenShield == null) {
+                return false;
+            }
+            Vec3 a = earthenPrev == null ? earthenShield : earthenPrev;
+            double abx = earthenShield.x - a.x;
+            double abz = earthenShield.z - a.z;
+            double len = abx * abx + abz * abz;
+            double t = len < 1e-9 ? 0 : Math.max(0, Math.min(1, ((pos.x - a.x) * abx + (pos.z - a.z) * abz) / len));
+            return Math.hypot(pos.x - (a.x + abx * t), pos.z - (a.z + abz * t)) <= DoomDelves.EARTHEN_SHIELD_BLOCKS;
+        }
+
+        /**
+         * Every Minecraft tick: from the countdown to the last shockwave, a ring closing on the floor around the Doom (orange, bright
+         * as a wave lands) and the earthen shield's safe circle (green) sliding between its steps, redrawn every 4 MC.
+         * // playability: OSRS shows the volatile earth and the shield only
+         */
+        @Override
+        public void tick(DataBossEntity boss) {
+            super.tick(boss);
+            long mc = com.runecraft.action.ActionManager.mcTick();
+            if (mc % com.runecraft.osrs.ThreatTiming.REDRAW_MC != 0 || shockwaveDue < 0) {
+                return;
+            }
+            ServerLevel world = BossFx.world(boss);
+            boolean countdown = com.runecraft.osrs.content.bosses.BossRealtime.shockwaveCountdown(now, shockwaveDue);
+            if (countdown || (now >= shockwaveDue && shockwavesLeft > 0)) {
+                double radius = countdown ? 4 + 2.0 * Math.max(0, shockwaveDue - now) : 10;
+                com.runecraft.boss.ThreatCues.ring(world, boss.position(), Math.min(10, radius), com.runecraft.boss.ThreatCues.AREA_RGB,
+                        null, !countdown || shockwaveDue - now <= 1);
+            }
+            if (earthenShield != null) {
+                Vec3 from = earthenPrev == null ? earthenShield : earthenPrev;
+                double t = Math.max(0, Math.min(1, (mc - earthenMovedMc) / (double) com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK));
+                Vec3 at = from.add(earthenShield.subtract(from).scale(t));
+                com.runecraft.boss.ThreatCues.ring(world, at, DoomDelves.EARTHEN_SHIELD_BLOCKS, 0x40FF60, null, true);
+            }
         }
 
         // ---------------- Acid blood ----------------

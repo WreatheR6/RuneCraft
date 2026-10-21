@@ -1,9 +1,12 @@
 package com.runecraft.content.bosses;
 
+import com.runecraft.action.ActionManager;
 import com.runecraft.boss.DataBossEntity;
+import com.runecraft.boss.ThreatCues;
 import com.runecraft.combat.CombatHandler;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
+import com.runecraft.osrs.content.bosses.BossRealtime;
 import com.runecraft.osrs.content.bosses.ZulrahVorkath;
 import com.runecraft.osrs.content.bosses.ZulrahVorkath.Form;
 import com.runecraft.osrs.content.bosses.ZulrahVorkath.Spot;
@@ -25,8 +28,18 @@ import net.minecraft.world.phys.Vec3;
  * barrages and snakeling orbs, then dives (invulnerable) and resurfaces as the next phase. The three forms are separate
  * entities (separate models) sharing one hitpoint pool. Hits above 50 deal 45-50; venom clouds hurt but don't
  * envenom; snakelings die off after 40 seconds.
+ *
+ * <p>Real time (round 42, // playability): a ring of the form's style colour floats over its head while it is up (green
+ * ranged, crimson melee, tanzanite magic; the Jad phase shows the colour of its next attack), and each Jad-phase attack is cued
+ * like TzTok-Jad's, its style's colour glowing {@value BossRealtime#ZULRAH_JAD_LEAD_TICKS} game ticks before it lands, so the
+ * alternation can be read and prayed attack by attack (OSRS: only the projectile, within its short hit delay). Its 3-tick
+ * cadence and every max hit are unchanged.
  */
 final class ZulrahScript extends ScriptedBoss {
+    /** The Jad phase's attacks: the same venom spit and bolt, cued {@value BossRealtime#ZULRAH_JAD_LEAD_TICKS} ticks ahead. */
+    static final AttackDef JAD_RANGED = ZulrahVorkath.ZULRAH_RANGED.telegraph(BossRealtime.ZULRAH_JAD_LEAD_TICKS, "Zulrah: ranged!");
+    static final AttackDef JAD_MAGIC = ZulrahVorkath.ZULRAH_MAGIC.telegraph(BossRealtime.ZULRAH_JAD_LEAD_TICKS, "Zulrah: magic!");
+
     private record Cloud(Vec3 pos, long until) {
     }
 
@@ -125,7 +138,7 @@ final class ZulrahScript extends ScriptedBoss {
         BossFx.sound(boss, SoundEvents.GENERIC_SPLASH, 0.6f);
         String hint = switch (s.form()) {
             case SERPENTINE -> "Zulrah surfaces in its green form! (ranged - protect from missiles)";
-            case MAGMA -> "Zulrah surfaces in its crimson form! Don't stand where it stares!";
+            case MAGMA -> "Zulrah surfaces in its crimson form (melee)! Don't stand where it stares!";
             case TANZANITE -> "Zulrah surfaces in its tanzanite form! (magic and ranged)";
             case JAD_RANGED -> "Zulrah begins to alternate its attacks rapidly, starting with ranged!";
             case JAD_MAGIC -> "Zulrah begins to alternate its attacks rapidly, starting with magic!";
@@ -163,7 +176,8 @@ final class ZulrahScript extends ScriptedBoss {
             case TANZANITE -> boss.getRandom().nextInt(4) < ZulrahVorkath.TANZANITE_MAGIC_IN_4
                     ? ZulrahVorkath.ZULRAH_MAGIC : ZulrahVorkath.ZULRAH_RANGED;
             case JAD_RANGED, JAD_MAGIC -> {
-                AttackDef a = jadMagic ? ZulrahVorkath.ZULRAH_MAGIC : ZulrahVorkath.ZULRAH_RANGED;
+                // playability: cued like TzTok-Jad's (OSRS: only the projectile shows the style)
+                AttackDef a = jadMagic ? JAD_MAGIC : JAD_RANGED;
                 jadMagic = !jadMagic;
                 yield a;
             }
@@ -173,6 +187,39 @@ final class ZulrahScript extends ScriptedBoss {
     @Override
     protected int attackDelay(DataBossEntity boss, AttackDef attack) {
         return attack == ZulrahVorkath.ZULRAH_TAIL_SLAM ? 6 : 3;
+    }
+
+    /** The style colour of the form that is up (the Jad phase: its next attack's), or -1 while it is under water. */
+    int formRgb() {
+        if (rotation < 0 || diving >= 0) {
+            return -1;
+        }
+        return switch (current().form()) {
+            case SERPENTINE -> ThreatCues.RANGED_RGB;
+            case MAGMA -> ThreatCues.MELEE_RGB;
+            case TANZANITE -> ThreatCues.MAGIC_RGB;
+            case JAD_RANGED, JAD_MAGIC -> jadMagic ? ThreatCues.MAGIC_RGB : ThreatCues.RANGED_RGB;
+        };
+    }
+
+    /**
+     * Every 4 Minecraft ticks: the form's colour as a ring over its head (the Jad phase: its next attack's). // playability: OSRS
+     * shows the form by its model's colour alone, which blocky models and particles can't carry
+     */
+    @Override
+    public void tick(DataBossEntity boss) {
+        super.tick(boss);
+        int rgb = formRgb();
+        if (rgb < 0 || ActionManager.mcTick() % 4 != 0) {
+            return;
+        }
+        var world = BossFx.world(boss);
+        var dust = ThreatCues.dust(rgb, 1.6f);
+        double y = boss.getY() + boss.getBbHeight() + 0.6;
+        for (int i = 0; i < 10; i++) {
+            double a = Math.PI * 2 * i / 10;
+            world.sendParticles(dust, boss.getX() + Math.cos(a) * 0.7, y, boss.getZ() + Math.sin(a) * 0.7, 1, 0, 0, 0, 0);
+        }
     }
 
     @Override
@@ -221,6 +268,9 @@ final class ZulrahScript extends ScriptedBoss {
         for (int i = 0; i < 2; i++) {
             Vec3 at = fill ? around(boss, homeVec(), 5) : around(boss, target.position(), 6);
             clouds.add(new Cloud(at, now + 30));
+            // drawn where it lands at once; it hurts from the next game tick (12 MC on, as hazards arm). // playability: OSRS
+            // the cloud projectile's landing spot, read on the tick
+            BossFx.world(boss).sendParticles(ParticleTypes.SNEEZE, at.x, at.y + 0.4, at.z, 24, 1.4, 0.3, 1.4, 0.0);
         }
         trace("cloud");
         BossFx.warn(boss, "Zulrah spits clouds of toxic fumes!");

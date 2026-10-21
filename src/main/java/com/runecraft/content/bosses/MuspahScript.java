@@ -80,6 +80,12 @@ final class MuspahScript extends ScriptedBoss {
     final Set<Long> spikes = new HashSet<>();
     /** Spikes about to erupt: tile -> game tick. */
     final Map<Long, Long> erupting = new HashMap<>();
+    /**
+     * The floor marks of the spikes (round 42): light blue under one about to erupt, white under a standing one, put back when
+     * it goes (or the Muspah does). // playability: OSRS shows a crack on the tile
+     */
+    private final Map<Long, com.runecraft.boss.FloorMarkers.Mark> spikeMarks = new HashMap<>();
+    private final Map<Long, com.runecraft.boss.HazardKind> spikeMarkKinds = new HashMap<>();
     /** Homing spikes: {x, z}. */
     final List<int[]> homing = new ArrayList<>();
     int homingTicks;
@@ -680,7 +686,10 @@ final class MuspahScript extends ScriptedBoss {
         return tiles;
     }
 
-    /** Marks spikes (plus one under the target): they erupt two ticks later, hitting whoever still stands there. */
+    /**
+     * Marks spikes (plus one under the target): they erupt three ticks later (the strike floor; OSRS two), hitting whoever still
+     * stands there. Each is marked on the floor at once.
+     */
     void markSpikes(DataBossEntity boss, ServerPlayer target, List<Long> tiles) {
         List<Long> fresh = new ArrayList<>(tiles);
         if (target != null) {
@@ -688,10 +697,54 @@ final class MuspahScript extends ScriptedBoss {
         }
         for (long t : fresh) {
             if (!spikes.contains(t)) {
-                erupting.put(t, now + MuspahRules.SPIKE_ERUPT_TICKS);
+                // playability: 3 ticks from the marker (OSRS 2), as every damaging ground strike
+                erupting.put(t, now + com.runecraft.osrs.content.bosses.BossRealtime.muspahSpikeEruptTicks());
+                BossFx.world(boss).sendParticles(ParticleTypes.ITEM_SNOWBALL, (int) (t >> 32) + 0.5, boss.getY() + 0.1, (int) t + 0.5,
+                        3, 0.25, 0.02, 0.25, 0.0);
             }
         }
+        markSpikeFloor(boss);
         BossFx.sound(boss, SoundEvents.GLASS_BREAK, 0.6f);
+    }
+
+    /** Brings the spikes' floor marks in line with the spikes: erupting light blue, standing white, gone ones put back. */
+    private void markSpikeFloor(DataBossEntity boss) {
+        Map<Long, com.runecraft.boss.HazardKind> want = new HashMap<>();
+        for (long t : spikes) {
+            want.put(t, com.runecraft.boss.HazardKind.SPIKE);
+        }
+        for (long t : erupting.keySet()) {
+            want.putIfAbsent(t, com.runecraft.boss.HazardKind.ICE);
+        }
+        java.util.Iterator<Map.Entry<Long, com.runecraft.boss.FloorMarkers.Mark>> it = spikeMarks.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Long, com.runecraft.boss.FloorMarkers.Mark> e = it.next();
+            if (want.get(e.getKey()) != spikeMarkKinds.get(e.getKey())) {
+                com.runecraft.boss.FloorMarkers.release(e.getValue());
+                spikeMarkKinds.remove(e.getKey());
+                it.remove();
+            }
+        }
+        // tiles that couldn't be marked are tried again only when their spike changes
+        spikeMarkKinds.entrySet().removeIf(e -> want.get(e.getKey()) != e.getValue());
+        for (Map.Entry<Long, com.runecraft.boss.HazardKind> e : want.entrySet()) {
+            if (spikeMarkKinds.containsKey(e.getKey())) {
+                continue;
+            }
+            long t = e.getKey();
+            com.runecraft.boss.FloorMarkers.Mark m = com.runecraft.boss.FloorMarkers.place(BossFx.world(boss),
+                    new Vec3((int) (t >> 32) + 0.5, boss.getY(), (int) t + 0.5), e.getValue(), boss);
+            spikeMarkKinds.put(t, e.getValue());
+            if (m != null) {
+                spikeMarks.put(t, m);
+            }
+        }
+    }
+
+    private void clearSpikeFloor() {
+        spikeMarks.values().forEach(com.runecraft.boss.FloorMarkers::release);
+        spikeMarks.clear();
+        spikeMarkKinds.clear();
     }
 
     private void tickSpikes(DataBossEntity boss, ServerPlayer target) {
@@ -725,6 +778,7 @@ final class MuspahScript extends ScriptedBoss {
                 spikeHit(boss, p);
             }
         }
+        markSpikeFloor(boss);
         if (!spikes.isEmpty() && ++spikeFx % 3 == 0) {
             int shown = 0;
             for (long t : spikes) {
@@ -814,6 +868,7 @@ final class MuspahScript extends ScriptedBoss {
     }
 
     private void cleanUp(DataBossEntity boss) {
+        clearSpikeFloor(); // the floor goes back with it (its spikes leave with it)
         clouds.clear();
         homing.clear();
         erupting.clear();

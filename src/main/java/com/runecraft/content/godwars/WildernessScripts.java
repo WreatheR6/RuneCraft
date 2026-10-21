@@ -3,6 +3,7 @@ package com.runecraft.content.godwars;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.combat.PoisonService;
 import com.runecraft.network.ServerNetworking;
+import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.godwars.WildernessBosses;
@@ -46,8 +47,12 @@ final class WildernessScripts {
                 && p.distanceToSqr(boss) <= radius * radius);
     }
 
+    /** A protection prayer, read through the shared chokepoint ({@code CombatHandler.isProtected}, with its switch grace). */
     private static boolean prays(ServerPlayer p, com.runecraft.osrs.Prayer prayer) {
-        return Players.data(p).isActive(prayer);
+        AttackType style = prayer == com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC ? AttackType.MAGIC
+                : prayer == com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES ? AttackType.RANGED
+                : prayer == com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE ? AttackType.CRUSH : null;
+        return style == null ? Players.data(p).isActive(prayer) : com.runecraft.combat.CombatHandler.isProtected(Players.data(p), style);
     }
 
     /** Binds a player in place for a few game ticks (bear traps, the knockback orb's stun). */

@@ -148,6 +148,11 @@ final class MoonScripts {
 
         final String id;
         int glyph = MoonsRules.FIRST_GLYPH;
+        /** The game tick the glyph last moved on (standing off it doesn't count for a moment after). */
+        private long glyphMovedAt = Long.MIN_VALUE / 4;
+        /** The lit glyph's floor mark (yellow) and where it stands. // playability: OSRS lights the sigil's tiles */
+        private com.runecraft.boss.FloorMarkers.Mark glyphMark;
+        private Vec3 glyphMarkAt;
         private int sinceGlyph;
         private boolean specialDue;
         Special special;
@@ -272,6 +277,7 @@ final class MoonScripts {
             if (++sinceGlyph >= MoonsRules.STANDARD_PER_GLYPH) {
                 sinceGlyph = 0;
                 glyph = MoonsRules.nextGlyph(glyph);
+                glyphMovedAt = now;
                 specialDue = MoonsRules.specialGlyph(glyph);
             }
         }
@@ -294,8 +300,27 @@ final class MoonScripts {
             cleanUp(boss);
             special = null;
             glyph = MoonsRules.nextGlyph(glyph); // the glyph moves on from the full or new moon
+            glyphMovedAt = now;
             sinceGlyph = 0;
             cooldown = 2;
+        }
+
+        /** The lit glyph's yellow floor block follows it (none during a special that lets the player stand anywhere). */
+        private void markGlyph(DataBossEntity boss) {
+            Vec3 want = glyphActive() ? glyphPos(boss) : null;
+            if (want != null && want.equals(glyphMarkAt)) {
+                return;
+            }
+            com.runecraft.boss.FloorMarkers.release(glyphMark);
+            glyphMark = want == null ? null : com.runecraft.boss.FloorMarkers.place(BossFx.world(boss), want,
+                    com.runecraft.boss.HazardKind.GLYPH, boss);
+            glyphMarkAt = want;
+        }
+
+        private void clearGlyphMark() {
+            com.runecraft.boss.FloorMarkers.release(glyphMark);
+            glyphMark = null;
+            glyphMarkAt = null;
         }
 
         @Override
@@ -331,7 +356,10 @@ final class MoonScripts {
                 boolean lit = g == glyph && glyphActive();
                 w.sendParticles(lit ? GLYPH_LIT : GLYPH_DIM, at.x, at.y + 0.1, at.z, lit ? 6 : 1, lit ? 0.4 : 0.1, 0.02, lit ? 0.4 : 0.1, 0);
             }
-            if (glyphActive() && attackCount > 0) {
+            markGlyph(boss);
+            // playability: just after the glyph moves on, standing off it doesn't count yet (BossRealtime.offGlyphCounts): the
+            // player sees the new yellow floor block and walks there (OSRS counts from the next tick)
+            if (glyphActive() && attackCount > 0 && com.runecraft.osrs.content.bosses.BossRealtime.offGlyphCounts(now, glyphMovedAt)) {
                 Vec3 at = glyphPos(boss);
                 for (ServerPlayer p : here) {
                     if (p.position().distanceToSqr(at.x, p.getY(), at.z) <= ON_GLYPH * ON_GLYPH) {
@@ -357,6 +385,7 @@ final class MoonScripts {
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             cleanUp(boss);
+            clearGlyphMark();
             special = null;
             pending.clear();
         }
@@ -364,6 +393,7 @@ final class MoonScripts {
         @Override
         public void onRemoved(DataBossEntity boss) {
             cleanUp(boss);
+            clearGlyphMark();
             special = null;
             pending.clear();
         }

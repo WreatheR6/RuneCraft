@@ -12,6 +12,7 @@ import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.ContentRegistry;
+import com.runecraft.osrs.content.bosses.BossRealtime;
 import com.runecraft.osrs.content.godwars.GwdBosses;
 import com.runecraft.osrs.content.godwars.GwdDungeon;
 import com.runecraft.osrs.content.systems.CombatAchievements;
@@ -65,6 +66,8 @@ final class NexScript extends GwdScript {
     private static final double SACRIFICE_BLOCKS = 14;
     /** Ice Prison's most damage (OSRS Wiki infobox: 75). */
     private static final int PRISON_MAX = 75;
+    /** The name Containment's icicles land under (their Protect from Missiles rule, {@link #strikeDamage}). */
+    private static final String CONTAINMENT = "containment";
     /** Wrath: most damage, delay after her death (3 seconds) and half-size of the 5x5 around her, in blocks. */
     private static final int WRATH_MAX = 50;
     private static final int WRATH_DELAY_TICKS = 5;
@@ -313,9 +316,12 @@ final class NexScript extends GwdScript {
                     iceprison(boss, world, victim, gameTick);
                 } else {
                     shout(boss, "Contain this!");
-                    // icicles in the 5x5 around her (she is 3x3): up to 60, and they switch off protection prayers
+                    // icicles in the 5x5 around her (she is 3x3): up to 60, halved by Protect from Missiles (strikeDamage), and
+                    // they switch off protection prayers. The 5x5's edge is 2.5 tiles from her centre (corners 3.5): a ring of 3
+                    // (approx; it was 5, which caught players well outside the 5x5).
                     // playability: OSRS lands them 2 ticks after the shout; GwdScript.strike floors that to 3 (1.8 s), marker shown
-                    strike(boss, boss.position(), 2, 60, 5.0, ParticleTypes.SNOWFLAKE, ParticleTypes.ITEM_SNOWBALL, (hit, dmg) -> {
+                    strike(CONTAINMENT, boss, boss.position(), 2, 60, BossRealtime.NEX_CONTAINMENT_RADIUS, ParticleTypes.SNOWFLAKE,
+                            ParticleTypes.ITEM_SNOWBALL, (hit, dmg) -> {
                         dropProtection(hit);
                         if (dmg > 0) {
                             CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_ICE);
@@ -388,7 +394,7 @@ final class NexScript extends GwdScript {
             if (p.distanceToSqr(boss) > 12 * 12) {
                 continue;
             }
-            boolean praying = Players.data(p).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+            boolean praying = CombatHandler.isProtected(Players.data(p), AttackType.MAGIC); // the shared chokepoint (switch grace)
             if (boss.getRandom().nextInt(praying ? 8 : 4) != 0) {
                 continue;
             }
@@ -400,6 +406,18 @@ final class NexScript extends GwdScript {
             Msg.red(p, "Nex drags you towards her!");
             return;
         }
+    }
+
+    /**
+     * Containment through Protect from Missiles: half (OSRS Wiki, Nex/Strategies: "praying Protect from Missiles will reduce the
+     * damage by half"); read as the icicles land, before they switch the prayers off.
+     */
+    @Override
+    protected int strikeDamage(DataBossEntity boss, String name, ServerPlayer player, int rolled) {
+        if (CONTAINMENT.equals(name)) {
+            return BossRealtime.nexIceDamage(rolled, CombatHandler.isProtected(Players.data(player), AttackType.RANGED));
+        }
+        return rolled;
     }
 
     /** Switches off a player's protection prayers (Containment, Ice Prison, Drag). */
@@ -561,7 +579,10 @@ final class NexScript extends GwdScript {
         if (broken) {
             Msg.game(prisoner, "You broke out of the ice prison!");
         } else if (prisoner.isAlive() && prisoner.position().distanceToSqr(prisonCentre) < 1.5 * 1.5) {
-            if (CombatHandler.applyDamage(boss, prisoner, boss.getRandom().nextInt(PRISON_MAX + 1)) > 0) {
+            // Protect from Missiles (switched back on inside the prison) halves it (OSRS Wiki, Nex/Strategies)
+            int rolled = boss.getRandom().nextInt(PRISON_MAX + 1);
+            int dmg = BossRealtime.nexIceDamage(rolled, CombatHandler.isProtected(Players.data(prisoner), AttackType.RANGED));
+            if (CombatHandler.applyDamage(boss, prisoner, dmg) > 0) {
                 CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_ICE);
             }
             Msg.red(prisoner, "The ice prison shatters around you!");

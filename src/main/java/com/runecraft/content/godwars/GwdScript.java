@@ -222,7 +222,7 @@ public abstract class GwdScript implements BossScript {
             for (ServerPlayer p : s.world.getPlayers(pl -> pl.isAlive() && !pl.isSpectator()
                     && ArenaTiming.inStrike(pl.getX() - s.pos.x, pl.getY() - s.pos.y, pl.getZ() - s.pos.z, s.radius)
                     && inRoom(pl, in))) {
-                int dmg = boss.getRandom().nextInt(s.maxHit + 1);
+                int dmg = strikeDamage(boss, s.name, p, boss.getRandom().nextInt(s.maxHit + 1));
                 if (s.name != null) {
                     com.runecraft.combat.CombatHooks.nameAttack(s.name, null); // "no damage from ..." Combat Achievements
                 }
@@ -232,6 +232,14 @@ public abstract class GwdScript implements BossScript {
                 }
             }
         }
+    }
+
+    /**
+     * A landing strike's damage on a player, from its roll (0 to its max hit): what a script's prayer rule leaves of it (Nex's
+     * Containment through Protect from Missiles). {@code name}: the strike's attack name, or null.
+     */
+    protected int strikeDamage(DataBossEntity boss, String name, ServerPlayer player, int rolled) {
+        return rolled;
     }
 
     /** Redraws the pending strike markers between game ticks (DataBossEntity runs this every Minecraft tick). */
