@@ -1111,6 +1111,15 @@ final class SlayerScripts {
             return "poison_pool".equals(name) ? com.runecraft.boss.HazardKind.POISON : super.strikeFloor(name, particle);
         }
 
+        /** Self-test (round 44 no-heal pass): where the lightning currents and the tracking flame are now (as drawn). */
+        List<Vec3> selfTestChasers() {
+            List<Vec3> out = new ArrayList<>();
+            for (Chaser ch : chasers) {
+                out.add(ch.pos);
+            }
+            return out;
+        }
+
         /** "A subsequent burn of 5 damage for 5 hits": five stacks of a five-hit burn. */
         private static void burn(DataBossEntity boss, ServerPlayer p) {
             for (int i = 0; i < 5; i++) {

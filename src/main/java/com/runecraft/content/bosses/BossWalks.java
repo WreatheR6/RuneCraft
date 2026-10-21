@@ -246,7 +246,7 @@ public final class BossWalks {
         return at;
     }
 
-    private static String walkSeeds(DataBossEntity boss, WhispererScript w, Driver d) {
+    static String walkSeeds(DataBossEntity boss, WhispererScript w, Driver d) {
         ServerPlayer p = d.player();
         if (!WhispererScript.activateFragment(p) || !w.inRealm(p)) {
             throw fail("seeds: the glowing fragment didn't take the player into the Shadow Realm");
@@ -289,7 +289,7 @@ public final class BossWalks {
         return "seeds: realm peek " + before + "->" + peek + "% sanity, " + n + " light seeds stepped on, sanity " + w.sanity(p) + "%";
     }
 
-    private static String walkSiphon(DataBossEntity boss, WhispererScript w, Driver d) {
+    static String walkSiphon(DataBossEntity boss, WhispererScript w, Driver d) {
         ServerPlayer p = d.player();
         List<Mob> souls = new ArrayList<>(w.selfTestSouls());
         if (souls.isEmpty()) {
@@ -318,7 +318,7 @@ public final class BossWalks {
         return "siphon: souls immune from outside, " + killed + " killed from the realm";
     }
 
-    private static String walkScreech(DataBossEntity boss, WhispererScript w, Driver d) {
+    static String walkScreech(DataBossEntity boss, WhispererScript w, Driver d) {
         ServerPlayer p = d.player();
         if (!WhispererScript.activateFragment(p)) {
             throw fail("screech: the glowing fragment didn't take the player into the Shadow Realm");

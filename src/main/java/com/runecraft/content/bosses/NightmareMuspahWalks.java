@@ -605,12 +605,15 @@ final class NightmareMuspahWalks {
             step(boss, p, 1);
             check(boss.getHealth() >= shielded - 0.5f, "a reflected hit hurt it through its shield (" + shielded + " -> " + boss.getHealth() + ")");
             // The shield: Smite and a corruption spell drain it beyond its 2 an attack.
-            data.activePrayers().add(Prayer.SMITE);
+            // Smite through the prayer key's path, as a player switches it (round 44: never by setting the active prayers)
+            data.setPrayerPoints(Math.max(data.prayerPoints(), 50));
+            PrayerService.set(p, Prayer.SMITE, true);
+            check(data.isActive(Prayer.SMITE), "could not switch Smite on (" + PrayerService.lastRefusal + ")");
             int absorbed = boss.modifyIncoming(p, 20, AttackType.RANGED);
             int afterSmite = m.shield();
             int expected = BossMechanics.MUSPAH_SHIELD - BossMechanics.MUSPAH_SHIELD_PER_ATTACK - BossMechanics.muspahSmiteDrain(20);
             check(absorbed == 0 && afterSmite <= expected, "Smite hit: took " + absorbed + ", shield " + afterSmite + " (expected <= " + expected + ")");
-            data.activePrayers().remove(Prayer.SMITE);
+            PrayerService.set(p, Prayer.SMITE, false);
             sp.corruptionPending = 2;
             sp.corruptionPendingUntil = com.runecraft.content.systems.SysTicks.now() + 100;
             boss.modifyIncoming(p, 0, AttackType.MAGIC);

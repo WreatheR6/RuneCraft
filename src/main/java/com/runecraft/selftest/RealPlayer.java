@@ -68,6 +68,8 @@ public final class RealPlayer implements AutoCloseable {
     private static final int CUE_MEMORY_MC = 60;
     /** A walk that moved the player less than this from where a strike found them didn't dodge it. */
     private static final double MOVED = 0.5;
+    /** How far (blocks) a dodge looks for a safe-coloured floor tile. */
+    private static final int SAFE_TILE_REACH = 8;
 
     /** One thing the player saw coming. */
     private static final class Cue {
@@ -84,6 +86,8 @@ public final class RealPlayer implements AutoCloseable {
         /** Blocks to the nearest safe spot when it appeared (0: not in it). */
         double need;
         boolean judged;
+        /** A dodge cue with no shape (an area shown by safe floor tiles): the player has looked for a safe tile. */
+        boolean sought;
 
         Cue(String name, long cueMc, long landMc, int protection, boolean dodge, Vec3 centre, double radius, Vec3 playerAt) {
             this.name = name;
@@ -522,6 +526,7 @@ public final class RealPlayer implements AutoCloseable {
         if (FreezeRules.frozen(p)) {
             return;
         }
+        seekSafeTiles(now);
         long soonest = Long.MAX_VALUE;
         for (Cue c : cues) {
             if (c.centre != null && c.landMc >= now && now - c.cueMc >= RealReaction.REACTION_MC
@@ -553,6 +558,70 @@ public final class RealPlayer implements AutoCloseable {
         dodging = true;
         dodges++;
         longestDodge = Math.max(longestDodge, spot[2]);
+    }
+
+    /**
+     * A dodge cast with no round shape behind it (a boss's area attack drawn as safe tiles, Sol Heredit's spear and shield): a
+     * reaction time after its cue the player walks to the nearest safe-coloured floor tile, when not on one already, and the
+     * walk is judged against the cue's lead.
+     */
+    private void seekSafeTiles(long now) {
+        for (Cue c : cues) {
+            if (!c.dodge || c.centre != null || c.sought || c.landMc < now || now - c.cueMc < RealReaction.REACTION_MC) {
+                continue;
+            }
+            c.sought = true;
+            int feet = feetY(p.getY());
+            if (safeUnder(p.getX(), p.getZ(), feet)) {
+                continue;
+            }
+            Vec3 best = null;
+            double bestD = Double.MAX_VALUE;
+            int px = (int) Math.floor(p.getX());
+            int pz = (int) Math.floor(p.getZ());
+            for (int dx = -SAFE_TILE_REACH; dx <= SAFE_TILE_REACH; dx++) {
+                for (int dz = -SAFE_TILE_REACH; dz <= SAFE_TILE_REACH; dz++) {
+                    double x = px + dx + 0.5;
+                    double z = pz + dz + 0.5;
+                    double d = Math.hypot(x - p.getX(), z - p.getZ());
+                    if (d < bestD && safeUnder(x, z, feet) && standable(x, z, feet, true)) {
+                        best = new Vec3(x, p.getY(), z);
+                        bestD = d;
+                    }
+                }
+            }
+            if (best == null) {
+                continue;
+            }
+            goTo(best);
+            dodging = true;
+            dodges++;
+            longestDodge = Math.max(longestDodge, bestD);
+            String why = RealReaction.budgetFailure(c.name, bestD, c.landMc - c.cueMc);
+            if (why != null && budget.size() < 8) {
+                budget.add(why);
+            }
+        }
+    }
+
+    /** Whether the floor block under (x, z) is marked safe (cyan). */
+    private boolean safeUnder(double x, double z, int feetY) {
+        BlockPos floor = new BlockPos((int) Math.floor(x), feetY - 1, (int) Math.floor(z));
+        return FloorMarkers.marked(world, floor) && kindOf(world.getBlockState(floor)) == HazardKind.SAFE;
+    }
+
+    /**
+     * The nearest spot the player can stand on at least {@code radius} blocks from every one of {@code threats} (chasing
+     * currents, tornadoes) and off any danger mark, within {@code reach}; null when there is none.
+     */
+    public Vec3 clearSpot(List<Vec3> threats, double radius, double reach) {
+        List<RealReaction.Disc> d = new ArrayList<>();
+        for (Vec3 t : threats) {
+            d.add(new RealReaction.Disc(t.x, t.z, radius, 0, "threat"));
+        }
+        int feet = feetY(p.getY());
+        double[] s = RealReaction.safeSpot(p.getX(), p.getZ(), d, Long.MAX_VALUE, reach, (x, z) -> standable(x, z, feet, true));
+        return s == null ? null : new Vec3(s[0], p.getY(), s[1]);
     }
 
     private boolean safeHere(Vec3 at, long now) {
@@ -674,8 +743,18 @@ public final class RealPlayer implements AutoCloseable {
         int gx = (int) Math.floor(at.x);
         int gz = (int) Math.floor(at.z);
         List<Vec3> out = new ArrayList<>();
-        GridPath.Floor floor = (x, z, near) -> (x != gx || z != gz) && !avoid.isEmpty() && avoided(x + 0.5, z + 0.5) ? GridPath.NONE
-                : feet(x, z, near);
+        // a dodging player (no-heal mode) also routes round hazards and danger marks, except right where it starts (to step off)
+        GridPath.Floor floor = (x, z, near) -> {
+            boolean goalCell = x == gx && z == gz;
+            if (!goalCell && !avoid.isEmpty() && avoided(x + 0.5, z + 0.5)) {
+                return GridPath.NONE;
+            }
+            if (!goalCell && autoDodge && (Math.abs(x - sx) > 1 || Math.abs(z - sz) > 1)
+                    && (dangerUnder(x + 0.5, z + 0.5, near) || Mechanics.hazardAt(world, new Vec3(x + 0.5, near, z + 0.5)))) {
+                return GridPath.NONE;
+            }
+            return feet(x, z, near);
+        };
         List<int[]> cells = GridPath.find(sx, sz, sy, gx, gz, ROUTE_RADIUS, ROUTE_NODES, floor);
         if (cells != null && !cells.isEmpty()) {
             cells = GridPath.smooth(new int[]{sx, sy, sz}, cells, floor);

@@ -642,13 +642,23 @@ public final class TzHaarSelfTest {
         log.append("nibblers chewed ").append(before - after).append(" pillar hitpoints; ");
     }
 
+    /**
+     * The protection prayer the player has up (null: none), switched through the prayer keys' path ({@code PrayerService.set})
+     * as a player does, never by setting the active prayers. // playability (round 44)
+     */
     private void pray(Prayer prayer) {
         PlayerData data = Players.data(player);
-        data.activePrayers().remove(Prayer.PROTECT_FROM_MAGIC);
-        data.activePrayers().remove(Prayer.PROTECT_FROM_MISSILES);
-        data.activePrayers().remove(Prayer.PROTECT_FROM_MELEE);
+        if (prayer != null && data.prayerPoints() <= 0) {
+            data.setPrayerPoints(99);
+        }
+        for (Prayer p : com.runecraft.osrs.PrayerGrace.PROTECTIONS) {
+            if (p != prayer && data.isActive(p)) {
+                com.runecraft.combat.PrayerService.set(player, p, false);
+            }
+        }
         if (prayer != null) {
-            data.activePrayers().add(prayer);
+            com.runecraft.combat.PrayerService.set(player, prayer, true);
+            expect(data.isActive(prayer), "could not switch " + prayer + " on (" + com.runecraft.combat.PrayerService.lastRefusal + ")");
         }
     }
 
@@ -842,25 +852,37 @@ public final class TzHaarSelfTest {
                 covered[0] = shielded;
             }
         };
+        // Round 44: the player reacts like a real one, a reaction time after the warning, and walks (at a run, through the
+        // arena) into the shadow's nearest edge instead of being put there; the walk must fit the charge (the walk-out budget).
+        com.runecraft.selftest.RealPlayer real = com.runecraft.selftest.RealPlayer.start(player);
         try {
-            player.teleportTo(glyph.getX() + 6, glyph.getY(), glyph.getZ() + 3); // beside the glyph's shadow
+            player.teleportTo(glyph.getX() + 6, glyph.getY(), glyph.getZ() + 3); // beside the glyph's shadow (setting the scene)
             expect(zuk.attackInterceptor.intercept(zuk, player, zuk.def().attacks.get(0)), "Zuk's attack turn was not taken");
             expect(charge[0] >= 0 && charge[1] - charge[0] >= TzHaarWaves.TELEGRAPH_FLOOR_MC,
                     "Zuk's blast charges for " + (charge[1] - charge[0]) + " MC");
             expect(!warnings.isEmpty() && warnings.get(0).contains("Get behind the glyph"),
                     "a player outside the glyph's shadow was not warned: " + warnings);
+            double edge = Math.max(0, TzHaarWaves.glyphShadowHalfWidth(glyph.getBbWidth()) - 0.5);
+            net.minecraft.world.phys.Vec3 cover = new net.minecraft.world.phys.Vec3(glyph.getX() + edge, player.getY(), glyph.getZ() + 3);
+            real.dodgeBudget("zuk_blast", Math.hypot(cover.x - player.getX(), cover.z - player.getZ()), charge[1] - charge[0]);
             for (int guard = 0; guard < 80 && charge[2] < 0; guard++) {
                 com.runecraft.action.ActionManager.advanceForSelfTest();
-                if (com.runecraft.action.ActionManager.mcTick() == charge[0] + 12) {
-                    player.teleportTo(glyph.getX(), glyph.getY(), glyph.getZ() + 3); // the player reacts
+                if (com.runecraft.action.ActionManager.mcTick() == charge[0] + com.runecraft.osrs.RealReaction.REACTION_MC) {
+                    real.goTo(cover); // the player reacts
                 }
+                real.tick();
                 script.tick(zuk);
                 heal();
             }
             expect(charge[2] >= charge[1], "Zuk's blast landed " + (charge[1] - charge[2]) + " MC early");
-            expect(covered[0], "the glyph did not block a blast the player stepped behind it for");
+            expect(covered[0], "the glyph did not block a blast the player walked behind it for (walking from "
+                    + String.format(java.util.Locale.ROOT, "%.1f", glyph.getX() + 6 - cover.x) + " blocks away, now "
+                    + String.format(java.util.Locale.ROOT, "%.1f, %.1f", player.getX() - glyph.getX(), player.getZ() - glyph.getZ())
+                    + " from the glyph; " + real.summary() + ")");
             expect(script.chargeDueMc() < 0, "Zuk is still charging after the blast landed");
+            real.assertFair("Zuk's blast");
         } finally {
+            real.close();
             ZukScript.chargeListener = before;
             com.runecraft.util.Msg.telegraphListener = heard;
             heal();

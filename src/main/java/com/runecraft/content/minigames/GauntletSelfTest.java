@@ -444,7 +444,7 @@ public final class GauntletSelfTest {
         PlayerData d = Players.data(p);
         int prayedMax = Gauntlet.hunllefMaxHit(mode, 0);
         int top = Gauntlet.hunllefUnprayedMax(mode);
-        d.activePrayers().add(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+        protectFromMagic(d);
         int through = BossSelfTests.hunllefPrayerDisable(boss, p, top);
         expect(through >= 0 && through <= prayedMax,
                 "a top prayer-disable roll through Protect from Magic let " + through + " through (prayed max " + prayedMax + ")");
@@ -454,7 +454,7 @@ public final class GauntletSelfTest {
         int worst = 0;
         for (int i = 0; i < 10; i++) {
             heal();
-            d.activePrayers().add(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+            protectFromMagic(d);
             int landed = prayerOrb(boss);
             expect(landed >= 0, "the Hunllef's prayer-disabling orb never landed");
             expect(landed <= prayedMax, "a prayer-disabling orb through Protect from Magic hit " + landed + " (prayed max " + prayedMax + ")");
@@ -463,6 +463,19 @@ public final class GauntletSelfTest {
         }
         heal();
         note("prayer-disabling orb through the right prayer: at most " + worst);
+    }
+
+    /**
+     * Protect from Magic on through the prayer key's path ({@code PrayerService.set}), as a player switches it, never by setting
+     * the active prayers. // playability (round 44)
+     */
+    private void protectFromMagic(PlayerData d) {
+        if (d.prayerPoints() <= 0) {
+            d.setPrayerPoints(99);
+        }
+        com.runecraft.combat.PrayerService.set(p, com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC, true);
+        expect(d.isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC), "could not switch Protect from Magic on ("
+                + com.runecraft.combat.PrayerService.lastRefusal + ")");
     }
 
     /** The player the prayer-disabling orb is watched landing on, and the damage it landed for (-1 while in flight). */

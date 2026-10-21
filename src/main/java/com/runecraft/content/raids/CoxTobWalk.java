@@ -68,6 +68,68 @@ public final class CoxTobWalk {
         return run(p, RaidType.COX, entrance, true);
     }
 
+    /**
+     * The no-heal pass (round 44 playability, {@code raid:noheal:cox} and {@code raid:noheal:tob}): the raid's first combat room
+     * (Tekton, Challenge Mode's fixed first room; the Maiden of Sugadinti) fought by a mortal player who is never topped up,
+     * on a fixed food and prayer potion budget, reacting to the cues alone ({@link RaidNoHealWalk}). Returns a summary or throws
+     * {@link AssertionError}.
+     */
+    public static String noHeal(ServerPlayer p, BlockPos entrance, RaidType type) {
+        RaidManager.enter(p, type, entrance);
+        RaidInstance raid = RaidManager.of(p);
+        expect(raid != null, "RaidManager.enter did not start a raid (see the log for \"Failed to start a raid\")");
+        CoxTobWalk w = new CoxTobWalk(raid, p);
+        w.challenge = type == RaidType.COX;
+        w.recorder = RaidStrikeRecorder.start();
+        try {
+            if (type == RaidType.COX) {
+                w.coxLobby();
+            }
+            w.begin();
+            String id = raid.rooms.get(1).id();
+            w.room = id + " (room 1)";
+            w.settle(1);
+            w.moveTo(raid.spawn(1));
+            w.tick(1);
+            expect(raid.currentRoom() == 1 && raid.logic(1).started, "walking in did not start the room");
+            String out = RaidNoHealWalk.fight(w.noHealRoom(), 1, "raid:noheal:" + type.id() + " (" + id + ")");
+            return id + ": " + out + "; " + w.recorder.summary();
+        } catch (AssertionError e) {
+            throw new AssertionError("[" + w.room + "] " + e.getMessage(), e);
+        } finally {
+            w.recorder.close();
+            p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            if (RaidManager.of(p) == raid) {
+                RaidManager.selfTestClose(raid);
+            }
+        }
+    }
+
+    private RaidNoHealWalk.Room noHealRoom() {
+        CoxTobWalk w = this;
+        return new RaidNoHealWalk.Room() {
+            @Override
+            public RaidInstance raid() {
+                return raid;
+            }
+
+            @Override
+            public ServerPlayer player() {
+                return player;
+            }
+
+            @Override
+            public void tick(int n) {
+                w.tick(n);
+            }
+
+            @Override
+            public int hit(LivingEntity target, int damage, AttackType type) {
+                return w.hit(target, damage, type);
+            }
+        };
+    }
+
     /** Walks a whole Theatre of Blood raid as {@code p}; returns a summary or throws {@link AssertionError}. */
     public static String tobRun(ServerPlayer p, BlockPos entrance) {
         return run(p, RaidType.TOB, entrance);
@@ -369,6 +431,11 @@ public final class CoxTobWalk {
             for (int m = 0; m < com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK; m++) {
                 com.runecraft.action.ActionManager.advanceForSelfTest();
                 com.runecraft.boss.Mechanics.tickForSelfTest();
+                // round 44: a player played like a real one (the no-heal pass) moves, prays and eats every Minecraft tick
+                com.runecraft.selftest.RealPlayer real = com.runecraft.selftest.RealPlayer.of(player);
+                if (real != null) {
+                    real.tick();
+                }
             }
             RaidEffects.gameTick();
             if (RaidManager.of(player) == raid) {
@@ -381,6 +448,10 @@ public final class CoxTobWalk {
 
     /** Keeps the player topped up (the real-player self-test player is invulnerable, but drains still apply). */
     void heal() {
+        com.runecraft.selftest.RealPlayer real = com.runecraft.selftest.RealPlayer.of(player);
+        if (real != null && real.mortal()) {
+            return; // the no-heal pass: the player lives on its own food and potions
+        }
         if (player.getHealth() < player.getMaxHealth()) {
             player.setHealth(player.getMaxHealth());
         }
