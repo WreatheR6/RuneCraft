@@ -445,10 +445,11 @@ public final class AgilityMinigameWalk {
         notes.add(marks + " marks from the run");
 
         step = "hallowed sack";
-        int kinds = distinctItems();
+        // five floors of coffin loot can fill the pack (or already hold what the sack rolls), so open it in an empty one
+        player.getInventory().clearContent();
         Inv.give(player, "hallowed_sack", 1);
         SepulchreSession.openSack(player);
-        expect(distinctItems() > kinds, "the hallowed sack gave nothing");
+        expect(distinctItems() - Math.min(1, Inv.count(player, "hallowed_sack")) > 0, "the hallowed sack gave nothing");
         notes.add("a hallowed sack opened");
     }
 
