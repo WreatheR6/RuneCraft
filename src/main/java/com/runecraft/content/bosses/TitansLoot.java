@@ -252,6 +252,38 @@ public final class TitansLoot {
         return pending != null && pending.damage() == damage;
     }
 
+    /**
+     * Self-test: drops a player's open choice from the world save, with its fallen Branda and last loot. A fake player never
+     * logs in, so {@link #timeouts} never resolves its choice: one a failed check leaves would stay in the save for good, and
+     * the next kill's {@link #offer} would loot Branda with it first.
+     */
+    static void forget(MinecraftServer server, UUID player) {
+        State.get(server).remove(player);
+        BRANDA.remove(player);
+        LAST.remove(player);
+    }
+
+    /** A player's open choice with its fallen Branda, saved around the self-test. */
+    private record Saved(Pending pending, DataBossEntity branda) {
+    }
+
+    /** Self-test: a (real) player's own open choice before the self-test, or null when none is open. */
+    static Object selfTestSave(MinecraftServer server, UUID player) {
+        Pending pending = State.get(server).pending.get(player);
+        return pending == null ? null : new Saved(pending, BRANDA.get(player));
+    }
+
+    /** Self-test: puts a saved choice back (its five minutes run from when the Titans fell), or drops the open one (null). */
+    static void selfTestRestore(MinecraftServer server, UUID player, Object saved) {
+        forget(server, player);
+        if (saved instanceof Saved s) {
+            State.get(server).put(player, s.pending());
+            if (s.branda() != null) {
+                BRANDA.put(player, s.branda());
+            }
+        }
+    }
+
     /** World-save storage of the open choices (player -> damage, when the Titans fell, killer). */
     static final class State extends SavedData {
         static final String KEY = "runecraft_bosses_titans";

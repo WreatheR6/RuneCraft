@@ -123,6 +123,7 @@ public final class TitansWalk {
         } finally {
             partner.getInventory().clearContent();
             Players.state(world.getServer()).remove(partner.getUUID()); // no fake partner's kill count left in the save
+            TitansLoot.forget(world.getServer(), partner.getUUID()); // nor its open choice, if the walk failed before it chose
             p.setItemInHand(InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
         }
     }

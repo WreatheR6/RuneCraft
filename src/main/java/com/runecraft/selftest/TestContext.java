@@ -141,7 +141,8 @@ public final class TestContext {
 
     /**
      * Per-player state the modules keep outside PlayerData: worn extra slots, spellbook, diaries and Combat Achievements
-     * (systems), the Slayer profile, minigame points and flags, quest flags and kill counters. Reset before every check so
+     * (systems), the Slayer profile, minigame points and flags, quest flags and kill counters, and boss loot held for the
+     * player (the Lunar Chest's Moons, the fallen Royal Titans' open choice). Reset before every check so
      * checks don't leak into each other, and put back for a real player at the end.
      */
     private List<ModuleState> moduleStates() {
@@ -193,6 +194,15 @@ public final class TestContext {
 
                     public void restore(java.util.UUID p, Object saved) {
                         com.runecraft.content.bosses.BossSelfTests.lunarChestRestore(server, p, saved);
+                    }
+                },
+                new ModuleState() { // the fallen Royal Titans' open loot choice (a Branda kill leaves it open)
+                    public Object save(java.util.UUID p) {
+                        return com.runecraft.content.bosses.BossSelfTests.titansChoiceSave(server, p);
+                    }
+
+                    public void restore(java.util.UUID p, Object saved) {
+                        com.runecraft.content.bosses.BossSelfTests.titansChoiceRestore(server, p, saved);
                     }
                 });
     }
