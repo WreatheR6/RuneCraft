@@ -28,7 +28,8 @@ final class SeaSlayerMonsters {
         return List.of(
                 // Frost dragon dragonfire is icy in OSRS (a brief freeze when unprotected): not built.
                 m("frost_dragon", "Frost dragon", 202, 230, 180, 150, 150, 150, 1).speed(4).attack(stab(16))
-                        .attack(Kit.dragonfire(50, 4)).defenceBonus(25, 90, 15, 50, 50).rangedDefence(70, 30).weakness("fire", 100)
+                        .attack(Kit.dragonfire(50, 4).particle("minecraft:snowflake")) // icy breath
+                        .defenceBonus(25, 90, 15, 50, 50).rangedDefence(70, 30).weakness("fire", 100)
                         .drops(Drop.always("frost_dragon_bones"), Drop.of("dragon_metal_sheet", 1, 1, 100), // 1/40 on task: SlayerRewards.ON_TASK_DROPS
                                 Drop.of("rune_2h_sword", 1, 1, 65), Drop.of("rune_kiteshield", 1, 1, 65), Drop.of("rune_longsword", 1, 1, 65),
                                 Drop.of("rune_pickaxe", 1, 1, 65), Drop.of("adamant_platebody", 1, 1, 33), Drop.of("adamant_warhammer", 1, 1, 33),
