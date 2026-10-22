@@ -33,7 +33,8 @@ public final class Slayer {
         if (stats != null && stats.profile() != null
                 && !com.runecraft.osrs.content.bosses.SlayerBossRules.taskKill(stats.profile().id)) {
             // Araxxor's araxytes: Slayer XP while they are on task, but no task kill (OSRS Wiki).
-            if (SlayerService.isOnTask(player, entity) && com.runecraft.skill.XpService.allowed(player, com.runecraft.osrs.Skill.SLAYER)) {
+            if (SlayerService.isOnTask(player, entity) && com.runecraft.skill.XpService.allowed(player, com.runecraft.osrs.Skill.SLAYER)
+                    && com.runecraft.osrs.content.bosses.SlayerBossRules.taskXp(stats.profile().id)) {
                 com.runecraft.skill.XpService.add(player, com.runecraft.osrs.Skill.SLAYER,
                         com.runecraft.osrs.data.MonsterTraits.slayerXp(stats.traitsKey(), stats.hitpoints()));
             }

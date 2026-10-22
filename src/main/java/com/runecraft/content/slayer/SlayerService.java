@@ -361,7 +361,12 @@ public final class SlayerService {
             return true;
         }
         String id = stats.profile() != null ? stats.profile().id : stats.boss() != null ? stats.boss().entityId() : null;
-        return SlayerBossTasks.counts(task, id, masterId);
+        if (SlayerBossTasks.counts(task, id, masterId)) {
+            return true;
+        }
+        // A boss's minions that count as its task's creatures (Araxxor's eggs and hatched araxytes: OSRS Wiki).
+        String boss = id == null ? null : com.runecraft.osrs.content.bosses.SlayerBossRules.TASK_MINIONS.get(id);
+        return boss != null && (SlayerCategories.counts(task, boss, declaredCategory(boss)) || SlayerBossTasks.counts(task, boss, masterId));
     }
 
     /**

@@ -1976,16 +1976,25 @@ final class SlayerScripts {
                     kinds.put(m, kind);
                     if ("ruptura_araxyte".equals(kind)) {
                         rupturas.add(m);
-                    } else if ("mirrorback_araxyte".equals(kind)) {
-                        // Melee on a mirrorback recoils half the damage back at the attacker (halberd reach not modelled).
-                        MinionRules.set(m, (player, mob, type, d) -> {
-                            if (type.isMelee() && d > 0) {
+                    }
+                    boolean mirrorback = "mirrorback_araxyte".equals(kind);
+                    MinionRules.set(m, new MinionRules.Rule() {
+                        /** A noxious halberd, a crush weapon or a crossbow/ballista always max hits a hatched araxyte (wiki). */
+                        @Override
+                        public boolean alwaysMaxHit(ServerPlayer player, net.minecraft.world.entity.LivingEntity mob, AttackType type) {
+                            return BossMechanics.araxyteMaxHit(type, Inv.idOf(player.getMainHandItem()));
+                        }
+
+                        @Override
+                        public int damage(ServerPlayer player, net.minecraft.world.entity.LivingEntity mob, AttackType type, int d) {
+                            // Melee on a mirrorback recoils half the damage back at the attacker (halberd reach not modelled).
+                            if (mirrorback && type.isMelee() && d > 0) {
                                 com.runecraft.combat.CombatHooks.nameAttack("mirrorback_recoil", null);
                                 CombatHandler.applyDamage(mob, player, (int) Math.round(d * SlayerBosses.MIRRORBACK_RECOIL));
                             }
                             return d;
-                        });
-                    }
+                        }
+                    });
                     BossFx.say(boss, "An egg hatches into " + com.runecraft.util.Msg.article(kind.replace('_', ' ')) + "!");
                 }
                 return;

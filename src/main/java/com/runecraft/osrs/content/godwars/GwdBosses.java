@@ -23,8 +23,8 @@ public final class GwdBosses {
 
     // --- Kree'arra ---
     /**
-     * Wiki infobox: 25 (Melee), "Magical melee": blocked by Protect from Melee, but rolled with his Magic against the player's
-     * magic defence (osrs.data.HybridStyles), as his wind blast is ranged magic (Magic against ranged defence).
+     * Wiki infobox: 25 (Melee), "Magical melee": blocked by Protect from Melee, but his melee accuracy rolls against the
+     * player's magic defence (osrs.data.HybridStyles), as his wind blast is ranged magic (Magic against ranged defence).
      */
     public static final AttackDef KREE_MELEE = AttackDef.of("talon swipe", AttackType.SLASH, 25, 3.5, 2);
     public static final AttackDef KREE_TORNADO = AttackDef.of("tornado", AttackType.RANGED, 69, 24, 6)

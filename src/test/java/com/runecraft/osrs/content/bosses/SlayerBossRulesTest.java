@@ -65,6 +65,28 @@ class SlayerBossRulesTest {
     }
 
     @Test
+    void araxxorsEggsCountForTheHelmetButNotTheTask() {
+        // OSRS Wiki "Araxxor": "Both the eggs and the araxytes spawned from them count as on-task monsters for the purpose of
+        // receiving the slayer helmet damage bonus, but the spawned araxytes do not reduce the player's task kill count."
+        assertEquals("araxytes", ContentRegistry.monster(BossMechanics.ARAXYTE_EGG).slayerCategory);
+        assertFalse(SlayerBossRules.taskKill(BossMechanics.ARAXYTE_EGG));
+        assertFalse(SlayerBossRules.taskXp(BossMechanics.ARAXYTE_EGG));
+        assertTrue(SlayerBossRules.taskXp("acidic_araxyte"));
+        // ... on Konar's Araxxor boss task too.
+        for (String id : new String[]{"acidic_araxyte", "mirrorback_araxyte", "ruptura_araxyte", BossMechanics.ARAXYTE_EGG}) {
+            assertEquals("araxxor", SlayerBossRules.TASK_MINIONS.get(id), id);
+        }
+        // Hatched araxytes take a guaranteed max hit from crush, crossbows/ballistae and the noxious halberd ("Araxxor/Strategies").
+        assertTrue(BossMechanics.araxyteMaxHit(com.runecraft.osrs.AttackType.CRUSH, "abyssal_bludgeon"));
+        assertTrue(BossMechanics.araxyteMaxHit(com.runecraft.osrs.AttackType.SLASH, "noxious_halberd"));
+        assertTrue(BossMechanics.araxyteMaxHit(com.runecraft.osrs.AttackType.RANGED, "armadyl_crossbow"));
+        assertTrue(BossMechanics.araxyteMaxHit(com.runecraft.osrs.AttackType.RANGED, "heavy_ballista"));
+        assertFalse(BossMechanics.araxyteMaxHit(com.runecraft.osrs.AttackType.RANGED, "twisted_bow"));
+        assertFalse(BossMechanics.araxyteMaxHit(com.runecraft.osrs.AttackType.SLASH, "abyssal_whip"));
+        assertFalse(BossMechanics.araxyteMaxHit(com.runecraft.osrs.AttackType.MAGIC, null));
+    }
+
+    @Test
     void brittleKey() {
         assertNotNull(ItemCatalog.get(SlayerBossRules.BRITTLE_KEY));
         assertEquals(150, SlayerBossRules.BRITTLE_KEY_RATE);

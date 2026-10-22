@@ -17,10 +17,11 @@ public final class HybridStyles {
 
     private static final Map<String, Hybrid> HYBRIDS = Map.of(
             // Kree'arra (OSRS Wiki infobox: "Ranged, Ranged magic, Magical melee"): his talon swipe is magical melee
-            // (Protect from Melee blocks it; his Magic against the player's magic defence), his wind blast ranged magic
+            // (Protect from Melee blocks it; his melee accuracy rolls against the player's magic defence, Magical melee:
+            // "attacks which roll for accuracy against your magic defensive bonuses"), his wind blast ranged magic
             // (Protect from Magic blocks it; Mod Ash: "Kree's magic attack rolls its MAGIC accuracy against your RANGED
             // defence").
-            key("kreearra", "talon swipe"), new Hybrid(AttackType.MAGIC, AttackType.MAGIC),
+            key("kreearra", "talon swipe"), new Hybrid(AttackType.SLASH, AttackType.MAGIC),
             key("kreearra", "wind blast"), new Hybrid(AttackType.MAGIC, AttackType.RANGED));
 
     private HybridStyles() {

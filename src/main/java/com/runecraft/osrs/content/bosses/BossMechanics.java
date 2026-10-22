@@ -834,6 +834,23 @@ public final class BossMechanics {
         return eggDamage > ARAXYTE_HP ? 0 : Math.max(1, ARAXYTE_HP - Math.max(0, eggDamage));
     }
 
+    /**
+     * Whether a player's attack on a hatched araxyte always lands its max hit (OSRS Wiki "Araxxor/Strategies": "Players
+     * will always max hit when attacking the hatched araxytes with a noxious halberd, crush weapons, or heavy Ranged weapon
+     * (such as a crossbow or ballista)"; an unhatched egg rolls normally). approx: the wiki's "if crush or ranged is their
+     * highest accuracy style" is read as the style the attack uses.
+     */
+    public static boolean araxyteMaxHit(com.runecraft.osrs.AttackType type, String weaponId) {
+        String w = weaponId == null ? "" : weaponId;
+        if (w.equals("noxious_halberd")) {
+            return true;
+        }
+        if (type == com.runecraft.osrs.AttackType.CRUSH) {
+            return true;
+        }
+        return type == com.runecraft.osrs.AttackType.RANGED && (w.contains("crossbow") || w.contains("ballista"));
+    }
+
     // ---------------- Moons of Peril (OSRS Wiki "Moons of Peril/Strategies") ----------------
 
     /** Combat Achievement flag: a player damaged the Eclipse Moon other than through a parried clone ("The Clone Zone"). */
