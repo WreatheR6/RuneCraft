@@ -295,8 +295,14 @@ public final class DoomWalk {
         // the shield rises the tick after the second earth breaks and lasts `travel` ticks: break it early enough to step in
         // before the first wave, late enough that it still stands at the last
         long lead = Math.max(2, Math.min(travel - (long) DoomDelves.SHOCKWAVE_GAP * (waves - 1) - 2, 6));
+        Vec3 target = a.position(); // the shield walks from the second earth broken towards the first
         BossWalks.attack(p, a); // the first decides where the shield walks to
         Mob second = b;
+        // Round 44: the player walks over to the second earth while the volatile earth winds up (the shield rises on its spot)
+        Vec3 bAt = b.position();
+        Vec3 toPlayer = p.position().subtract(bAt).multiply(1, 0, 1);
+        Vec3 by = toPlayer.lengthSqr() < 1e-4 ? bAt : bAt.add(toPlayer.normalize().scale(1.2));
+        d.walkTo(BossFx.ground(BossFx.world(boss), by.x, by.z, bAt.y), boss);
         if (BossWalks.until(boss, d, 30, () -> s.walkShockwaveTicksLeft() <= lead) < 0) {
             throw fail("the shockwave never came due");
         }
@@ -305,7 +311,12 @@ public final class DoomWalk {
         int waited = BossWalks.until(boss, d, 40, () -> {
             Vec3 shield = s.walkEarthenShield();
             if (shield != null) {
-                d.walkTo(shield, boss); // round 44: after the walking shield on foot
+                // round 44: after the walking shield on foot, to where it steps next (a player keeps in its 2.5 blocks while it
+                // moves a block or two a game tick, standing a step ahead of it rather than a step behind)
+                Vec3 to = target.subtract(shield).multiply(1, 0, 1);
+                double len = to.length();
+                Vec3 ahead = len < 1e-3 ? shield : shield.add(to.scale(Math.min(speed, len) / len));
+                d.walkTo(ahead, boss);
             }
             return !s.walkShockwavePending();
         });
@@ -413,7 +424,15 @@ public final class DoomWalk {
                 d.walkOut("trample", dodge(boss, s, eye, p.position()), since,
                         (DoomDelves.ZOOM_WINDUP + 1) * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK - since, boss);
                 zooms++;
-                d.ticks(boss, DoomDelves.ZOOM_WINDUP + 1);
+                // from delve 6 a car slam follows from where the zoom stops (its eye), three game ticks after it: a player
+                // heads for cover on its own side of the path while the Doom winds up and zooms, as rocks may be far off
+                Vec3 cover = DoomDelves.carSlams(level) ? coverFrom(boss, s, eye, p.position()) : null;
+                if (cover != null) {
+                    d.walkTo(cover, boss);
+                }
+                for (int w = 0; w <= DoomDelves.ZOOM_WINDUP && s.walkEye() != null; w++) {
+                    d.ticks(boss, 1);
+                }
                 continue;
             }
             if (s.walkSlamming()) {
@@ -463,7 +482,6 @@ public final class DoomWalk {
                 + waves;
     }
 
-    /** A spot inside the arena well off the line from the Doom to its eye. */
     /**
      * Where to stand off the Doom's zoom from where it is to its eye: the spot nearest {@code at} that is clear of its trample
      * (half its width plus a block either side of its path, and a margin), inside the arena. Round 44: the nearest such spot, as
@@ -496,6 +514,50 @@ public final class DoomWalk {
             best = c.add(side.scale(clear + 1));
         }
         return BossFx.ground(BossFx.world(boss), best.x, best.z, from.y);
+    }
+
+    /**
+     * Cover from the car slam that follows a zoom (round 44), taken while the Doom winds up: the spot behind a rock (as seen
+     * from the eye, where the zoom stops) nearest {@code at}, on the player's side of the zoom's path and clear of its
+     * trample, the rock itself out of the path's reach (the zoom smashes rocks within 2.5 blocks); null when there is none.
+     */
+    private static Vec3 coverFrom(DataBossEntity boss, DoomDelveService.DoomScript s, Vec3 eye, Vec3 at) {
+        Vec3 from = boss.position();
+        double len = Math.max(0.1, Math.hypot(eye.x - from.x, eye.z - from.z));
+        double sideX = -(eye.z - from.z) / len;
+        double sideZ = (eye.x - from.x) / len;
+        double clear = boss.getBbWidth() / 2 + 1.0 + com.runecraft.osrs.RealReaction.EDGE_CLEARANCE + 0.3;
+        double atSide = (at.x - from.x) * sideX + (at.z - from.z) * sideZ;
+        Vec3 c = s.homeVec();
+        Vec3 best = null;
+        for (Vec3 r : s.walkRocks()) {
+            if (toSegment(r, from, eye) < 2.7) {
+                continue; // smashed by the zoom on its way
+            }
+            Vec3 away = r.subtract(eye);
+            double far = Math.hypot(away.x, away.z);
+            if (far < 0.5) {
+                continue;
+            }
+            Vec3 spot = r.add(away.x / far * 1.2, 0, away.z / far * 1.2);
+            double off = (spot.x - from.x) * sideX + (spot.z - from.z) * sideZ;
+            if (off * atSide <= 0 || toSegment(spot, from, eye) < clear || Math.hypot(spot.x - c.x, spot.z - c.z) > 11) {
+                continue;
+            }
+            if (best == null || spot.distanceToSqr(at) < best.distanceToSqr(at)) {
+                best = spot;
+            }
+        }
+        return best == null ? null : BossFx.ground(BossFx.world(boss), best.x, best.z, boss.getY());
+    }
+
+    /** Horizontal distance from {@code v} to the segment from {@code a} to {@code b}. */
+    private static double toSegment(Vec3 v, Vec3 a, Vec3 b) {
+        double dx = b.x - a.x;
+        double dz = b.z - a.z;
+        double l2 = dx * dx + dz * dz;
+        double t = l2 < 1e-9 ? 0 : Math.max(0, Math.min(1, ((v.x - a.x) * dx + (v.z - a.z) * dz) / l2));
+        return Math.hypot(v.x - (a.x + t * dx), v.z - (a.z + t * dz));
     }
 
     /** A spot with a rock between it and the Doom, nearest {@code at} (round 44: the nearest cover, as a player takes it). */
