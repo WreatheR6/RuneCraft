@@ -126,6 +126,7 @@ public final class NoHealWalks {
                 }
             };
             case "alchemical_hydra" -> new Hydra();
+            case "vardorvis" -> new Vardorvis();
             case "the_nightmare" -> new Nightmare();
             case "the_whisperer" -> new Whisperer();
             case "sol_heredit" -> new Sol();
@@ -226,6 +227,46 @@ public final class NoHealWalks {
         @Override
         public String note() {
             return flees + " run(s) from its currents";
+        }
+    }
+
+    // ------------------------------------------------------------------ Vardorvis
+
+    /**
+     * Vardorvis: his Strangle's spores are broken (one hit each, at the player's own attack speed) a reaction time after they
+     * rise, before the boss himself; any left when the tendrils tighten cost about 25.
+     */
+    private static final class Vardorvis implements Plan {
+        private final Map<LivingEntity, Integer> seen = new LinkedHashMap<>();
+        private int broken;
+
+        @Override
+        public void gameTick(DataBossEntity boss, Fight f) {
+            if (!(boss.script() instanceof EncounterScripts.Vardorvis v)) {
+                return;
+            }
+            for (Mob spore : v.walkSpores()) {
+                if (spore == null || !spore.isAlive()) {
+                    continue;
+                }
+                int first = seen.computeIfAbsent(spore, k -> f.tick());
+                if (f.tick() - first >= REACT_TICKS && f.attack(spore, (int) Math.ceil(spore.getHealth()) + 1, AttackType.SLASH)) {
+                    if (!spore.isAlive()) {
+                        broken++;
+                    }
+                }
+                return; // one target a game tick
+            }
+        }
+
+        @Override
+        public boolean drive(DataBossEntity boss, Fight f) {
+            return !(boss.script() instanceof EncounterScripts.Vardorvis v) || v.walkSpores().stream().noneMatch(Mob::isAlive);
+        }
+
+        @Override
+        public String note() {
+            return broken + " strangler spore(s) broken";
         }
     }
 
