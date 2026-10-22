@@ -235,6 +235,10 @@ public final class QuestBossRules {
     /** The Curse of Arrav (wiki quick guide): every third attack Arrav swings his axe ahead of him for up to 26. */
     public static final int COA_ARRAV_AXE_EVERY = 3;
 
+    /** The Final Dawn (wiki): Lucius's triple projectile and Metzli's specials come every third attack. */
+    public static final int TFD_LUCIUS_SPECIAL_EVERY = 3;
+    public static final int TFD_METZLI_SPECIAL_EVERY = 3;
+
     /** Whether a boss's {@code attack}th attack (1-based) is its every-{@code n}th special. */
     public static boolean nthIsSpecial(int attack, int n) {
         return n > 0 && attack > 0 && attack % n == 0;

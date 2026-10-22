@@ -269,4 +269,80 @@ class QuestPuzzlesRound44Test {
         assertEquals(167, itzla.combatLevel);
         assertEquals(250, itzla.hitpoints);
     }
+
+    /**
+     * The Final Dawn (wiki quick guide, quest-helper): the passcode, the blue chest's tumblers (every board leaves one
+     * combination), the GUS door, Teumo's barrels, the sun altars and the moon kindling, and the six fights the wiki names.
+     */
+    @Test
+    void finalDawnPuzzlesAndFights() {
+        QuestSpec q = BOOK.spec("the_final_dawn");
+        assertEquals(4, q.stages.size(), "the saved stage count");
+        for (QuestPuzzle p : List.of(VarlamoreQuests.TFD_PASSCODE, VarlamoreQuests.TFD_TUMBLER_CHEST, VarlamoreQuests.TFD_DOOR_CODE,
+                VarlamoreQuests.TFD_BARRELS, VarlamoreQuests.TFD_SUN_ALTARS, VarlamoreQuests.TFD_MOON_KINDLING)) {
+            assertTrue(hasPuzzle("the_final_dawn", p), p.key);
+        }
+        Variant pass = VarlamoreQuests.TFD_PASSCODE.rooms.get(0).variants().get(0);
+        assertEquals("Final Dawn", pass.options().get(pass.solutions().get(0).get(0)));
+        Variant door = VarlamoreQuests.TFD_DOOR_CODE.rooms.get(0).variants().get(0);
+        assertEquals("GUS", door.solutions().get(0).stream().map(door.options()::get).reduce("", String::concat));
+        // feedback: green right tumbler, blue a number used elsewhere, counted once
+        assertArrayEquals(new int[]{2, 1, 0, 0}, VarlamoreQuests.tfdTumblers(new int[]{1, 2, 3, 4}, new int[]{1, 3, 5, 6}));
+        assertArrayEquals(new int[]{1, 1, 0, 1}, VarlamoreQuests.tfdTumblers(new int[]{1, 2, 3, 3}, new int[]{3, 1, 1, 2}));
+        for (int i = 0; i < VarlamoreQuests.TFD_BOARDS.size(); i++) {
+            VarlamoreQuests.TfdBoard board = VarlamoreQuests.TFD_BOARDS.get(i);
+            List<int[]> left = VarlamoreQuests.tfdConsistent(board.code(), board.tries());
+            assertEquals(1, left.size(), "board " + i + " has one combination");
+            assertArrayEquals(board.code(), left.get(0));
+            Variant v = VarlamoreQuests.TFD_TUMBLER_CHEST.rooms.get(0).variants().get(i);
+            assertEquals(1, v.check(java.util.Arrays.stream(board.code()).map(d -> d - 1).boxed().toList()));
+        }
+        Variant barrels = VarlamoreQuests.TFD_BARRELS.rooms.get(0).variants().get(0);
+        assertEquals(List.of("Steamforge brew", "Dwarven stout", "Beer", "Wizard's mind bomb", "Beer glass"),
+                barrels.solutions().get(0).stream().map(barrels.options()::get).toList());
+        // altars: 1 north-east, clockwise to 8 north; the first word the prince's, the second yours
+        List<String> altars = List.of("North-east altar", "East altar", "South-east altar", "South altar", "South-west altar",
+                "West altar", "North-west altar", "North altar");
+        assertEquals(3, VarlamoreQuests.TFD_SUN_ALTARS.rooms.size());
+        for (QuestPuzzle.Room room : VarlamoreQuests.TFD_SUN_ALTARS.rooms) {
+            for (Variant v : room.variants()) {
+                String[] words = v.prompt().get(1).replaceAll(".*reads: '([A-Za-z]+) ([A-Za-z]+)-([A-Za-z]+)'.*", "$1 $2 $3").split(" ");
+                int prince = VarlamoreQuests.TFD_NUMBERS.get(words[0]);
+                int you = VarlamoreQuests.TFD_NUMBERS.get(words[1]);
+                assertEquals(altars.get(prince - 1), v.options().get(v.solutions().get(0).get(0)), v.prompt().get(1));
+                assertEquals(altars.get(you - 1), v.options().get(v.solutions().get(0).get(1)), v.prompt().get(1));
+                assertEquals(1, v.check(List.of(you - 1, prince - 1)), "either of you may take either altar");
+            }
+        }
+        assertEquals(Integer.valueOf(4), VarlamoreQuests.TFD_NUMBERS.get("Naui"));
+        assertEquals(Integer.valueOf(7), VarlamoreQuests.TFD_NUMBERS.get("Koma"));
+        assertEquals(Integer.valueOf(10), VarlamoreQuests.TFD_NUMBERS.get("Makti"));
+        // kindling: the braziers lit on both plates, added up
+        assertEquals(3, VarlamoreQuests.TFD_MOON_KINDLING.rooms.size());
+        for (QuestPuzzle.Room room : VarlamoreQuests.TFD_MOON_KINDLING.rooms) {
+            for (Variant v : room.variants()) {
+                int lit = 0;
+                for (int line = 1; line <= 2; line++) {
+                    String list = v.prompt().get(line).replaceAll(".*: (.*)\\.$", "$1");
+                    lit += list.split(", ").length;
+                }
+                assertEquals("Deposit " + lit + " root kindling", v.options().get(v.solutions().get(0).get(0)));
+            }
+        }
+        List<String> kills = q.triggers().stream().filter(t -> t.kind == QuestSpec.Trigger.Kind.KILL).map(t -> t.target).toList();
+        assertEquals(List.of("tfd_emissary_enforcer", "tfd_lucius", "tfd_chimalli", "tfd_emissary_brawler", "tfd_ennius_tullus",
+                "tfd_augur_metzli"), kills);
+        java.util.Map<String, int[]> stats = java.util.Map.of("tfd_emissary_enforcer", new int[]{196, 126}, "tfd_lucius",
+                new int[]{160, 180}, "tfd_chimalli", new int[]{160, 180}, "tfd_ennius_tullus", new int[]{306, 380}, "tfd_augur_metzli",
+                new int[]{396, 600}, "tfd_emissary_brawler", new int[]{86, 55});
+        stats.forEach((id, lh) -> {
+            var boss = BOOK.bosses.stream().filter(b -> b.id.equals(id)).findFirst().orElseThrow();
+            assertEquals(lh[0], boss.combatLevel, id);
+            assertEquals(lh[1], boss.hitpoints, id);
+        });
+        var ennius = BOOK.bosses.stream().filter(b -> b.id.equals("tfd_ennius_tullus")).findFirst().orElseThrow();
+        assertTrue(ennius.immuneTo.containsAll(List.of(com.runecraft.osrs.AttackType.RANGED, com.runecraft.osrs.AttackType.MAGIC)),
+                "only melee harms Ennius");
+        assertTrue(q.triggers().stream().noneMatch(t -> "fortis_colosseum".equals(t.target)), "no colosseum battle in the quest");
+    }
 }

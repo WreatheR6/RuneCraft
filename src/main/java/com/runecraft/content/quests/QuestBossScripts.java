@@ -53,6 +53,8 @@ final class QuestBossScripts {
         BossScripts.register("fragment_of_seren", FragmentSpecials::new);
         BossScripts.register("vanstrom_klause", Vanstrom::new);
         BossScripts.register("arrav", () -> new EveryNth(QuestBossRules.COA_ARRAV_AXE_EVERY, "axe_swing"));
+        BossScripts.register("tfd_lucius", () -> new EveryNth(QuestBossRules.TFD_LUCIUS_SPECIAL_EVERY, "triple_projectile"));
+        BossScripts.register("tfd_augur_metzli", () -> new EveryNth(QuestBossRules.TFD_METZLI_SPECIAL_EVERY, "sunfire_waves"));
         Vanstrom.register();
     }
 
