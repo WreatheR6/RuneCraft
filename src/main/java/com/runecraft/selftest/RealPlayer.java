@@ -328,8 +328,8 @@ public final class RealPlayer implements AutoCloseable {
         String name = g.label() != null ? g.label() : g.source() != null ? g.source().getName().getString() : "strike";
         Cue cue = new Cue(name, now, now + g.landInMc(), -1, true, g.centre(), g.radius(), p.position());
         add(cue);
-        if (RealReaction.exitDistance(dx, dz, g.radius()) > 0) {
-            // what a player reacting at once has to walk: to the nearest spot clear of everything landing with it
+        if (RealReaction.exitDistance(dx, dz, g.radius(), RealReaction.BUDGET_CLEARANCE) > 0) {
+            // what a player reacting at once has to walk: to the nearest spot clear of everything landing with it (its edge)
             double[] spot = safeSpot(p.position(), cue.landMc - 6, cue.landMc + 6, false);
             cue.need = spot == null ? Double.POSITIVE_INFINITY : Math.max(spot[2], 1e-3);
         }
@@ -579,7 +579,8 @@ public final class RealPlayer implements AutoCloseable {
     private double[] safeSpot(Vec3 at, long from, long to, boolean avoidDanger) {
         List<RealReaction.Disc> d = discs(from, to);
         int feet = feetY(at.y);
-        return RealReaction.safeSpot(at.x, at.z, d, to, DODGE_REACH, (x, z) -> standable(x, z, feet, avoidDanger));
+        double clearance = avoidDanger ? RealReaction.EDGE_CLEARANCE : RealReaction.BUDGET_CLEARANCE;
+        return RealReaction.safeSpot(at.x, at.z, d, to, DODGE_REACH, clearance, (x, z) -> standable(x, z, feet, avoidDanger));
     }
 
     private void dodge(long now) {
@@ -701,7 +702,8 @@ public final class RealPlayer implements AutoCloseable {
                 c.judged = true;
                 if (c.centre != null && c.need > 0) {
                     double movedFrom = Math.hypot(p.getX() - c.playerAt.x, p.getZ() - c.playerAt.z);
-                    boolean stillIn = RealReaction.exitDistance(p.getX() - c.centre.x, p.getZ() - c.centre.z, c.radius) > 0;
+                    boolean stillIn = RealReaction.exitDistance(p.getX() - c.centre.x, p.getZ() - c.centre.z, c.radius,
+                            RealReaction.BUDGET_CLEARANCE) > 0;
                     if (movedFrom >= MOVED || autoDodge) {
                         String why = RealReaction.budgetFailure(c.name, c.need, c.landMc - c.cueMc);
                         if (why != null && budget.size() < 8) {

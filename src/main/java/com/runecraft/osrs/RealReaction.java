@@ -36,6 +36,11 @@ public final class RealReaction {
     public static final double MARGIN_SECONDS = 0.25;
     /** Blocks past a strike's edge a dodging player aims for (its hit test counts the edge itself as inside). */
     public static final double EDGE_CLEARANCE = 0.3;
+    /**
+     * Blocks past a strike's edge the walk-out budget measures to: the distance to safety itself (the hit test counts the edge
+     * as inside), not the dodge's comfort margin.
+     */
+    public static final double BUDGET_CLEARANCE = 0.05;
 
     /** Seconds a walk of {@code distance} blocks takes at the run pace, plus the margin. */
     public static double walkOutSeconds(double distance) {
@@ -70,8 +75,13 @@ public final class RealReaction {
      * horizontally, with {@link #EDGE_CLEARANCE} past its edge (0 when already clear).
      */
     public static double exitDistance(double dx, double dz, double radius) {
+        return exitDistance(dx, dz, radius, EDGE_CLEARANCE);
+    }
+
+    /** {@link #exitDistance(double, double, double)} with {@code clearance} past the edge. */
+    public static double exitDistance(double dx, double dz, double radius, double clearance) {
         double d = Math.sqrt(dx * dx + dz * dz);
-        return d > radius + EDGE_CLEARANCE ? 0 : radius + EDGE_CLEARANCE - d;
+        return d > radius + clearance ? 0 : radius + clearance - d;
     }
 
     /** A danger on the floor: a disc that lands on Minecraft tick {@code landMc}. */
@@ -92,9 +102,14 @@ public final class RealReaction {
 
         /** Whether a player standing at ({@code px}, {@code pz}) is hit by it (its edge counts, as the landing test does). */
         public boolean covers(double px, double pz) {
+            return covers(px, pz, EDGE_CLEARANCE);
+        }
+
+        /** {@link #covers(double, double)} with {@code clearance} past the edge. */
+        public boolean covers(double px, double pz, double clearance) {
             double dx = px - x;
             double dz = pz - z;
-            return dx * dx + dz * dz <= (radius + EDGE_CLEARANCE) * (radius + EDGE_CLEARANCE);
+            return dx * dx + dz * dz <= (radius + clearance) * (radius + clearance);
         }
     }
 
@@ -109,7 +124,13 @@ public final class RealReaction {
      * Returns {x, z, distance}.
      */
     public static double[] safeSpot(double px, double pz, List<Disc> discs, long byMc, double maxDistance, Standable standable) {
-        if (clear(px, pz, discs, byMc) && standable.ok(px, pz)) {
+        return safeSpot(px, pz, discs, byMc, maxDistance, EDGE_CLEARANCE, standable);
+    }
+
+    /** {@link #safeSpot(double, double, List, long, double, Standable)} keeping {@code clearance} past every disc's edge. */
+    public static double[] safeSpot(double px, double pz, List<Disc> discs, long byMc, double maxDistance, double clearance,
+            Standable standable) {
+        if (clear(px, pz, discs, byMc, clearance) && standable.ok(px, pz)) {
             return new double[]{px, pz, 0};
         }
         for (double r = 0.25; r <= maxDistance + 1e-9; r += 0.25) {
@@ -119,7 +140,7 @@ public final class RealReaction {
                 double a = 2 * Math.PI * i / points;
                 double x = px + Math.cos(a) * r;
                 double z = pz + Math.sin(a) * r;
-                if (clear(x, z, discs, byMc) && standable.ok(x, z)) {
+                if (clear(x, z, discs, byMc, clearance) && standable.ok(x, z)) {
                     best = new double[]{x, z, r};
                     break;
                 }
@@ -131,9 +152,9 @@ public final class RealReaction {
         return null;
     }
 
-    private static boolean clear(double x, double z, List<Disc> discs, long byMc) {
+    private static boolean clear(double x, double z, List<Disc> discs, long byMc, double clearance) {
         for (Disc d : discs) {
-            if (d.landMc <= byMc && d.covers(x, z)) {
+            if (d.landMc <= byMc && d.covers(x, z, clearance)) {
                 return false;
             }
         }

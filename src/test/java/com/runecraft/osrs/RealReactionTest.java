@@ -50,6 +50,25 @@ class RealReactionTest {
         assertEquals(3.0 + RealReaction.EDGE_CLEARANCE, RealReaction.exitDistance(0, 0, 3.0), 1e-9);
         assertEquals(1.0 + RealReaction.EDGE_CLEARANCE, RealReaction.exitDistance(2.0, 0, 3.0), 1e-9);
         assertEquals(0, RealReaction.exitDistance(4.0, 0, 3.0), 1e-9);
+        // the walk-out budget measures to the edge itself (the distance to safety), not the dodge's comfort margin
+        assertEquals(3.0 + RealReaction.BUDGET_CLEARANCE, RealReaction.exitDistance(0, 0, 3.0, RealReaction.BUDGET_CLEARANCE), 1e-9);
+        assertTrue(RealReaction.BUDGET_CLEARANCE < RealReaction.EDGE_CLEARANCE);
+    }
+
+    /**
+     * A hazard (radius 1.0, arming after 12 MC) dropped on the player fits the budget when measured to its edge: 1.05 blocks,
+     * found on the 1.25 ring, 0.54 s of 0.6 s; to the dodge's margin (1.5 ring) it would sit on the limit.
+     */
+    @Test
+    void budgetMeasuresToTheStrikesEdge() {
+        RealReaction.Disc pool = new RealReaction.Disc(0, 0, ThreatTiming.HAZARD_RADIUS, 12, "pool");
+        double[] edge = RealReaction.safeSpot(0, 0, List.of(pool), 12, 6, RealReaction.BUDGET_CLEARANCE, (x, z) -> true);
+        assertEquals(1.25, edge[2], 1e-9);
+        assertTrue(RealReaction.fits(edge[2], ThreatTiming.HAZARD_ARM_MC));
+        double[] margin = RealReaction.safeSpot(0, 0, List.of(pool), 12, 6, (x, z) -> true);
+        assertEquals(1.5, margin[2], 1e-9);
+        assertFalse(pool.covers(1.1, 0, RealReaction.BUDGET_CLEARANCE));
+        assertTrue(pool.covers(1.1, 0));
     }
 
     @Test
