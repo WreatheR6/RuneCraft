@@ -298,7 +298,9 @@ final class DungeonsAsgarnia {
         c.camp(lx + 22, lz - 4, lx + 42, lz + 18, f, 4, 25, "hobgoblin");
         c.camp(lx + 12, lz - 68, lx + 68, lz - 22, f, 7, 25, "ice_warrior", "ice_giant");
         c.camp(lx + 92, lz - 74, lx + 138, lz - 22, f, 4, 50, "skeletal_wyvern");
-        c.pillar(lx + 104, lz - 93, up, 7, mc("blue_ice"));
+        // Two ice pillars to safespot behind (OSRS Wiki shows a safespot in the upper area), clear of the camp's centre.
+        c.pillar(lx + 96, lz - 93, up, 7, mc("blue_ice"));
+        c.pillar(lx + 112, lz - 93, up, 7, mc("blue_ice"));
         c.camp(lx + 88, lz - 102, lx + 120, lz - 84, up, 14, 50, "skeletal_wyvern");
         c.taskOnly("skeletal_wyverns", "Pieve", lx + 86, lz - 104, lx + 122, lz - 82, up, 7);
         return c.build();

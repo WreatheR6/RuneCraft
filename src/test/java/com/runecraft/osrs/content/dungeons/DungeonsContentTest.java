@@ -724,6 +724,28 @@ class DungeonsContentTest {
     }
 
     /**
+     * The Slayer self-test (slayer:task_only:...) stands at a task-only camp's centre and spawns the creature a block east of
+     * it: both must be open air, not a wall or a pillar.
+     */
+    @Test
+    void taskOnlyCampCentresAreWalkable() {
+        Map<String, Set<Long>> cache = new HashMap<>();
+        List<String> bad = new ArrayList<>();
+        for (Dungeons.Camp c : Dungeons.camps()) {
+            Dungeons.TaskOnlyArea area = Dungeons.taskOnlyArea(c.centreX(), c.feetY() + 1, c.centreZ());
+            if (c.creatures().isEmpty() || c.creatures().get(0).startsWith("minecraft:") || area == null
+                    || Dungeons.TASK_ONLY.containsKey(area.dungeon()) && !area.dungeon().equals("dng_stronghold_slayer_cave")) {
+                continue; // the older whole task-only dungeons have checks of their own
+            }
+            Set<Long> air = cache.computeIfAbsent(c.dungeon() + "@" + c.feetY(), k -> walkable(dungeon(c.dungeon()), c.feetY()));
+            if (!air.contains(key(c.centreX(), c.centreZ())) || !air.contains(key(c.centreX() + 1, c.centreZ()))) {
+                bad.add(c.dungeon() + " " + c.creatures() + " at " + c.centreX() + "," + c.feetY() + "," + c.centreZ());
+            }
+        }
+        assertTrue(bad.isEmpty(), String.join("\n", bad));
+    }
+
+    /**
      * Ape Atoll's dungeons follow the map: from the bamboo ladder every monster's cache tile and Zooknock's cave are
      * reachable on foot through the traced tunnels; in the temple dungeon the first area reaches the wooden door but not
      * the great western cave behind it, and the southern cave is separate.
