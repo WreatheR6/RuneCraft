@@ -95,7 +95,10 @@ public final class MagicService {
             return true;
         }
         for (Map.Entry<Rune, Integer> e : spell.runes().entrySet()) {
-            if (!staffProvides(player, e.getKey()) && !Inv.has(player, e.getKey().itemId(), e.getValue())) {
+            String rune = e.getKey().itemId();
+            // Runes in a rune pouch count as carried (slayer module).
+            if (!staffProvides(player, e.getKey()) && Inv.count(player, rune)
+                    + com.runecraft.content.slayer.SlayerItemService.pouchCount(player, rune) < e.getValue()) {
                 return false;
             }
         }
@@ -110,7 +113,7 @@ public final class MagicService {
         }
         for (Map.Entry<Rune, Integer> e : spell.runes().entrySet()) {
             if (!staffProvides(player, e.getKey())) {
-                Inv.remove(player, e.getKey().itemId(), e.getValue());
+                com.runecraft.content.slayer.SlayerItemService.payRunes(player, e.getKey().itemId(), e.getValue());
             }
         }
     }

@@ -7,7 +7,6 @@ import com.runecraft.platform.ServerPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import java.util.Locale;
 
 /** Server to client sync of the slayer task (shown on the HUD by the client hooks). */
 public final class SlayerNet {
@@ -27,7 +26,7 @@ public final class SlayerNet {
         com.runecraft.osrs.content.slayer.SlayerMasters.Master m = p.master == null ? null
                 : com.runecraft.osrs.content.slayer.SlayerMasters.get(p.master);
         buf.writeVarInt(m != null && m.wilderness() ? p.wildyStreak : p.streak);
-        buf.writeUtf(p.region == null ? "" : p.region.toLowerCase(Locale.ROOT).replace('_', ' '));
+        buf.writeUtf(p.region == null ? "" : SlayerService.regionName(p.region));
         if (ServerPlayNetworking.canSend(player, TASK)) {
             ServerPlayNetworking.send(player, TASK, buf);
         }

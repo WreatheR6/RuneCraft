@@ -24,6 +24,15 @@ import java.util.function.Consumer;
 public final class SlayerContent implements ContentModule {
     private static List<MonsterDef> monsters;
 
+    /** Konar quo Maten's tile on Mount Karuulm (OSRS Wiki map; the brimstone chest stands beside her). */
+    public static final int[] KONAR_TILE = {1309, 3785};
+    /** Larran's big chest, on the deck of the ship west of the Pirates' Hideout (OSRS Wiki map, plane 1). */
+    public static final int[] LARRAN_CHEST_TILE = {3018, 3955};
+    public static final String LARRAN_SHIP = "larrans_ship";
+    /** Vannaka's tile in the Edgeville Dungeon (OSRS Wiki map, cache coordinates). */
+    public static final int[] VANNAKA_TILE = {3147, 9914};
+    public static final String VANNAKA_POST = "vannaka_post";
+
     @Override
     public String id() {
         return "slayer";
@@ -57,6 +66,7 @@ public final class SlayerContent implements ContentModule {
             list.addAll(SlayerTaskMonsters.all());
             list.addAll(SlayerTaskMonsters2.all());
             list.addAll(SlayerTaskMonsters3.all());
+            list.addAll(SeaSlayerMonsters.all());
             list.add(TormentedDemons.monster());
             list.addAll(DemonicGorillas.monsters());
             list.addAll(Superiors.build(list));
@@ -79,16 +89,26 @@ public final class SlayerContent implements ContentModule {
     public List<ModelSpec.Variant> modelVariants() {
         List<ModelSpec.Variant> out = new ArrayList<>(SlayerTaskMonsters.variants());
         out.addAll(SlayerTaskMonsters2.variants());
+        out.addAll(SeaSlayerMonsters.variants());
         return out;
     }
 
     @Override
     public List<PlaceDef> places() {
         return List.of(
-                // Konar quo Maten at the summit of Mount Karuulm (Zeah) with the brimstone chest.
-                PlaceDef.of("mount_karuulm", "Mount Karuulm", 1311, 3807, PlaceDef.Style.CAMP, List.of("brimstone_chest")),
-                // Larran's big chest in the Wilderness pirates' hideout (level 53).
-                PlaceDef.of("pirates_hideout", "Pirates' Hideout", 3041, 3949, PlaceDef.Style.RUINS, List.of("larrans_big_chest")),
+                // Konar quo Maten on the summit of Mount Karuulm (Kebos Lowlands) with the brimstone chest next to her
+                // (OSRS Wiki: both at 1309, 3785; the Karuulm Slayer Dungeon's entrance is further north, at 1311, 3807).
+                PlaceDef.of("mount_karuulm", "Mount Karuulm", KONAR_TILE[0], KONAR_TILE[1], PlaceDef.Style.CAMP,
+                        List.of("brimstone_chest")),
+                // The Wilderness pirates' hideout (level 53); Larran's big chest is on the ship west of it (OSRS Wiki:
+                // 3018, 3955, on deck), built by the Minecraft side at LARRAN_CHEST_TILE.
+                PlaceDef.of("pirates_hideout", "Pirates' Hideout", 3041, 3949, PlaceDef.Style.RUINS, List.of()),
+                PlaceDef.of(LARRAN_SHIP, "Larran's ship", LARRAN_CHEST_TILE[0], LARRAN_CHEST_TILE[1], PlaceDef.Style.NONE,
+                        List.of()),
+                // Vannaka stands in the Edgeville Dungeon (OSRS 3147, 9914), east of the Wilderness gate: his spot is
+                // the surface tile above it (cache y - 6400), the dungeons module carves his room.
+                PlaceDef.of(VANNAKA_POST, "Vannaka's post", VANNAKA_TILE[0], VANNAKA_TILE[1] - 6400, PlaceDef.Style.NONE,
+                        List.of()),
                 // Chaeldar lives in Zanaris; the shed in Lumbridge Swamp leads there.
                 PlaceDef.of("zanaris", "Zanaris", 3202, 3169, PlaceDef.Style.CAMP, List.of("fairy_ring_shed")));
     }
@@ -108,8 +128,8 @@ public final class SlayerContent implements ContentModule {
                 NpcDef.of("turael", "Turael", "BURTHORPE", 64, 16, 0xC8A080, 0x3A5A8A, 0x3A3A4A, 0x6A4A2A),
                 NpcDef.of("mazchna", "Mazchna", "CANIFIS", 30, -42, // north-east of the square (OSRS 3511, 3509)
                         0xB09070, 0x4A3A2A, 0x3A2A2A, 0x2A2A2A),
-                // approx: Vannaka stands in the Edgeville Dungeon (OSRS 3147, 9914), which isn't carved that far east.
-                NpcDef.of("vannaka", "Vannaka", "EDGEVILLE", 5, -4, 0xC8A080, 0x6A6A70, 0x4A4A50, 0x8A8A8A),
+                // In the Edgeville Dungeon (OSRS 3147, 9914): NpcStoreys puts his feet on the dungeon's floor.
+                NpcDef.of("vannaka", "Vannaka", VANNAKA_POST, 2, -8, 0xC8A080, 0x6A6A70, 0x4A4A50, 0x8A8A8A),
                 // By the Fairy Queen's throne in Zanaris (OSRS 2444, 4431; the islands module's Zanaris at 2412, 4434).
                 NpcDef.of("chaeldar", "Chaeldar", "isl_zanaris", 64, 6, 0xA0C0A0, 0x6A9A5A, 0x4A6A3A, 0xD0E0B0),
                 // By the yews south of the Stronghold's bank (OSRS 2432, 3423).
@@ -118,7 +138,10 @@ public final class SlayerContent implements ContentModule {
                 NpcDef.of("steve", "Steve", "GNOME_STRONGHOLD", -56, 42, 0xC8A080, 0x3A5A2A, 0x2A3A1A, 0x6A4A2A),
                 NpcDef.of("duradel", "Duradel", "SHILO_VILLAGE", 34, -54, // in his hut (OSRS 2869, 2982)
                         0x6A4A3A, 0x8A2A2A, 0x5A1A1A, 0x202020),
-                NpcDef.of("konar", "Konar quo Maten", "mount_karuulm", 2, 2, 0x8AA080, 0x6A4A6A, 0x4A2A4A, 0xC0A040),
+                NpcDef.of("konar", "Konar quo Maten", "mount_karuulm", 6, -6, 0x8AA080, 0x6A4A6A, 0x4A2A4A, 0xC0A040),
+                // approx: Mortimer lives on Wyrmscraig (the quests module's Auchrie, Fallen From Grace); the wiki has no
+                // map of him yet.
+                NpcDef.of(Mortimer.ID, "Mortimer", "quest_wyrmscraig", 10, 8, 0xC8A888, 0x2A2A3A, 0x1A1A2A, 0x6A2A2A),
                 // By the Edgeville jailhouse, north-east of the bank (OSRS 3109, 3514).
                 NpcDef.of("krystilia", "Krystilia", "EDGEVILLE", 32, -42, 0xE0C0A0, 0x2A2A2A, 0x1A1A1A, 0xC03030));
     }

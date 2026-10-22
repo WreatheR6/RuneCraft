@@ -68,6 +68,10 @@ final class DungeonsMisthalin {
         c.room(tx - 12, ditch - 56, tx + 24, ditch - 16, f, 8);
         c.hall(tx - 12, ditch - 30, tx - 34, ditch - 30, f, 3, 4);
         c.room(tx - 58, ditch - 50, tx - 34, ditch - 14, f, 8);
+        // Vannaka's room east of the corridor, south of the Wilderness ditch (OSRS 3147, 9914: 50 tiles east and 46
+        // north of the ladder; the slayer module's NPC stands at tx + 100, tz - 93).
+        c.hall(tx, tz - 99, tx + 86, tz - 99, f, 3, 4);
+        c.room(tx + 86, tz - 102, tx + 112, tz - 84, f, 6);
         c.carve();
         DungeonsAsgarnia.gate(c, tx, ditch - 4, f, 'z');
         // Jail cells along the corridor room and cobwebs.

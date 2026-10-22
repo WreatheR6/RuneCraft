@@ -56,7 +56,10 @@ public final class SlayerItems {
             {"araxyte", "Araxyte", "6A6A7A", "an Araxyte head"},
             {"tztok", "Tztok", "C05A1A", "TzTok-Jad's colours"},
             {"vampyric", "Vampyric", "6A1A2A", "Verzik Vitur's colours"},
-            {"tzkal", "Tzkal", "D07A1A", "TzKal-Zuk's colours"}};
+            {"tzkal", "Tzkal", "D07A1A", "TzKal-Zuk's colours"},
+            {"twisted", "Twisted", "6A5A3A", "the Great Olm's twisted horns"},
+            {"hooded", "Hooded", "3A3A4A", "the Slayer skillcape's hood"},
+            {"oathplate", "Oathplate", "8A7A5A", "Oathplate's demonic quill"}};
 
     // Shared slayer-boss uniques (hydra parts, trident, occult, abyssal dagger/head, granite maul,
     // dragon chainbody, brimstone ring, ferocious gloves, smouldering stone) are defined by the bosses module.
@@ -95,7 +98,29 @@ public final class SlayerItems {
         items.add("ice_cooler", "Ice cooler", Kind.SIMPLE, "pot_item", 0xB0D8F0).value(1).stack(64)
                 .examine("Desert lizards can't stand the cold.");
         items.add("fungicide_spray", "Fungicide spray", Kind.TOOL, "spray", 0x6AA05A).value(300).stack(1)
-                .examine("Kills mutated zygomites.");
+                .examine("Kills mutated zygomites. Holds 10 charges; refill it with fungicide.");
+        items.add("fungicide", "Fungicide", Kind.SIMPLE, "vial", 0x8AC07A).value(10).stack(1)
+                .examine("Does exactly what it says on the tin. (Kills Fungi.)");
+        items.add("fishing_explosive", "Fishing explosive", Kind.SIMPLE, "pot_item", 0xB0603A).value(60).stack(1000)
+                .examine("The jar keeps shaking...I'm scared.");
+        items.add("rock_thrownhammer", "Rock thrownhammer", Kind.SIMPLE, "hammer", 0x7A7A7A).value(200).stack(1000)
+                .examine("Smash gargoyles from a distance.");
+        items.add("reinforced_goggles", "Reinforced goggles", Kind.ARMOUR, "full_helm", 0x6A5A3A).value(100).stack(1)
+                .tier("leather").equipment(wear(Slot.HEAD, NONE)).examine("A very sturdy-feeling pair of slayer goggles.");
+        items.add("broad_arrowhead_pack", "Broad arrowhead pack", Kind.SIMPLE, "package", 0x9A9A8A).value(5500).stack(1)
+                .examine("A pack containing 100 broad arrowheads.");
+        items.add("unfinished_broad_bolt_pack", "Unfinished broad bolt pack", Kind.SIMPLE, "package", 0x8A8A7A).value(5500)
+                .stack(1).examine("A pack containing 100 unfinished broad bolts.");
+        items.add("rune_pouch", "Rune pouch", Kind.SIMPLE, "pouch", 0x8A4A9A).value(0).stack(1)
+                .examine("A bag used for storing runes: up to 16,000 each of three kinds, cast from directly.");
+        // Slayer helmet recolour items (the twisted horns and demonic quill come from the Leagues reward shop in OSRS,
+        // traded on the Grand Exchange) and the Slayer skillcape's hood.
+        items.add("twisted_horns", "Twisted horns", Kind.SIMPLE, "bones", 0x8A7A5A).value(100000).stack(1)
+                .examine("These look like they can be attached to a slayer helmet.");
+        items.add("demonic_quill", "Demonic quill", Kind.SIMPLE, "secondary", 0x8A2A1A).value(100000).stack(1)
+                .examine("These look like they can be attached to a slayer helmet.");
+        items.add("slayer_hood", "Slayer hood", Kind.ARMOUR, "cowl", 0x3A3A4A).value(1).stack(1).tier("leather")
+                .equipment(wear(Slot.HEAD, NONE, Skill.SLAYER, 99)).examine("Slayer skillcape hood.");
         items.add("unlit_bug_lantern", "Unlit bug lantern", Kind.SIMPLE, "lantern", 0x6A6A6A).value(130).stack(1)
                 .examine("Light it with a tinderbox (33 Firemaking).");
         // The lit bug lantern is in CommonItems (skilling: it lights lantern harpooning).
@@ -231,6 +256,9 @@ public final class SlayerItems {
         items.add("eternal_gem", "Eternal gem", Kind.SLAYER_GEM, "gem", 0x8A30C0).value(1).stack(1)
                 .examine("An enchanted gem that never runs out of charges.");
         // Slayer chest uniques (OSRS Wiki): the brimstone chest's broken dragon hasta, Larran's big chest's Dagon'hai robes.
+        // Round 44: dropped by gryphons (OSRS Wiki "Gryphon feather"; they charge the horn of plenty, not built).
+        items.add("gryphon_feather", "Gryphon feather", Kind.SIMPLE, "secondary", 0xC8A070).value(15).stack(100000)
+                .examine("A feather from a gryphon.");
         items.add("broken_dragon_hasta", "Broken dragon hasta", Kind.SIMPLE, "spear", 0x8A3A2A).value(62400).stack(1)
                 .examine("The item to make into a hasta.");
         items.add("dragon_hasta", "Dragon hasta", Kind.MELEE_WEAPON, "spear", 0xC02020).value(62400).stack(1).tier("dragon")

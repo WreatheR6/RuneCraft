@@ -57,6 +57,15 @@ final class SlayerChecks {
         checks.add(new SelfTest.Check("slayer:leaf_bladed_and_finishers", g::weaponsAndFinishers));
         checks.add(new SelfTest.Check("slayer:karuulm_hot_floor", g::hotFloor));
         checks.add(new SelfTest.Check("slayer:nightmare_zone_credit", g::nmzCredit));
+        // Round 44: every task-only area (a task from a master, refused without it, one kill there) and the rewards.
+        for (TaskOnlySpot spot : taskOnlySpots()) {
+            checks.add(new SelfTest.Check("slayer:task_only:" + spot.dungeon().replace("dng_", "") + ":" + spot.task(),
+                    () -> g.taskOnlyArea(spot)));
+        }
+        checks.add(new SelfTest.Check("slayer:konar_location", g::konarLocation));
+        checks.add(new SelfTest.Check("slayer:mortimer", g::mortimer));
+        checks.add(new SelfTest.Check("slayer:task_storage", g::taskStorage));
+        checks.add(new SelfTest.Check("slayer:duly_noted_and_rune_pouch", g::dulyNotedAndPouch));
         return checks;
     }
 
@@ -249,7 +258,173 @@ final class SlayerChecks {
             prof.region = null;
         }
         note.append(", Konar's kingdom rule holds for boss credit");
+        // 9. Her named location: Cerberus counts for hellhounds she wants killed in Taverley Dungeon (wherever the lair
+        // is), not for those she wants killed in the Karuulm Slayer Dungeon.
+        prof.task = "hellhounds";
+        prof.remaining = 10;
+        prof.master = "konar";
+        try {
+            prof.region = SlayerService.LOCATION + "karuulm_slayer_dungeon";
+            SlayerService.creditBossKill(p(), "cerberus");
+            if (prof.remaining != 10) {
+                throw failure("a Cerberus kill counted for Konar's hellhounds in the Karuulm Slayer Dungeon");
+            }
+            prof.region = SlayerService.LOCATION + "taverley_dungeon";
+            SlayerService.creditBossKill(p(), "cerberus");
+            if (prof.remaining != 9) {
+                throw failure("a Cerberus kill didn't count for Konar's hellhounds in Taverley Dungeon (" + prof.remaining
+                        + " left, want 9)");
+            }
+        } finally {
+            prof.task = null;
+            prof.remaining = 0;
+            prof.region = null;
+        }
+        note.append(", and her Taverley Dungeon location takes Cerberus");
         return note.toString();
+    }
+
+    /** Konar's place for a task at a spot: her location holding it, else the kingdom (a task with no built location). */
+    private static String konarPlaceAt(String task, BlockPos at) {
+        for (com.runecraft.osrs.content.slayer.KonarLocations.Location l
+                : com.runecraft.osrs.content.slayer.KonarLocations.candidates(task)) {
+            if (l.contains(at.getX(), at.getY(), at.getZ())) {
+                return SlayerService.LOCATION + l.id();
+            }
+        }
+        return com.runecraft.osrs.world.TaskRegions.at(at.getX(), at.getY(), at.getZ()).name();
+    }
+
+    // ------------------------------------------------------------------ Mortimer (round 44)
+
+    /**
+     * Mortimer offers two tasks with modifiers (three after 100 of his tasks); the player picks one, and completing it pays
+     * only the points modifier's points.
+     */
+    private String mortimer() {
+        c.completeQuests(null);
+        SlayerState.Profile prof = profile();
+        SlayerMasters.Master mortimer = SlayerMasters.get(com.runecraft.osrs.content.slayer.Mortimer.ID);
+        int doneBefore = prof.mortimerTasks;
+        int pointsBefore = prof.points;
+        try {
+            prof.task = null;
+            prof.remaining = 0;
+            prof.mortimerTasks = 0;
+            SlayerService.talk(p(), mortimer);
+            List<com.runecraft.osrs.content.slayer.Mortimer.Offer> offers = SlayerService.mortimerOffers(p());
+            if (prof.hasTask() || offers.size() != 2 || offers.get(0).category().equals(offers.get(1).category())) {
+                throw failure("Mortimer should offer two different tasks, offered " + offers + (prof.hasTask() ? " and assigned "
+                        + prof.task : ""));
+            }
+            com.runecraft.osrs.content.slayer.Mortimer.Offer pick = offers.get(1);
+            if (!SlayerService.chooseMortimer(p(), 2) || !pick.category().equals(prof.task) || prof.amount != pick.amount()
+                    || !pick.modifier().name().equals(prof.modifier) || !com.runecraft.osrs.content.slayer.Mortimer.ID.equals(prof.master)) {
+                throw failure("picking Mortimer's second offer " + pick + " gave " + prof.task + " x" + prof.amount + " ("
+                        + prof.modifier + ")");
+            }
+            // Finish it with a points modifier: only that pays.
+            prof.modifier = com.runecraft.osrs.content.slayer.Mortimer.Modifier.POINTS.name();
+            prof.modifierValue = 20;
+            prof.points = 0;
+            SlayerService.completeTask(p());
+            if (prof.points != 20 || prof.mortimerTasks != 1 || prof.modifier != null) {
+                throw failure("a Mortimer task with +20 points paid " + prof.points + " (tasks " + prof.mortimerTasks
+                        + ", modifier " + prof.modifier + ")");
+            }
+            prof.mortimerTasks = 100;
+            prof.task = null;
+            prof.remaining = 0;
+            SlayerService.talk(p(), mortimer);
+            int third = SlayerService.mortimerOffers(p()).size();
+            if (third != 3) {
+                throw failure("after 100 of his tasks Mortimer offered " + third + " tasks, not 3");
+            }
+            return "offered " + offers.get(0).category() + " / " + pick.category() + ", took " + pick.category() + " ("
+                    + pick.modifier().describe(pick.value()) + "); +20 points modifier paid 20; 3 offers at 100 tasks";
+        } finally {
+            prof.task = null;
+            prof.remaining = 0;
+            prof.modifier = null;
+            prof.modifierValue = 0;
+            prof.mortimerTasks = doneBefore;
+            prof.points = pointsBefore;
+        }
+    }
+
+    // ------------------------------------------------------------------ Konar's locations (round 44)
+
+    /**
+     * Konar names a location, not a kingdom: her task comes with one of its built locations; a hellhound killed in Taverley
+     * Dungeon counts when she named Taverley Dungeon and not when she named the Stronghold Slayer Cave, also in the west.
+     */
+    private String konarLocation() {
+        c.completeQuests(null);
+        SlayerState.Profile prof = profile();
+        SlayerMasters.Master konar = SlayerMasters.get("konar");
+        StringBuilder note = new StringBuilder();
+        for (int i = 0; i < 5; i++) {
+            prof.task = null;
+            prof.remaining = 0;
+            prof.region = null;
+            SlayerService.talk(p(), konar);
+            if (!prof.hasTask()) {
+                throw failure("Konar gave a maxed player no task");
+            }
+            if (prof.task.startsWith("boss_") || com.runecraft.osrs.content.slayer.KonarLocations.candidates(prof.task).isEmpty()) {
+                continue;
+            }
+            String id = prof.region == null || !prof.region.startsWith(SlayerService.LOCATION) ? null
+                    : prof.region.substring(SlayerService.LOCATION.length());
+            com.runecraft.osrs.content.slayer.KonarLocations.Location l =
+                    id == null ? null : com.runecraft.osrs.content.slayer.KonarLocations.get(id);
+            if (l == null || !com.runecraft.osrs.content.slayer.KonarLocations.candidates(prof.task).contains(l)) {
+                throw failure("Konar's " + prof.task + " task came with " + prof.region + ", not one of its locations");
+            }
+            note.append(prof.task).append(" in ").append(l.name()).append("; ");
+            break;
+        }
+        Dungeons.Camp cp = camp("dng_taverley_dungeon", "hellhound");
+        BlockPos at = new BlockPos(cp.centreX(), cp.feetY(), cp.centreZ());
+        EntityType<?> type = ModEntities.typeById("hellhound");
+        if (type == null) {
+            throw new SelfTest.Skip("no hellhound entity");
+        }
+        StructurePlacer.applyAround(c.world, at.getX(), at.getZ(), 6);
+        p().teleportTo(c.world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p().getYRot(), p().getXRot());
+        ChunkSettle.holdAndSettle(c.world, at, 16);
+        LivingEntity first = null;
+        LivingEntity second = null;
+        try {
+            prof.task = "hellhounds";
+            prof.amount = 40;
+            prof.remaining = 40;
+            prof.master = "konar";
+            prof.region = SlayerService.LOCATION + "stronghold_slayer_cave";
+            first = spawnAt(type, at.offset(1, 0, 0), true);
+            killAsPlayer(first);
+            if (prof.remaining != 40) {
+                throw failure("a hellhound in Taverley Dungeon counted for Konar's Stronghold Slayer Cave task");
+            }
+            prof.region = SlayerService.LOCATION + "taverley_dungeon";
+            second = spawnAt(type, at.offset(1, 0, 0), true);
+            killAsPlayer(second);
+            if (prof.remaining != 39) {
+                throw failure("a hellhound in Taverley Dungeon didn't count for Konar's Taverley Dungeon task ("
+                        + prof.remaining + " left, want 39)");
+            }
+            return note + "Taverley hellhound: Stronghold task 40 -> 40, Taverley task 40 -> 39";
+        } finally {
+            for (LivingEntity e : new LivingEntity[]{first, second}) {
+                if (e != null && e.isAlive()) {
+                    e.discard();
+                }
+            }
+            prof.task = null;
+            prof.remaining = 0;
+            prof.region = null;
+            c.home();
+        }
     }
 
     // ------------------------------------------------------------------ task-only dungeons
@@ -299,6 +474,253 @@ final class SlayerChecks {
         } finally {
             devil.discard();
         }
+    }
+
+    // ------------------------------------------------------------------ task-only areas (round 44)
+
+    /** One task-only area to walk: a camp inside it and the task its guardian asks for. */
+    record TaskOnlySpot(String dungeon, String task, Dungeons.Camp camp) {
+    }
+
+    /** One camp per task-only area kind (dungeon and task), the Stronghold Slayer Cave's hellhounds for the whole cave. */
+    static List<TaskOnlySpot> taskOnlySpots() {
+        List<TaskOnlySpot> out = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (Dungeons.Camp cp : Dungeons.camps()) {
+            Dungeons.TaskOnlyArea a = Dungeons.taskOnlyArea(cp.centreX(), cp.feetY() + 1, cp.centreZ());
+            if (a == null || cp.creatures().isEmpty() || cp.creatures().get(0).startsWith("minecraft:")) {
+                continue;
+            }
+            boolean whole = Dungeons.TASK_ONLY.containsKey(a.dungeon());
+            if (whole && !a.dungeon().equals("dng_stronghold_slayer_cave")) {
+                continue; // the older task-only dungeons have their own checks
+            }
+            String task = Dungeons.ANY_TASK.equals(a.task()) ? categoryOf(cp.creatures().get(0)) : a.task();
+            if (task != null && seen.add(a.dungeon() + ":" + (whole ? "" : task))) {
+                out.add(new TaskOnlySpot(a.dungeon(), task, cp));
+            }
+        }
+        return out;
+    }
+
+    private static String categoryOf(String creature) {
+        MonsterDef m = com.runecraft.osrs.content.ContentRegistry.monster(creature);
+        return m == null ? null : SlayerTasks.categoryOf(m);
+    }
+
+    /**
+     * A master who assigns {@code task}: Krystilia for a Wilderness area, else any other, Konar (sending the player to this
+     * very place) only when no one else does (hydras).
+     */
+    private static SlayerMasters.Master masterFor(String task, boolean wilderness) {
+        SlayerMasters.Master krystilia = null;
+        SlayerMasters.Master konar = null;
+        for (SlayerMasters.Master m : SlayerMasters.all()) {
+            if (m.assignment(task) == null) {
+                continue;
+            }
+            if (m.locationRestricted()) {
+                konar = m;
+            } else if (m.wilderness()) {
+                krystilia = m;
+            } else if (!wilderness) {
+                return m;
+            }
+        }
+        return wilderness ? krystilia : konar;
+    }
+
+    /**
+     * In a task-only area, as a player would be: off task the guardian stops every hit (no damage on any path); a task
+     * from a master who assigns it lets the player hurt the creature, and a kill there counts.
+     */
+    private String taskOnlyArea(TaskOnlySpot spot) {
+        Dungeons.Camp cp = spot.camp();
+        String creature = cp.creatures().get(0);
+        EntityType<?> type = ModEntities.typeById(creature);
+        if (type == null) {
+            throw new SelfTest.Skip("no " + creature + " entity");
+        }
+        BlockPos at = new BlockPos(cp.centreX(), cp.feetY(), cp.centreZ());
+        Dungeons.TaskOnlyArea area = Dungeons.taskOnlyArea(at.getX(), at.getY() + 1, at.getZ());
+        if (area == null) {
+            throw failure(creature + " camp at " + at.toShortString() + " is not task-only");
+        }
+        StructurePlacer.applyAround(c.world, at.getX(), at.getZ(), 6);
+        p().teleportTo(c.world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p().getYRot(), p().getXRot());
+        ChunkSettle.holdAndSettle(c.world, at, 16);
+        SlayerState.Profile prof = profile();
+        LivingEntity mob = spawnAt(type, at.offset(1, 0, 0), true);
+        try {
+            prof.task = null;
+            prof.remaining = 0;
+            float hp = mob.getHealth();
+            if (CombatHandler.applyDamage(p(), mob, 3) != 0 || mob.getHealth() < hp) {
+                throw failure("a player without a task hurt a " + creature + " in " + area.dungeon() + " (" + area.guardian() + ")");
+            }
+            String said = com.runecraft.content.dungeons.DungeonsHooks.taskOnlyMessage(area);
+            String own = Dungeons.TASK_ONLY_LINES.get(area.dungeon());
+            if (area.guardian() == null ? own == null || !said.equals(own) : !said.startsWith(area.guardian())) {
+                throw failure("no Slayer guardian speaks for " + area.dungeon() + ": " + said);
+            }
+            boolean wild = com.runecraft.world.Gielinor.wildernessLevel(mob) > 0;
+            SlayerMasters.Master master = masterFor(spot.task(), wild);
+            if (master == null) {
+                throw failure("no Slayer master assigns " + spot.task());
+            }
+            SlayerMasters.Assignment line = master.assignment(spot.task());
+            prof.task = spot.task();
+            prof.amount = line.min();
+            prof.remaining = line.min();
+            prof.master = master.id();
+            prof.region = master.locationRestricted() ? konarPlaceAt(spot.task(), at) : null;
+            int dealt = CombatHandler.applyDamage(p(), mob, 3);
+            if (dealt <= 0) {
+                throw failure("a " + spot.task() + " task from " + master.name() + " still couldn't hurt a " + creature);
+            }
+            double xp = slayerXp();
+            int before = prof.remaining;
+            killAsPlayer(mob);
+            if (prof.remaining != before - 1 || slayerXp() <= xp) {
+                throw failure("a " + creature + " kill in the task-only area took the task from " + before + " to " + prof.remaining
+                        + " (+" + (slayerXp() - xp) + " XP)");
+            }
+            return area.guardian() + " refused the off-task hit; " + master.name() + "'s " + spot.task() + " task: hit " + dealt
+                    + ", kill " + before + " -> " + prof.remaining;
+        } finally {
+            if (mob.isAlive()) {
+                mob.discard();
+            }
+            prof.task = null;
+            prof.remaining = 0;
+            c.home();
+        }
+    }
+
+    // ------------------------------------------------------------------ rewards (round 44)
+
+    /** Task Storage bought with points: store a task, take another, swap them back, unstore once nothing is current. */
+    private String taskStorage() {
+        c.completeQuests(null);
+        SlayerState.Profile prof = profile();
+        prof.unlocks.remove(com.runecraft.osrs.content.slayer.SlayerRewards.TASK_STORAGE);
+        prof.storedTask = null;
+        prof.storedRemaining = 0;
+        prof.task = "hellhounds";
+        prof.amount = 40;
+        prof.remaining = 33;
+        prof.master = "vannaka";
+        if (SlayerService.storeTask(p()) || prof.hasStoredTask()) {
+            throw failure("a task was stored without the Task Storage unlock");
+        }
+        prof.points = 520;
+        slayerCommand("unlock " + com.runecraft.osrs.content.slayer.SlayerRewards.TASK_STORAGE);
+        if (!prof.unlocks.contains(com.runecraft.osrs.content.slayer.SlayerRewards.TASK_STORAGE) || prof.points != 20) {
+            throw failure("unlocking Task Storage left " + prof.points + " points (want 20)");
+        }
+        slayerCommand("store");
+        if (prof.hasTask() || !"hellhounds".equals(prof.storedTask) || prof.storedRemaining != 33) {
+            throw failure("storing the task left task " + prof.task + "/" + prof.remaining + ", stored " + prof.storedTask + "/"
+                    + prof.storedRemaining);
+        }
+        // A new task from a master while one is stored; storing again is refused (one stored task at a time).
+        SlayerService.talk(p(), SlayerMasters.get("vannaka"));
+        if (!prof.hasTask()) {
+            throw failure("Vannaka gave no task while one was stored");
+        }
+        String second = prof.task;
+        int secondLeft = prof.remaining;
+        if (SlayerService.storeTask(p())) {
+            throw failure("a second task was stored while one already was");
+        }
+        slayerCommand("unstore");
+        if (!"hellhounds".equals(prof.task) || prof.remaining != 33 || !second.equals(prof.storedTask)
+                || prof.storedRemaining != secondLeft) {
+            throw failure("swapping left task " + prof.task + "/" + prof.remaining + ", stored " + prof.storedTask);
+        }
+        // Finish the current one, then take the stored one up again.
+        prof.task = null;
+        prof.remaining = 0;
+        slayerCommand("unstore");
+        if (!second.equals(prof.task) || prof.remaining != secondLeft || prof.hasStoredTask()) {
+            throw failure("unstoring left task " + prof.task + "/" + prof.remaining + ", stored " + prof.storedTask);
+        }
+        prof.task = null;
+        prof.remaining = 0;
+        return "stored 33 hellhounds, took " + secondLeft + " " + second + ", swapped and unstored";
+    }
+
+    /** Duly Noted notes a mithril dragon's bars only on task; the rune pouch holds runes that spells then use. */
+    private String dulyNotedAndPouch() {
+        SlayerState.Profile prof = profile();
+        StringBuilder note = new StringBuilder();
+        EntityType<?> dragonType = ModEntities.typeById("mithril_dragon");
+        if (dragonType != null) {
+            LivingEntity dragon = spawnAt(dragonType, c.near(4, 0), true);
+            try {
+                prof.unlocks.add(com.runecraft.osrs.content.slayer.SlayerRewards.DULY_NOTED);
+                prof.task = "metal_dragons";
+                prof.remaining = 30;
+                prof.master = "nieve";
+                prof.region = null;
+                ItemStack onTask = com.runecraft.combat.CombatHooks.dropStack(p(), dragon, "mithril_bar", 3);
+                ItemStack other = com.runecraft.combat.CombatHooks.dropStack(p(), dragon, "rune_battleaxe", 1);
+                prof.task = "black_demons";
+                ItemStack offTask = com.runecraft.combat.CombatHooks.dropStack(p(), dragon, "mithril_bar", 3);
+                if (!com.runecraft.bank.Notes.isNote(onTask) || onTask.getCount() != 3) {
+                    throw failure("Duly Noted didn't note a mithril dragon's 3 bars on task: " + onTask);
+                }
+                if (com.runecraft.bank.Notes.isNote(other) || com.runecraft.bank.Notes.isNote(offTask)) {
+                    throw failure("Duly Noted noted another drop or an off-task kill's bars");
+                }
+                note.append("mithril bars noted on task only");
+            } finally {
+                dragon.discard();
+                prof.task = null;
+                prof.remaining = 0;
+            }
+        }
+        // The rune pouch: 750 points, one only; runes stored in it pay for a spell.
+        prof.points = 1600;
+        slayerCommand("buy rune_pouch");
+        slayerCommand("buy rune_pouch");
+        if (!Inv.has(p(), "rune_pouch", 1) || Inv.count(p(), "rune_pouch") != 1 || prof.points != 850) {
+            throw failure("buying the rune pouch twice left " + Inv.count(p(), "rune_pouch") + " pouches and " + prof.points
+                    + " points (want 1 and 850)");
+        }
+        Inv.remove(p(), "air_rune", Inv.count(p(), "air_rune"));
+        Inv.remove(p(), "mind_rune", Inv.count(p(), "mind_rune"));
+        Inv.give(p(), "air_rune", 50);
+        Inv.give(p(), "mind_rune", 3);
+        slayerCommand("pouch deposit air_rune");
+        if (Inv.count(p(), "air_rune") != 0 || com.runecraft.content.slayer.SlayerItemService.pouchCount(p(), "air_rune") != 50) {
+            throw failure("depositing 50 air runes left " + Inv.count(p(), "air_rune") + " carried and "
+                    + com.runecraft.content.slayer.SlayerItemService.pouchCount(p(), "air_rune") + " in the pouch");
+        }
+        java.util.Map<String, Integer> strike = java.util.Map.of("air_rune", 1, "mind_rune", 1);
+        if (!com.runecraft.content.systems.SpellService.payRunes(p(), strike)) {
+            throw failure("Wind Strike's runes weren't paid from the rune pouch");
+        }
+        if (com.runecraft.content.slayer.SlayerItemService.pouchCount(p(), "air_rune") != 49 || Inv.count(p(), "mind_rune") != 2) {
+            throw failure("a cast took the wrong runes: pouch air " + com.runecraft.content.slayer.SlayerItemService.pouchCount(p(), "air_rune")
+                    + ", mind " + Inv.count(p(), "mind_rune"));
+        }
+        slayerCommand("pouch withdraw air_rune 49");
+        Inv.remove(p(), "air_rune", 49);
+        Inv.remove(p(), "mind_rune", 2);
+        Inv.remove(p(), "rune_pouch", 1);
+        note.append(note.length() > 0 ? "; " : "").append("rune pouch bought once (850 points left), Wind Strike paid from it");
+        // A slayer helmet comes apart into its six components.
+        Inv.give(p(), "slayer_helmet", 1);
+        slayerCommand("disassemble slayer_helmet");
+        boolean ok = !Inv.has(p(), "slayer_helmet", 1) && Inv.has(p(), "black_mask", 1) && Inv.has(p(), "enchanted_gem", 1);
+        for (String part : com.runecraft.osrs.content.slayer.SlayerRewards.HELMET_PARTS) {
+            Inv.remove(p(), part, 1);
+        }
+        if (!ok) {
+            throw failure("disassembling a slayer helmet didn't give back its components");
+        }
+        return note.append("; slayer helmet disassembled").toString();
     }
 
     // ------------------------------------------------------------------ protective gear

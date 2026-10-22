@@ -131,7 +131,73 @@ public final class SlayerService {
             menu(player, p);
             return;
         }
+        if (master.id().equals(com.runecraft.osrs.content.slayer.Mortimer.ID)) {
+            offerMortimer(player, master, p, combat, slayer);
+            return;
+        }
         assign(player, master, p, combat, slayer);
+    }
+
+    /** Mortimer's offers waiting for the player's pick (lost on logout: talk to him again). */
+    private static final java.util.Map<java.util.UUID, List<com.runecraft.osrs.content.slayer.Mortimer.Offer>> MORTIMER_OFFERS = new java.util.HashMap<>();
+
+    /**
+     * Mortimer offers two tasks (three after 100 of his), each with a modifier, and the player picks one
+     * ({@code /slayer choose <n>}; OSRS Wiki "Mortimer").
+     */
+    private static void offerMortimer(ServerPlayer player, SlayerMasters.Master master, SlayerState.Profile p, int combat,
+                                      int slayer) {
+        Random random = new Random(player.getRandom().nextLong());
+        List<String> blocked = SlayerRewards.blockedFor(p.blocked, master.id());
+        String previous = p.task;
+        List<com.runecraft.osrs.content.slayer.Mortimer.Offer> offers = com.runecraft.osrs.content.slayer.Mortimer.offers(random,
+                x -> SlayerTasks.eligible(x, slayer, combat, p.unlocks, blocked, previous, q -> questMet(player, q)), p.unlocks,
+                p.mortimerTasks, x -> {
+                    SlayerRewards.Unlock ext = SlayerRewards.extensionFor(x.category());
+                    return ext != null && p.unlocks.contains(ext.id());
+                });
+        if (offers.isEmpty()) {
+            say(player, master, "I have nothing for you right now.");
+            return;
+        }
+        MORTIMER_OFFERS.put(player.getUUID(), offers);
+        say(player, master, "Choose your quarry. Each of these comes with a little something extra.");
+        for (int i = 0; i < offers.size(); i++) {
+            com.runecraft.osrs.content.slayer.Mortimer.Offer o = offers.get(i);
+            String text = o.amount() + " " + SlayerTasks.displayName(o.category()) + ": " + o.modifier().describe(o.value());
+            player.displayClientMessage(Component.literal("  ").append(button("[" + (i + 1) + "] " + text,
+                    "/slayer choose " + (i + 1), "Take this task")), false);
+        }
+    }
+
+    /** Takes Mortimer's offer number {@code n} (1-based). Returns false (and says why) when there is none. */
+    public static boolean chooseMortimer(ServerPlayer player, int n) {
+        SlayerState.Profile p = profile(player);
+        List<com.runecraft.osrs.content.slayer.Mortimer.Offer> offers = MORTIMER_OFFERS.get(player.getUUID());
+        if (p.hasTask() || offers == null || n < 1 || n > offers.size()) {
+            Msg.game(player, p.hasTask() ? "You already have a task." : "Mortimer hasn't offered you that task.");
+            return false;
+        }
+        MORTIMER_OFFERS.remove(player.getUUID());
+        com.runecraft.osrs.content.slayer.Mortimer.Offer o = offers.get(n - 1);
+        SlayerMasters.Master master = SlayerMasters.get(com.runecraft.osrs.content.slayer.Mortimer.ID);
+        p.task = o.category();
+        p.amount = o.amount();
+        p.remaining = o.amount();
+        p.master = master.id();
+        p.region = null;
+        p.chooseAmount = false;
+        p.modifier = o.modifier().name();
+        p.modifierValue = o.value();
+        say(player, master, "Your new task is to kill " + p.amount + " " + describe(p) + ". This one "
+                + o.modifier().describe(o.value()) + ".");
+        SlayerNet.sync(player);
+        return true;
+    }
+
+    /** The offers Mortimer is waiting on the player to pick from (self-tests). */
+    public static List<com.runecraft.osrs.content.slayer.Mortimer.Offer> mortimerOffers(ServerPlayer player) {
+        return MORTIMER_OFFERS.getOrDefault(player.getUUID(), List.of());
     }
 
     /** "How many would you like to slay?": clickable boss-task amounts from 3 to the player's maximum. */
@@ -224,11 +290,22 @@ public final class SlayerService {
         p.chooseAmount = boss != null;
         p.remaining = p.amount;
         p.master = master.id();
+        p.modifier = null;
+        p.modifierValue = 0;
         p.region = null;
         if (master.locationRestricted() && boss == null) {
-            List<Region> regions = SlayerTasks.regions(a.category());
-            if (!regions.isEmpty()) {
-                p.region = regions.get(random.nextInt(regions.size())).name();
+            // Konar names one of the task's locations the player may enter, each as likely (OSRS Wiki); a task none of
+            // whose locations is built keeps the kingdom rule.
+            List<com.runecraft.osrs.content.slayer.KonarLocations.Location> locations =
+                    com.runecraft.osrs.content.slayer.KonarLocations.candidates(a.category(),
+                            q -> ContentRegistry.quest(q) == null || QuestApi.isComplete(player, q));
+            if (!locations.isEmpty()) {
+                p.region = LOCATION + locations.get(random.nextInt(locations.size())).id();
+            } else {
+                List<Region> regions = SlayerTasks.regions(a.category());
+                if (!regions.isEmpty()) {
+                    p.region = regions.get(random.nextInt(regions.size())).name();
+                }
             }
         }
         if (boss != null) {
@@ -280,10 +357,46 @@ public final class SlayerService {
         return TaskRegions.at(entity.blockPosition().getX(), entity.blockPosition().getY(), entity.blockPosition().getZ());
     }
 
+    /** Prefix of a task region that is one of Konar's locations (KonarLocations id); other regions are kingdoms. */
+    public static final String LOCATION = "loc:";
+
+    /**
+     * Whether a kill at {@code at} (of the boss {@code bossId}, or null) is where Konar wants it: in her location (or one
+     * of the bosses that count there), or in her kingdom for older tasks. True for tasks without a place.
+     */
+    static boolean inKonarArea(SlayerState.Profile p, Entity at, String bossId) {
+        if (p.region == null) {
+            return true;
+        }
+        if (p.region.startsWith(LOCATION)) {
+            net.minecraft.core.BlockPos b = at.blockPosition();
+            return com.runecraft.osrs.content.slayer.KonarLocations.counts(p.region.substring(LOCATION.length()), b.getX(),
+                    b.getY(), b.getZ(), bossId);
+        }
+        return taskRegion(at).name().equals(p.region);
+    }
+
+    /** The name of a task's place (a Konar location or a kingdom), or null for none. */
+    public static String regionName(String region) {
+        if (region == null) {
+            return null;
+        }
+        if (region.startsWith(LOCATION)) {
+            com.runecraft.osrs.content.slayer.KonarLocations.Location l =
+                    com.runecraft.osrs.content.slayer.KonarLocations.get(region.substring(LOCATION.length()));
+            return l != null ? l.name() : region.substring(LOCATION.length());
+        }
+        try {
+            return Region.valueOf(region).displayName();
+        } catch (IllegalArgumentException e) {
+            return region;
+        }
+    }
+
     private static String describe(SlayerState.Profile p) {
         String name = SlayerTasks.displayName(p.task);
         if (p.region != null) {
-            name += " in " + Region.valueOf(p.region).displayName();
+            name += " in " + regionName(p.region);
         }
         return name;
     }
@@ -296,7 +409,8 @@ public final class SlayerService {
     /** Clickable task-management options shown by masters. */
     static void menu(ServerPlayer player, SlayerState.Profile p) {
         MutableComponent line = Component.literal("Options: ").withStyle(ChatFormatting.GRAY);
-        line.append(button("[Skip " + SlayerRewards.SKIP_COST + "pts]", "/slayer skip", "Cancel this task for 30 points"));
+        int skip = SlayerRewards.skipCost(p.master);
+        line.append(button("[Skip " + skip + "pts]", "/slayer skip", "Cancel this task for " + skip + " points"));
         line.append(Component.literal(" "));
         line.append(button("[Block " + SlayerRewards.blockCost(p.master) + "pts]", "/slayer block", "Never be assigned this task again"));
         line.append(Component.literal(" "));
@@ -305,7 +419,80 @@ public final class SlayerService {
         line.append(button("[Shop]", "/slayer shop", "Buy slayer equipment"));
         line.append(Component.literal(" "));
         line.append(button("[Craft]", "/slayer craft", "Assemble slayer helmets, rings and more"));
+        if (p.unlocks.contains(SlayerRewards.TASK_STORAGE)) {
+            line.append(Component.literal(" "));
+            if (p.hasStoredTask()) {
+                line.append(button("[" + (p.hasTask() ? "Swap" : "Unstore") + " task]", "/slayer unstore",
+                        "Stored: " + p.storedRemaining + " " + SlayerTasks.displayName(p.storedTask)));
+            } else {
+                line.append(button("[Store task]", "/slayer store", "Put this task aside for later (free)"));
+            }
+        }
         player.displayClientMessage(line, false);
+    }
+
+    // ------------------------------------------------------------------ task storage
+
+    /**
+     * "Task Storage" (OSRS Wiki "Slayer Rewards"): stores the current task for free, for later; refused without the unlock,
+     * without a task, or when a task is already stored. Wilderness tasks may be stored too.
+     */
+    public static boolean storeTask(ServerPlayer player) {
+        SlayerState.Profile p = profile(player);
+        if (!p.unlocks.contains(SlayerRewards.TASK_STORAGE)) {
+            Msg.game(player, "You need to unlock Task Storage (500 points) first.");
+            return false;
+        }
+        if (!p.hasTask()) {
+            Msg.game(player, "You don't have a task to store.");
+            return false;
+        }
+        if (p.hasStoredTask()) {
+            Msg.game(player, "You already have a task stored: " + p.storedRemaining + " " + SlayerTasks.displayName(p.storedTask) + ".");
+            return false;
+        }
+        if (com.runecraft.content.minigames.games.TzHaarSlayer.bossTaskTaken(player)) {
+            Msg.game(player, "You can't store a task you have taken on as TzTok-Jad or TzKal-Zuk.");
+            return false;
+        }
+        p.swapStored();
+        Msg.game(player, "You store your task: " + p.storedRemaining + " " + SlayerTasks.displayName(p.storedTask)
+                + ". You can take it up again from any Slayer master.");
+        SlayerNet.sync(player);
+        return true;
+    }
+
+    /**
+     * Takes the stored task back up: unstores it when there is no current task, else swaps the two (free, OSRS). False
+     * without a stored task.
+     */
+    public static boolean unstoreTask(ServerPlayer player) {
+        SlayerState.Profile p = profile(player);
+        if (!p.hasStoredTask()) {
+            Msg.game(player, "You don't have a stored task.");
+            return false;
+        }
+        boolean swap = p.hasTask();
+        p.swapStored();
+        Msg.game(player, (swap ? "You swap tasks: you're" : "You take up your stored task: you're") + " now hunting "
+                + describe(p) + " (" + p.remaining + " to go)" + (swap ? "; your previous task is stored." : "."));
+        SlayerNet.sync(player);
+        return true;
+    }
+
+    // ------------------------------------------------------------------ Duly Noted
+
+    /** "Duly Noted": a mithril dragon killed on task drops its mithril bars as banknotes (OSRS); null leaves a drop alone. */
+    static net.minecraft.world.item.ItemStack dulyNoted(ServerPlayer killer, LivingEntity mob, String item, int count) {
+        if (killer == null || mob == null) {
+            return null;
+        }
+        String id = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getPath();
+        if (!SlayerRewards.dulyNoted(id, item) || !profile(killer).unlocks.contains(SlayerRewards.DULY_NOTED)
+                || !isOnTask(killer, mob)) {
+            return null;
+        }
+        return com.runecraft.bank.Notes.note(item, "", count);
     }
 
     static MutableComponent button(String label, String command, String hover) {
@@ -422,7 +609,7 @@ public final class SlayerService {
         if (m != null && m.wilderness() && Gielinor.wildernessLevel(entity) <= 0) {
             return false;
         }
-        return p.region == null || taskRegion(entity).name().equals(p.region);
+        return inKonarArea(p, entity, net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath());
     }
 
     /**
@@ -466,8 +653,8 @@ public final class SlayerService {
             Msg.game(player, "Krystilia's tasks only count in the Wilderness.");
             return;
         }
-        if (p.region != null && !taskRegion(at).name().equals(p.region)) {
-            Msg.game(player, "Konar wants you to kill these in " + Region.valueOf(p.region).displayName() + ".");
+        if (!inKonarArea(p, at, bossId)) {
+            Msg.game(player, "Konar wants you to kill these in " + regionName(p.region) + ".");
             return;
         }
         com.runecraft.osrs.content.BossDef def = ContentRegistry.boss(bossId);
@@ -501,8 +688,8 @@ public final class SlayerService {
             Msg.game(player, "Krystilia's tasks only count in the Wilderness.");
             return;
         }
-        if (p.region != null && !taskRegion(entity).name().equals(p.region)) {
-            Msg.game(player, "Konar wants you to kill these in " + Region.valueOf(p.region).displayName() + ".");
+        if (!inKonarArea(p, entity, net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath())) {
+            Msg.game(player, "Konar wants you to kill these in " + regionName(p.region) + ".");
             return;
         }
         // The first kill fixes a boss task's size.
@@ -511,8 +698,10 @@ public final class SlayerService {
         Superiors.Superior superior = prof == null ? null : Superiors.byId(prof.id);
         // OSRS: a kill gives its hitpoints in Slayer XP unless the wiki lists another value (bosses, dragons, dream bosses...).
         double dream = prof == null ? -1 : dreamSlayerXp(entity, prof.id);
-        XpService.add(player, Skill.SLAYER, superior != null ? superior.xp() : dream >= 0 ? dream
-                : com.runecraft.osrs.data.MonsterTraits.slayerXp(stats.traitsKey(), stats.hitpoints()));
+        // Mortimer's experience modifier adds its percentage to every kill of the task.
+        XpService.add(player, Skill.SLAYER, com.runecraft.osrs.content.slayer.Mortimer.xp(superior != null ? superior.xp() : dream >= 0 ? dream
+                : com.runecraft.osrs.data.MonsterTraits.slayerXp(stats.traitsKey(), stats.hitpoints()),
+                com.runecraft.osrs.content.slayer.Mortimer.modifier(p.modifier), p.modifierValue));
         // "Double Trouble": each Grotesque Guardians kill counts twice.
         // Expeditious bracelet / bracelet of slaughter (systems module): 25% chance to double or void the credit.
         String killed = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath();
@@ -566,6 +755,13 @@ public final class SlayerService {
             streak = ++p.streak;
         }
         int points = master == null ? 0 : master.pointsFor(streak, eliteDiary);
+        if (master != null && master.id().equals(com.runecraft.osrs.content.slayer.Mortimer.ID)) {
+            // Mortimer gives no points but through a points modifier (OSRS Wiki); his tasks unlock more modifiers.
+            points = com.runecraft.osrs.content.slayer.Mortimer.points(com.runecraft.osrs.content.slayer.Mortimer.modifier(p.modifier), p.modifierValue);
+            p.mortimerTasks++;
+        }
+        p.modifier = null;
+        p.modifierValue = 0;
         p.points += points;
         Msg.red(player, "You have completed your task! You've completed " + streak + " tasks in a row"
                 + (points > 0 ? " and received " + points + " points, giving you a total of " + p.points : "")

@@ -223,14 +223,18 @@ public final class DungeonsHooks implements ModuleHooks {
         }
     }
 
-    /** The Kalphite Cave's monsters can only be damaged on a matching Slayer task (null = allowed). */
+    /**
+     * Task-only dungeons and areas (the Kalphite Cave, the Wilderness Slayer Cave's abyssal demons, Karuulm's task-only
+     * wyrms...): their monsters can only be damaged on a matching Slayer task (null = allowed); the area's Slayer guardian
+     * says so.
+     */
     private static String taskOnlyDenied(ServerPlayer player, net.minecraft.world.entity.LivingEntity target) {
         if (!(target instanceof com.runecraft.entity.OsrsMonsterEntity)) {
             return null;
         }
         BlockPos at = target.blockPosition();
-        String needed = Dungeons.taskOnly(at.getX(), at.getY(), at.getZ());
-        if (needed == null) {
+        Dungeons.TaskOnlyArea area = Dungeons.taskOnlyArea(at.getX(), at.getY(), at.getZ());
+        if (area == null) {
             return null;
         }
         // Whatever counts towards the player's task may be fought (a waterfiend task in the Kraken Cove, a boss task for
@@ -238,7 +242,19 @@ public final class DungeonsHooks implements ModuleHooks {
         if (com.runecraft.content.slayer.SlayerService.taskCountsFor(player, target)) {
             return null;
         }
-        return "You can only fight the creatures of this cave while on a Slayer task to kill them.";
+        return taskOnlyMessage(area);
+    }
+
+    /** What an area's Slayer guardian says to a player who attacks its monsters off task. */
+    public static String taskOnlyMessage(Dungeons.TaskOnlyArea area) {
+        String what = Dungeons.ANY_TASK.equals(area.task()) ? "the creatures of this cave"
+                : com.runecraft.osrs.content.slayer.SlayerTasks.displayName(area.task());
+        String line = "You can only fight " + what + " here while on a Slayer task to kill them.";
+        String own = Dungeons.TASK_ONLY_LINES.get(area.dungeon());
+        if (area.guardian() == null && own != null) {
+            return own;
+        }
+        return area.guardian() == null ? line : area.guardian() + ": " + line;
     }
 
     /**

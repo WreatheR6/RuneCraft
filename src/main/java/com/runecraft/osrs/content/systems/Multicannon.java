@@ -265,6 +265,8 @@ public final class Multicannon {
             Map.entry("dng_tonali_cavern", "An ancient magical force won't let you set up a cannon here."),
             Map.entry("dng_ruins_of_tapoyauik", "An ancient magical force won't let you set up a cannon here."),
             Map.entry("dng_wyvern_cave", "Fungi start eating into the legs of your cannon; you quickly decide not to set it up here."),
+            Map.entry("dng_wyvern_cave_south", "Fungi start eating into the legs of your cannon; you quickly decide not to set it up here."),
+            Map.entry("dng_grimstone_dungeon", "It's far too cold for you to set up a cannon here."),
             Map.entry("dng_abyss_passage", DEFAULT_MESSAGE),
             Map.entry("dng_the_abyss", DEFAULT_MESSAGE));
 
