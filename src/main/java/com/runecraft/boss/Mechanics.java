@@ -867,7 +867,13 @@ public final class Mechanics {
     private static void resolveHit(OsrsMonsterEntity mob, ServerPlayer target, AttackDef a, double multiplier) {
         MonsterStats stats = mob.stats();
         PlayerData data = Players.data(target);
-        int attackLevel = switch (a.style()) {
+        // A hybrid attack (magical melee, ranged magic: HybridStyles) rolls its accuracy in another style than the prayer sees.
+        com.runecraft.osrs.data.HybridStyles.Hybrid hybrid = com.runecraft.osrs.data.HybridStyles.of(
+                mob instanceof DataBossEntity b && b.def() != null ? b.def().id
+                        : stats.profile() != null ? stats.profile().id : null, a.name());
+        AttackType rollStyle = hybrid != null ? hybrid.accuracy() : a.style();
+        AttackType defendStyle = hybrid != null ? hybrid.defence() : a.style();
+        int attackLevel = switch (rollStyle) {
             case MAGIC -> stats.magic();
             case RANGED -> stats.ranged();
             default -> stats.attack();
@@ -891,9 +897,9 @@ public final class Mechanics {
             }
         }
         Random random = new Random(mob.getRandom().nextLong());
-        long attackRoll = com.runecraft.combat.CombatHooks.versusAttackRoll(mob, target, a.style(),
-                CombatHandler.npcAttackRoll(mob, stats, a.style(), attackLevel));
-        long defenceRoll = CombatHandler.defenceRoll(target, a.style());
+        long attackRoll = com.runecraft.combat.CombatHooks.versusAttackRoll(mob, target, rollStyle,
+                CombatHandler.npcAttackRoll(mob, stats, rollStyle, attackLevel));
+        long defenceRoll = CombatHandler.defenceRoll(target, defendStyle);
         maxHit = com.runecraft.combat.CombatHooks.versusMaxHit(mob, target, a.style(), maxHit);
         boolean alwaysHits = a.special() == AttackDef.Special.DRAGONFIRE || a.special() == AttackDef.Special.AOE
                 || a.special() == AttackDef.Special.SKY_STRIKE;

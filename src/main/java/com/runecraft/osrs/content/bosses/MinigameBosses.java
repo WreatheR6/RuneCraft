@@ -254,11 +254,9 @@ public final class MinigameBosses {
                 .phase(50, com.runecraft.osrs.content.minigames.SolHeredit.PHASE_LINES.get(2), 1.0, false)
                 .phase(25, com.runecraft.osrs.content.minigames.SolHeredit.PHASE_LINES.get(3), 1.0, false)
                 .phase(10, com.runecraft.osrs.content.minigames.SolHeredit.PHASE_LINES.get(4), 1.0, false)
-                .drops(Drop.of("sunfire_splinters", 200, 600, 1), Drop.of("dizanas_quiver", 1, 1, 1),
-                        Drop.of("sunfire_fanatic_helm", 1, 1, 90), Drop.of("sunfire_fanatic_cuirass", 1, 1, 90),
-                        Drop.of("sunfire_fanatic_chausses", 1, 1, 90), Drop.of("echo_crystal", 1, 1, 60),
-                        Drop.of("tonalztics_of_ralos", 1, 1, 150), Drop.of("runite_bar", 5, 10, 4), Drop.of("coins", 50000, 150000, 2))
-                // Fought only as the Colosseum's wave 12 (ColosseumSession): no summoning stone or surface arena.
+                // No drop table: in OSRS Sol Heredit drops nothing; his loot is the Rewards Chest's (ColosseumRewards) and the
+                // Fortis Colosseum collection log page is listed in OsrsPages. Fought only as the Colosseum's wave 12
+                // (ColosseumSession): no summoning stone or surface arena.
                 .pet("pet_smol_heredit").at("fortis_colosseum").arena(15, "sand").raidOnly()
                 .size(0.9f, 2.4f, 1.6f).moveSpeed(0.26);
     }

@@ -141,9 +141,11 @@ public final class GwdMonsters {
                 .attack(AttackDef.of("bite", AttackType.STAB, 14, 2.5, 10))
                 .drops(followerDrops(Drop.always("vile_ashes"), Drop.of("clue_scroll_hard", 1, 1, 64)))
                 .model("gwd_hellhound").size(0.9f, 1.2f, 1.3f));
-        list.add(MonsterDef.of("gwd_gorak", "Gorak").level(149).stats(128, 130, 140, 140, 1, 1).speed(4) // approx.
-                .defenceBonus(40, 40, 40, 40, 40)
-                .attack(AttackDef.of("claws", AttackType.CRUSH, 16, 2.5, 10).special(Special.PRAYER_PIERCING, 0))
+        // OSRS Wiki (Gorak, GWD version): level 149, 128 hitpoints, no bonuses, typeless melee up to 14 that ignores
+        // protection prayers; each successful hit drains a random stat by 1-4 (GwdKillcount.goraksTouch).
+        list.add(MonsterDef.of("gwd_gorak", "Gorak").level(149).stats(128, 133, 126, 135, 1, 1).speed(4)
+                .defenceBonus(0, 0, 0, 0, 0)
+                .attack(AttackDef.of("claws", AttackType.CRUSH, 14, 2.5, 10).special(Special.PRAYER_PIERCING, 0))
                 .drops(followerDrops(Drop.always("bones"), Drop.of("death_rune", 5, 15, 8)))
                 .skin(0x6A5AA0, 0x4A3A80, 0x3A2A60, 0xC0C0E0).size(0.8f, 2.2f, 1.1f));
         list.add(MonsterDef.of("gwd_vampire", "Vampire").level(72).stats(60, 60, 60, 60, 1, 1).speed(4)
@@ -187,7 +189,8 @@ public final class GwdMonsters {
                 .slayer(83, "spiritual_creatures").skin(0xB0B0C8, purple, purple, 0xE0E0E0).size(0.6f, 1.95f, 1.1f));
         list.add(MonsterDef.of("gwd_blood_reaver", "Blood Reaver").level(174).stats(125, 1, 1, 100, 190, 1).speed(5)
                 .defenceBonus(20, 80, 120, 300, 55)
-                .attack(AttackDef.of("blood spell", AttackType.MAGIC, 20, 10, 10).particle("minecraft:damage_indicator"))
+                .attack(AttackDef.of("blood spell", AttackType.MAGIC, 20, 10, 10).special(Special.LIFESTEAL, 25) // approx: 25%
+                        .particle("minecraft:damage_indicator"))
                 .drops(prisonDrops(Drop.of("blood_rune", 10, 30, 8)))
                 .model("blood_reaver").size(0.8f, 1.6f, 1.1f));
     }
@@ -275,10 +278,14 @@ public final class GwdMonsters {
     }
 
     private static void minions(List<MonsterDef> list) {
-        // Nex: blood reavers summoned during Blood siphon.
-        list.add(MonsterDef.of("blood_reaver", "Blood reaver").level(122).stats(150, 100, 100, 80, 1, 1).speed(4) // approx.
-                .attack(AttackDef.of("melee", AttackType.SLASH, 12, 2.5, 10).special(Special.LIFESTEAL, 25))
-                .drops(Drop.always("bones")).size(0.8f, 1.6f, 1.1f));
+        // Nex: blood reavers summoned during Blood siphon. OSRS Wiki (Blood Reaver, Nex's chamber version): level 161, 150
+        // hitpoints, a Blood Rush-like spell up to 20 every 5 ticks that heals the reaver (25% of the damage, as blood spells:
+        // approx); damaging one heals its attacker half the damage (GwdKillcount). Defences from MonsterStatsTable.
+        list.add(MonsterDef.of("blood_reaver", "Blood Reaver").level(161).stats(150, 1, 1, 100, 190, 1).speed(5)
+                .defenceBonus(20, 80, 120, 300, 55)
+                .attack(AttackDef.of("blood spell", AttackType.MAGIC, 20, 10, 10).special(Special.LIFESTEAL, 25)
+                        .particle("minecraft:damage_indicator"))
+                .drops(Drop.always("malicious_ashes")).model("blood_reaver").size(0.8f, 1.6f, 1.1f));
         // Vet'ion / Calvar'ion hounds.
         list.add(MonsterDef.of("skeleton_hellhound", "Skeleton Hellhound").level(194).stats(80, 200, 160, 100, 1, 1).speed(4)
                 .defenceBonus(100, 100, 100, 100, 100)

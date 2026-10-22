@@ -33,6 +33,20 @@ final class NexMinionScript implements BossScript {
         boss.getNavigation().stop();
     }
 
+    /** Umbra's Shadow Barrage lowers the Attack level of a player it hits by 15% (OSRS Wiki, Umbra). */
+    @Override
+    public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+        if (damage > 0 && boss.def() != null && "umbra".equals(boss.def().id)) {
+            var skills = com.runecraft.player.Players.data(player).skills();
+            int drain = com.runecraft.osrs.content.godwars.GwdBosses.umbraDrain(skills.currentLevel(com.runecraft.osrs.Skill.ATTACK));
+            if (drain > 0) {
+                skills.setBoost(com.runecraft.osrs.Skill.ATTACK, skills.boost(com.runecraft.osrs.Skill.ATTACK) - drain);
+                com.runecraft.network.ServerNetworking.sync(player);
+            }
+        }
+        return damage;
+    }
+
     @Override
     public void gameTick(DataBossEntity boss, long gameTick) {
         if (nex == null || nex.isRemoved() || !nex.isAlive()) {

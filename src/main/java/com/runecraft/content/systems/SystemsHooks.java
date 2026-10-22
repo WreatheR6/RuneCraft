@@ -158,6 +158,9 @@ public final class SystemsHooks implements ModuleHooks {
         com.runecraft.content.godwars.GwdKillcount.required = p -> CombatAchievements.gwdKillcount(CombatAchievementService.tier(p));
         com.runecraft.content.godwars.GwdKillcount.ecumenicalChance = p ->
                 CombatAchievements.ecumenicalKeyChance(CombatAchievementService.tier(p));
+        com.runecraft.content.godwars.GwdKillcount.ecumenicalCap = p -> com.runecraft.osrs.content.godwars.GodWarsFactions.ecumenicalKeyCap(
+                Diaries.tierComplete(SysState.of(p).diaryDone, "wilderness", Diaries.Tier.MEDIUM),
+                Diaries.tierComplete(SysState.of(p).diaryDone, "wilderness", Diaries.Tier.HARD));
         com.runecraft.content.minigames.games.PestControlSession.extraPoints = p ->
                 CombatAchievements.pestControlBonus(CombatAchievementService.tier(p));
         com.runecraft.content.minigames.games.WarriorsGuildSession.tokenMultiplier = p ->

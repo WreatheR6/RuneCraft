@@ -20,6 +20,46 @@ public final class GodWarsFactions {
     /** Pet roll used by the generic boss engine (1/3000); see {@link #extraPetChance}. */
     public static final int ENGINE_PET_RATE = 3000;
 
+    /**
+     * Most ecumenical keys a player may hold (OSRS Wiki, Ecumenical key: three, four with the medium Wilderness Diary and
+     * five with the hard one; further keys are deleted with "You already have enough of these").
+     */
+    public static int ecumenicalKeyCap(boolean mediumWildernessDiary, boolean hardWildernessDiary) {
+        return hardWildernessDiary ? 5 : mediumWildernessDiary ? 4 : 3;
+    }
+
+    /**
+     * Hitpoints a player's hit on a creature heals them: half the damage dealt (rounded down) on a blood reaver, in the
+     * Ancient Prison or Nex's chamber (OSRS Wiki, Blood Reaver); 0 on anything else.
+     */
+    /** Whether a creature is a gorak (the God Wars Dungeon's and the Gorak Plane's): its hits drain the player's stats. */
+    public static boolean gorak(String creatureId) {
+        return "gwd_gorak".equals(creatureId) || "gorak".equals(creatureId);
+    }
+
+    /** One stat a gorak's touch drains, and by how much. */
+    public record GorakDrain(com.runecraft.osrs.Skill skill, int amount) {
+    }
+
+    /**
+     * A gorak's touch (OSRS Wiki, Gorak: "for every successful hit they make, a random stat of the player (excluding
+     * Hitpoints) is drained by 1-4"), from two rolls: {@code skillRoll} picks among every skill but Hitpoints and
+     * {@code drainRoll} the drain (0-3 for 1-4).
+     */
+    public static GorakDrain goraksTouch(int skillRoll, int drainRoll) {
+        java.util.List<com.runecraft.osrs.Skill> skills = new java.util.ArrayList<>();
+        for (com.runecraft.osrs.Skill s : com.runecraft.osrs.Skill.values()) {
+            if (s != com.runecraft.osrs.Skill.HITPOINTS) {
+                skills.add(s);
+            }
+        }
+        return new GorakDrain(skills.get(Math.floorMod(skillRoll, skills.size())), 1 + Math.floorMod(drainRoll, 4));
+    }
+
+    public static int reaverLeech(String creatureId, int dealt) {
+        return dealt > 0 && ("blood_reaver".equals(creatureId) || "gwd_blood_reaver".equals(creatureId)) ? dealt / 2 : 0;
+    }
+
     public enum God {
         ARMADYL("Armadyl", 0x5A7AA0),
         BANDOS("Bandos", 0x6A7A3A),
