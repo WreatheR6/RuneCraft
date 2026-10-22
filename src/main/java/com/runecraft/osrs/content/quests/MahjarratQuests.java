@@ -7,6 +7,7 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.AttackDef.Special;
 import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.MonsterDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.data.Drop;
 import java.util.List;
@@ -25,7 +26,6 @@ final class MahjarratQuests {
         b.spot("quest_paterdomus_hills", "Hills north of Paterdomus", 3406, 3505);
         b.spot("quest_garden_of_death", "The Garden of Death", 1255, 3625);
         b.place("quest_the_vault", "The Vault", 3180, 2862, PlaceDef.Style.RUINS);
-        b.place("quest_zemouregals_fort", "Zemouregal's fort", 3375, 3480, PlaceDef.Style.RUINS);
         b.spot("quest_troll_stronghold_roof", "Troll Stronghold rooftop", 2829, 3694);
         b.place("quest_weiss", "Weiss", 2848, 3936, PlaceDef.Style.CAMP);
         enakhrasLament(b);
@@ -584,35 +584,293 @@ final class MahjarratQuests {
                 .at("quest_the_vault").arena(10, "void"));
     }
 
+    /**
+     * The Curse of Arrav, after the wiki quick guide and quest-helper's steps (TheCurseOfArrav and its solvers): the Uzer Mastaba
+     * (two mastaba keys from the looters' skeletons, the odd markings and the two levers, the golem guard, the coloured floor
+     * tiles ({@link #COA_TILES}), the oil-filled canopic jar, the murals, dwellberries and a ring of life), the climb to
+     * Zemouregal's fort on Trollweiss Mountain (the Trollheim cave and crevasse, the rubble mined through, Arrav, the tapestry's
+     * base plans and key), and the heist on Zemouregal's base east of the Varrock sawmill (the kitchen, the electrified sewers in
+     * insulated boots, the decoder strips and code key for the metal doors ({@link #COA_METAL_DOOR}), the pipe crossed with a
+     * mith grapple) ending in the fight with Arrav at his heart's pedestal. OSRS fights no Zemouregal here: he only appears in
+     * the closing scene.
+     */
     private static void curseOfArrav(QuestBook b) {
-        Cast.npc(b, "elias_white", "Elias White", "quest_zemouregals_fort", 0, 3, Cast.FAIR, 0x6A6A8A);
-        b.item("arravs_heart", "Arrav's heart", "orb", 0x8A1A1A, "The heart of Arrav, kept by Zemouregal.");
-        b.boss(BossDef.of("quest_zemouregal", "Zemouregal").level(252).stats(300, 180, 180, 200, 220, 150).speed(4)
-                .defenceBonus(100, 100, 100, 150, 100)
-                .attack(AttackDef.of("ancient_blast", AttackType.MAGIC, 28, 9, 6).particle("minecraft:soul"))
-                .attack(AttackDef.of("undead_summon", AttackType.MAGIC, 12, 9, 2).special(Special.SUMMON, 2).telegraph(2, "Zemouregal raises his undead!"))
-                .attack(AttackDef.of("claw", AttackType.SLASH, 24, 3, 3))
-                .minion("minecraft:zombie", 3)
-                .drops(Drop.always("bones")).skin(0x6A7A6A, 0x2A1A2A, 0x1A0A1A, 0x8A2A2A).size(1.0f, 2.6f, 1.1f)
-                .at("quest_zemouregals_fort").arena(12, "crypt"));
+        // Elias at Zemouregal's base (quest-helper 3341, 3516: east of the Varrock sawmill, north of the Digsite)
+        b.npcAt("elias_white", "Elias White", 3341, 3516, 0xE0B89A, 0x6A6A8A, 0x4A4A5B, 0x2A2A2B);
         b.npcAt("elias_white_uzer", "Elias White", 3505, 3037, 0xE0B89C, 0x6A6A8C, 0x4A4A5D, 0x2A2A2D); // south of the ruins of Uzer
+        // Arrav in Zemouregal's fort at the top of the Trollweiss cave's stairs (quest-helper 2856, 3871)
+        b.npcAt("arrav_trollweiss", "Arrav", 2856, 3871, 0x8AA07B, 0xA08A3A, 0x6A5A2A, 0x5A6A4A);
+        // the Uzer Mastaba's entrance on the hill south-west of Elias (3486, 3023); its rooms are an instance in OSRS, so the
+        // tomb's steps happen at the entrance
+        b.spot("coa_mastaba", "Uzer Mastaba", 3486, 3023);
+        b.spot("coa_trollheim_cave", "Cave beside Trollheim", 2821, 3744);
+        b.spot("coa_trollweiss_cave", "Trollweiss cave", 2809, 3861);
+        b.spot("coa_fort_tapestry", "Zemouregal's fort, tapestry room", 2861, 3865);
+        // Zemouregal's base (an instance below its entrance at 3343, 3515)
+        b.spot("coa_zemouregals_base", "Zemouregal's base", 3343, 3515);
+        b.item("mastaba_key", "Mastaba key", "key", 0xB09060, "A key from a tomb looter's remains.");
+        b.item("canopic_jar_oil", "Canopic jar (oil)", "pot_item", 0xC0A060, "An ancient jar filled with oil.");
+        b.item("canopic_jar_oil_berries", "Canopic jar (oil and berries)", "pot_item", 0x6A5AA0, "An ancient jar of oil and dwellberries.");
+        b.item("canopic_jar_full", "Canopic jar (full)", "pot_item", 0xE0E0F0, "An ancient jar, ready to hold a heart.");
+        b.item("base_plans", "Base plans", "note", 0xE0D0A0, "Plans of Zemouregal's base, in some sort of code.");
+        b.item("base_key", "Base key", "key", 0x5A5A6A, "The key to Zemouregal's base.");
+        b.item("decoder_strips", "Decoder strips", "note", 0xD0C0A0, "Four strips of metal, each with a single window and a number 1 to 4.");
+        b.item("code_key", "Code key", "key", 0x8A8A9A, "A key engraved with four letters.");
+        b.item("arravs_heart", "Arrav's heart", "orb", 0x8A1A1A, "The heart of Arrav, sealed in a canopic jar.");
+        // DPS calculator (Golem guard): level 141, 150 HP, crush up to 18 every 4 ticks, weak to crush; when the screen shakes it
+        // stands still and pounds the ground through prayer (wiki: up to 28 three times; one step away avoids it)
+        b.boss(BossDef.of("coa_golem_guard", "Golem guard").level(141).stats(150, 170, 170, 100, 170, 1).speed(4)
+                .defenceBonus(180, 200, 20, 40, 0)
+                .attack(AttackDef.of("slam", AttackType.CRUSH, 18, 2.5, 5))
+                // approx: one pound of up to 28 (OSRS: three in succession), a 3-tick shake to step away in
+                .attack(AttackDef.of("ground_pound", AttackType.CRUSH, 28, 1.6, 1).special(Special.PRAYER_PIERCING, 0)
+                        .telegraph(3, "The ground shakes! The golem guard plants its feet: step away from it!"))
+                .drops(Drop.always("bones")).skin(0xB0A080, 0x8A7A5A, 0x6A5A3A, 0xC0B080).size(1.2f, 2.8f, 1.2f));
+        // DPS calculator (Arrav, The Curse of Arrav): level 339, 600 HP, crush up to 30 every 5 ticks; every third attack he
+        // swings his axe ahead of him for up to 26 (wiki), dodged by stepping beside or behind him (QuestBossScripts.EveryNth)
+        // while armoured zombies (10 HP, up to 10) leave venom pools where they go (4 a tick)
+        b.boss(BossDef.of("coa_arrav", "Arrav").level(339).stats(600, 220, 220, 150, 150, 1).speed(5)
+                .defenceBonus(80, 80, 40, 160, 80)
+                .attack(AttackDef.of("axe", AttackType.CRUSH, 30, 2.5, 6))
+                .attack(AttackDef.of("raise_zombies", AttackType.MAGIC, 0, 10, 1).special(Special.SUMMON, 2)
+                        .telegraph(2, "Armoured zombies claw their way up around Arrav!"))
+                // weight 0: only the script's every-third swing
+                .attack(AttackDef.of("axe_swing", AttackType.SLASH, 26, 6, 0).special(Special.SKY_STRIKE, 0)
+                        .telegraph(3, "Arrav raises his axe: get beside or behind him!"))
+                .minion("coa_armoured_zombie", 2)
+                .model("arrav").drops(Drop.always("bones")).skin(0x8AA07B, 0xA08A3A, 0x6A5A2A, 0x5A6A4A).size(1.0f, 2.6f, 1.1f));
+        b.monster(MonsterDef.of("coa_armoured_zombie", "Armoured zombie").level(70).stats(10, 106, 94, 10, 1, 1).speed(4)
+                .defenceBonus(5, 5, 5, -50, -100)
+                // approx: OSRS leaves venom wherever they walk; here where their claws land
+                .attack(AttackDef.of("claw", AttackType.CRUSH, 10, 2.5, 1).special(Special.HAZARD, 4))
+                .skin(0x6A7A5A, 0x5A5A60, 0x3A3A40, 0x4A5A3A).size(0.7f, 2.0f, 1.0f));
         b.quest("the_curse_of_arrav", "The Curse of Arrav", Difficulty.MASTER, 2)
                 .reqQuest("defender_of_varrock", "troll_romance")
                 .req(Skill.MINING, 64).req(Skill.RANGED, 62).req(Skill.THIEVING, 62).req(Skill.AGILITY, 61).req(Skill.STRENGTH, 58).req(Skill.SLAYER, 37)
                 .xp(Skill.MINING, 40000).xp(Skill.THIEVING, 40000).xp(Skill.AGILITY, 40000) // wiki: fixed quest XP
-                .unlock("Arrav freed from Zemouregal's control")
+                .unlock("Access to Zemouregal's Fort")
                 .stage("I can start this quest by speaking to Elias White at the Uzer Oasis. (Requires Defender of Varrock, Troll Romance, 64 Mining, 62 Ranged, 62 Thieving, 61 Agility, 58 Strength, 37 Slayer.)")
-                .talk("elias_white_uzer").say("Arrav, the hero of Avarrocka, is still Zemouregal's undead slave. His heart is the key: Zemouregal keeps it in his fort.",
-                        "Meet me by the fort when you have it.")
-                .stage("I should break into Zemouregal's fort and steal Arrav's heart.")
-                .reach("quest_zemouregals_fort", 8).give("arravs_heart").say("* Past the zombies and traps, you find a beating heart in a jar. Zemouregal will not be pleased.")
-                .stage("Arrav attacks under Zemouregal's command. I must subdue him.")
-                .kill("arrav").need("arravs_heart").say("* Arrav falls to his knees. Holding his heart, you feel Zemouregal's hold on him weaken.")
-                .missing("* Without the heart, Arrav cannot be freed.")
-                .stage("I must face Zemouregal himself.")
-                .kill("quest_zemouregal").say("* Zemouregal retreats into the shadows, cursing your name. Arrav's will is his own again.")
-                .stage("I should return Arrav's heart to Elias White.")
+                .talk("elias_white_uzer").say("Arrav, the hero of Avarrocka, is still Zemouregal's undead slave. His heart is the key to him.",
+                        "To carry a heart you'll need a proper canopic jar. The Mastaba on the hill to the south-west was built for such rites.")
+                // ---- stage 1: the Uzer Mastaba ----
+                .stage("I should search the Uzer Mastaba south-west of Elias for a canopic jar, and prepare it to hold Arrav's heart. "
+                        + "I'll need three dwellberries and a ring of life.")
+                .reach("coa_mastaba", 6).stay().unlessFlag("coa_key1").flag("coa_key1").give("mastaba_key")
+                .say("* In the cave south of the entrance, the southernmost skeleton of a tomb looter still holds a mastaba key.")
+                .reach("coa_mastaba", 6).stay().needFlag("coa_key1").unlessFlag("coa_key2").flag("coa_key2").give("mastaba_key")
+                .say("* North-west of the stone boat in the central room, another skeleton: a second mastaba key.")
+                .reach("coa_mastaba", 6).stay().needFlag("coa_key2").unlessFlag("coa_lever_south").reqSkill(Skill.THIEVING, 62)
+                .take("mastaba_key").flag("coa_lever_south")
+                .say("* In the far south-east you search the odd markings on the wall and disarm the spear traps.",
+                        "* The key turns in the south lever's lock and you pull it. Something grinds in the walls.")
+                .missing("* Odd markings run along the wall by a set of spear traps. Disarming them takes 62 Thieving, and the lever is locked.")
+                .reach("coa_mastaba", 6).stay().needFlag("coa_lever_south").unlessFlag("coa_lever_north").reqSkill(Skill.THIEVING, 62)
+                .take("mastaba_key").flag("coa_lever_north")
+                .say("* East of the imposing doors in the north-east you disarm the traps the same way and pull the north lever.",
+                        "* The imposing doors to the west unlock.")
+                .reach("coa_mastaba", 6).stay().needFlag("coa_lever_north").unlessFlag("coa_golem_door").flag("coa_golem_door")
+                .spawn("coa_golem_guard")
+                .say("* You open the imposing doors. A golem guard lumbers to life!")
+                .kill("coa_golem_guard").stay().needFlag("coa_golem_door").unlessFlag("coa_golem").flag("coa_golem")
+                .say("* The golem guard crumbles. Stairs lead down from its chamber.")
+                .puzzle("coa_mastaba", COA_TILES).stay().needFlag("coa_golem").unlessFlag("coa_tiles").flag("coa_tiles")
+                .say("* You reach the far side and pull the lever there: the coloured tiles go dark.")
+                .reach("coa_mastaba", 6).stay().needFlag("coa_tiles").unlessFlag("coa_jar").flag("coa_jar").give("canopic_jar_oil")
+                .say("* On the shelves in the north of the burial chamber stands an oil-filled canopic jar.")
+                .reach("coa_mastaba", 6).stay().needFlag("coa_jar").unlessFlag("coa_mural").flag("coa_mural")
+                .say("* In the room with the statue of Tumeken the southern mural shows the rite: dwellberries in the oil to bind the "
+                        + "heart, then a ring of life to keep it beating.")
+                .reach("coa_mastaba", 6).stay().needFlag("coa_mural").unless("canopic_jar_oil_berries", "canopic_jar_full")
+                .take("canopic_jar_oil", "dwellberries:3").give("canopic_jar_oil_berries")
+                .say("* You drop three dwellberries into the oil.")
+                .missing("* The mural's rite wants three dwellberries in the jar first.")
+                .reach("coa_mastaba", 6).stay().needFlag("coa_mural").unless("canopic_jar_full").take("canopic_jar_oil_berries", "ring_of_life")
+                .give("canopic_jar_full")
+                .say("* You lower the ring of life into the jar. The oil shimmers.")
+                .missing("* Next the rite wants a ring of life in the jar.")
+                .talk("elias_white_uzer").need("canopic_jar_full")
+                .say("> I have a canopic jar, prepared as the murals showed.", "Then we only need the heart. Arrav himself may know where "
+                        + "Zemouregal keeps it: he's held in Zemouregal's fort, at the top of Trollweiss Mountain.")
+                .missing("?!coa_jar|The Mastaba is just south-west of here, on top of the hill. Bring dwellberries and a ring of life.",
+                        "?coa_jar|Follow the murals: the jar must be prepared before it can hold a heart.")
+                // ---- stage 2: Zemouregal's fort on Trollweiss Mountain ----
+                .stage("I should find Arrav in Zemouregal's fort on Trollweiss Mountain: through the cave beside Trollheim, out at the "
+                        + "crevasse and into the Trollweiss cave. I'll need a pickaxe.")
+                .reach("coa_trollheim_cave", 6).stay().unlessFlag("coa_crevasse").flag("coa_crevasse")
+                .say("* You follow the tunnel north past the ice trolls and climb out of a crevasse onto the summit of Trollweiss Mountain.")
+                // approx: the rubble's rule (each pile mined once from each side, so some must be walked round) is folded into the
+                // four piles' mining
+                .reach("coa_trollweiss_cave", 8).stay().needFlag("coa_crevasse").unlessFlag("coa_rubble1").needTool("pickaxe")
+                .reqSkill(Skill.MINING, 64).flag("coa_rubble1")
+                .say("* Rubble chokes the cave. You mine the first pile from the south, then from the east, and squeeze past.")
+                .missing("* Rubble blocks the cave: you need a pickaxe and 64 Mining.")
+                .reach("coa_trollweiss_cave", 8).stay().needFlag("coa_rubble1").unlessFlag("coa_rubble2").needTool("pickaxe")
+                .reqSkill(Skill.MINING, 64).flag("coa_rubble2")
+                .say("* The next chamber's rubble is three piles deep: you work round them from the west, then the north.")
+                .reach("coa_trollweiss_cave", 8).stay().needFlag("coa_rubble2").unlessFlag("coa_rubble3").needTool("pickaxe")
+                .reqSkill(Skill.MINING, 64).flag("coa_rubble3")
+                .say("* Further in you clear a fall of rock from both sides of a narrow bend.")
+                .reach("coa_trollweiss_cave", 8).stay().needFlag("coa_rubble3").unlessFlag("coa_rubble4").needTool("pickaxe")
+                .reqSkill(Skill.MINING, 64).flag("coa_rubble4")
+                .say("* The last rubble gives way. Stairs climb from a room with a red tiled floor.")
+                .talk("arrav_trollweiss").stay().needFlag("coa_rubble4").unlessFlag("coa_arrav").flag("coa_arrav")
+                .say("> Arrav! I've come to free you.", "Zemouregal keeps my heart in his base below Varrock. While he holds it, I am his.",
+                        "There's a tapestry in the next room: he hides more than dust behind it.")
+                .missing("* The way up into the fort is still blocked by rubble.")
+                .reach("coa_fort_tapestry", 4).stay().needFlag("coa_arrav").unless("base_plans").give("base_plans", "base_key")
+                .say("* Behind the tapestry in the south of the room: plans of Zemouregal's base, written in a code, and its key.")
+                .talk("elias_white_uzer").need("base_plans", "base_key")
+                .say("> Arrav says Zemouregal keeps his heart in his base. I found its plans and key.", "These plans are in a simple "
+                        + "cipher... There: the base is north of the Digsite, east of the Varrock sawmill. Meet me at its entrance.",
+                        "You'll want a crossbow and a mith grapple, insulated boots for his sewers, and the jar.")
+                .missing("?coa_arrav|Arrav spoke of a tapestry? Bring me whatever you find.")
+                // ---- stage 3: the heist ----
+                .stage("I should meet Elias at Zemouregal's base east of the Varrock sawmill and take Arrav's heart. I'll need the "
+                        + "base key, the canopic jar, insulated boots, a crossbow and a mith grapple.")
+                .talk("elias_white").stay().unlessFlag("coa_base_elias").need("base_key", "canopic_jar_full").flag("coa_base_elias")
+                .say("I'll keep watch out here. The plans say the heart is at the very back. Go carefully.")
+                .missing("Have you got the base key and the jar? We won't get a second try.")
+                .reach("coa_zemouregals_base", 8).stay().needFlag("coa_base_elias").unlessFlag("coa_kitchen").need("base_key")
+                .flag("coa_kitchen")
+                .say("* The base key opens the gates. Past the zombies in the halls you reach the kitchen.")
+                .reach("coa_zemouregals_base", 8).stay().needFlag("coa_kitchen").unlessFlag("coa_sewers").need("insulated_boots")
+                .flag("coa_sewers")
+                .say("* In your insulated boots you crawl through the pipe in the kitchen's south wall and follow the electrified sewers to "
+                        + "the far end.")
+                .missing("* The sewer floor crackles with electricity. Insulated boots would keep you safe.")
+                .reach("coa_zemouregals_base", 8).stay().needFlag("coa_sewers").unless("decoder_strips").give("decoder_strips")
+                .say("* On the western table of the southern room: four decoder strips.")
+                .reach("coa_zemouregals_base", 8).stay().needFlag("coa_sewers").unless("code_key").give("code_key")
+                .say("* In the storage room's chest: a code key engraved with four letters.")
+                .puzzle("coa_zemouregals_base", COA_METAL_DOOR).stay().needFlag("coa_sewers").need("decoder_strips", "code_key")
+                .unlessFlag("coa_doors").flag("coa_doors")
+                .say("* The fourth number clicks in. The metal doors slide apart.")
+                // approx: OSRS needs a crossbow and a mith grapple equipped (with the grapple's Ranged, Agility and Strength); here
+                // the grapple carried and the levels
+                .reach("coa_zemouregals_base", 8).stay().needFlag("coa_doors").unlessFlag("coa_pipe").need("mith_grapple")
+                .reqSkill(Skill.RANGED, 62).reqSkill(Skill.AGILITY, 61).reqSkill(Skill.STRENGTH, 58).flag("coa_pipe")
+                .say("* You fire your mith grapple at the metal bars over the fire traps and swing across the pipe.")
+                .missing("* Fire traps guard the floor beyond the doors. A mith grapple could cross on the bars above them.")
+                .reach("coa_zemouregals_base", 8).stay().needFlag("coa_pipe").unlessFlag("coa_pedestal").need("canopic_jar_full")
+                .flag("coa_pedestal").spawn("coa_arrav")
+                .say("* You reach for Arrav's heart on its pedestal. Arrav steps from the shadows, Zemouregal's will in his eyes!")
+                .kill("coa_arrav").needFlag("coa_pedestal").take("canopic_jar_full").give("arravs_heart")
+                .say("* Arrav falls to his knees. You seal his beating heart in the canopic jar, and Zemouregal's hold on him breaks.",
+                        "* Zemouregal himself appears, cursing, and vanishes into the shadows.")
+                .missing("* Without the canopic jar there is nothing to hold Arrav's heart.")
+                // ---- stage 4 ----
+                .stage("I should tell Elias White that Arrav is free.")
                 .talk("elias_white").take("arravs_heart").say("Arrav is free. After all these centuries... Varrock owes you more than it knows.");
+    }
+
+    /** Coloured floor tiles in the Mastaba: 0 blue, 1 green, 2 yellow, 3 red (wiki: blue goes with green, yellow with red). */
+    private static final String[] COA_TILE_COLOURS = {"blue", "green", "yellow", "red"};
+
+    /**
+     * The Mastaba's coloured floor (wiki quick guide; quest-helper TilePuzzleSolver): crossing west, every tile stepped on must be
+     * of the starting tile's pair, blue and green or yellow and red; a tile of the other pair strikes the player and the crossing
+     * starts again. The 12 by 12 floor is three rows of six here, one column a step, onto the same row or the one beside it.
+     * // approx: the floor's layouts (OSRS: one fixed floor)
+     */
+    static final QuestPuzzle COA_TILES = coaTiles();
+
+    private static QuestPuzzle coaTiles() {
+        // [row][column], column 0 the east column beside the player
+        int[][][] floors = {
+                {{0, 2, 1, 3, 2, 0}, {3, 1, 2, 0, 1, 3}, {2, 3, 0, 2, 3, 1}},
+                {{2, 0, 0, 3, 1, 2}, {1, 3, 2, 1, 0, 3}, {3, 1, 2, 0, 2, 0}},
+                {{3, 1, 2, 2, 0, 1}, {0, 2, 1, 0, 3, 2}, {1, 0, 3, 1, 2, 0}},
+                {{1, 3, 0, 2, 2, 3}, {2, 0, 3, 1, 0, 1}, {0, 2, 1, 3, 1, 2}}};
+        String[] rows = {"North", "Middle", "South"};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("coa_tiles").room("floor");
+        for (int[][] floor : floors) {
+            List<String> prompt = new java.util.ArrayList<>();
+            prompt.add("* Coloured tiles cover the floor west to a lever, three rows wide. From the east (beside you) to the west:");
+            for (int r = 0; r < 3; r++) {
+                StringBuilder line = new StringBuilder("* " + rows[r] + " row: ");
+                for (int c = 0; c < 6; c++) {
+                    line.append(c == 0 ? "" : ", ").append(COA_TILE_COLOURS[floor[r][c]]);
+                }
+                prompt.add(line.toString());
+            }
+            prompt.add("* A mural by the stairs pairs blue with green and yellow with red. Each step goes one column west, into the "
+                    + "same row or the one beside it.");
+            b.variant(null).prompt(prompt.toArray(String[]::new))
+                    .options("Step west into the north row", "Step west into the middle row", "Step west into the south row");
+            List<int[]> paths = coaTilePaths(floor);
+            if (paths.isEmpty()) {
+                throw new IllegalStateException("coa_tiles: a floor nobody can cross");
+            }
+            paths.forEach(b::solution);
+        }
+        return b.failLines("* The tile flares under your feet and throws you back to the eastern edge!").build();
+    }
+
+    /** Every crossing of a floor: a row for each column, east to west, each beside the last, all of the first tile's pair. */
+    static List<int[]> coaTilePaths(int[][] floor) {
+        List<int[]> out = new java.util.ArrayList<>();
+        for (int start = 0; start < 3; start++) {
+            coaTileWalk(floor, new int[]{start, 0, 0, 0, 0, 0}, 1, floor[start][0] / 2, out);
+        }
+        return out;
+    }
+
+    private static void coaTileWalk(int[][] floor, int[] path, int col, int pair, List<int[]> out) {
+        if (floor[path[col - 1]][col - 1] / 2 != pair) {
+            return;
+        }
+        if (col == 6) {
+            out.add(path.clone());
+            return;
+        }
+        for (int r = Math.max(0, path[col - 1] - 1); r <= Math.min(2, path[col - 1] + 1); r++) {
+            path[col] = r;
+            coaTileWalk(floor, path, col + 1, pair, out);
+        }
+    }
+
+    /**
+     * The metal doors' grid of numbers, rows A to I (quest-helper MetalDoorSolver: the numbers never change), and the column (1-9)
+     * each decoder strip's window shows: strip 1 the 6th, strip 2 the 4th, strip 3 the 8th, strip 4 the 2nd.
+     */
+    static final String[] COA_DOOR_GRID = {"3 7 2 9 1 6 5 4 3", "6 5 4 3 2 1 9 0 4", "7 2 1 8 7 6 4 3 2", "9 0 7 6 5 4 3 7 1",
+            "9 4 1 3 3 6 2 4 8", "6 2 3 2 4 1 6 9 7", "0 2 1 3 7 2 5 6 3", "9 4 6 3 8 8 0 1 9", "4 9 2 3 1 0 4 9 2"};
+    static final int[] COA_STRIP_COLUMN = {6, 4, 8, 2};
+
+    /** The metal doors' four numbers for a code key's four letters: letter n read through strip n's window. */
+    static int[] coaDoorPassword(String code) {
+        int[] out = new int[4];
+        for (int i = 0; i < 4; i++) {
+            String[] row = COA_DOOR_GRID[code.charAt(i) - 'A'].split(" ");
+            out[i] = Integer.parseInt(row[COA_STRIP_COLUMN[i] - 1]);
+        }
+        return out;
+    }
+
+    /**
+     * The metal doors (wiki quick guide; quest-helper MetalDoorSolver): the code key's four letters (random in OSRS, a code per
+     * player here) are set on the four decoder strips in order, and each strip's window shows a number of the door's grid; the
+     * four numbers open the doors.
+     */
+    static final QuestPuzzle COA_METAL_DOOR = coaMetalDoor();
+
+    private static QuestPuzzle coaMetalDoor() {
+        String[] codes = {"IFCB", "ADGH", "HEBC", "CIDF", "GBEA", "FHAI", "DCIG", "EGFB"};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("coa_metal_door").room("doors");
+        for (String code : codes) {
+            List<String> prompt = new java.util.ArrayList<>();
+            prompt.add("* Your code key reads " + code + ". The metal doors' panel is a grid of numbers in rows A to I:");
+            for (int r = 0; r < 9; r += 3) {
+                prompt.add("* " + (char) ('A' + r) + ": " + COA_DOOR_GRID[r] + "   " + (char) ('A' + r + 1) + ": " + COA_DOOR_GRID[r + 1]
+                        + "   " + (char) ('A' + r + 2) + ": " + COA_DOOR_GRID[r + 2]);
+            }
+            prompt.add("* Each decoder strip has one window: strip 1's shows the 6th number of a row, strip 2's the 4th, strip 3's "
+                    + "the 8th and strip 4's the 2nd. Set strip 1 to the code's first letter, strip 2 to its second, and so on, and "
+                    + "enter the four numbers in order.");
+            b.variant(null).prompt(prompt.toArray(String[]::new)).options("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+                    .solution(coaDoorPassword(code));
+        }
+        return b.failLines("* The panel buzzes and the numbers reset. The doors stay shut.").build();
     }
 
     private static void myArmsBigAdventure(QuestBook b) {

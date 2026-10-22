@@ -232,6 +232,14 @@ public final class QuestBossRules {
         return STONE_OF_JAS_LEVEL - realLevel;
     }
 
+    /** The Curse of Arrav (wiki quick guide): every third attack Arrav swings his axe ahead of him for up to 26. */
+    public static final int COA_ARRAV_AXE_EVERY = 3;
+
+    /** Whether a boss's {@code attack}th attack (1-based) is its every-{@code n}th special. */
+    public static boolean nthIsSpecial(int attack, int n) {
+        return n > 0 && attack > 0 && attack % n == 0;
+    }
+
     /** Song of the Elves (wiki): the Fragment of Seren makes one of her specials every fourth attack (three normal ones first). */
     public static final int FRAGMENT_ATTACKS_PER_SPECIAL = 4;
 

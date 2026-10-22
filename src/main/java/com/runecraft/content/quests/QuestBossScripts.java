@@ -52,6 +52,7 @@ final class QuestBossScripts {
         com.runecraft.platform.ServerTickEvents.END_SERVER_TICK.register(StoneDemon::releaseStonePower);
         BossScripts.register("fragment_of_seren", FragmentSpecials::new);
         BossScripts.register("vanstrom_klause", Vanstrom::new);
+        BossScripts.register("coa_arrav", () -> new EveryNth(QuestBossRules.COA_ARRAV_AXE_EVERY, "axe_swing"));
         Vanstrom.register();
     }
 
@@ -826,6 +827,35 @@ final class QuestBossScripts {
                 p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, held);
                 p.setHealth(p.getMaxHealth());
             }
+        }
+    }
+
+    /**
+     * A quest boss whose every {@code n}th real attack is one named special, its other attacks picked as usual (The Curse of
+     * Arrav: Arrav swings his axe ahead of him every third attack, QuestBossRules.COA_ARRAV_AXE_EVERY). Counted in beforeAttack,
+     * on the attacks it really makes.
+     */
+    static final class EveryNth implements BossScript {
+        private final int n;
+        private final String special;
+        private int attacks;
+
+        EveryNth(int n, String special) {
+            this.n = n;
+            this.special = special;
+        }
+
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (attack == null || boss.def() == null || !QuestBossRules.nthIsSpecial(++attacks, n)) {
+                return attack;
+            }
+            for (AttackDef a : boss.def().attacks) {
+                if (a.name().equals(special)) {
+                    return a;
+                }
+            }
+            return attack;
         }
     }
 
