@@ -55,6 +55,29 @@ public final class AwakenedBosses {
         return BOSSES.contains(bossId);
     }
 
+    /**
+     * Whether a boss is outside Slayer: an awakened Desert Treasure II boss never counts as the player's task, so the black
+     * mask and slayer helmet give no bonus and its kill takes nothing off a boss task (OSRS Wiki, each boss's "Awakened
+     * mode": "The black mask and Slayer helmet (i) do not apply their usual on-task damage and accuracy bonuses";
+     * news 3 August 2023: "Slayer tasks no longer apply to the Awakened versions of the Desert Treasure II bosses").
+     */
+    public static boolean offTask(boolean awakened) {
+        return awakened;
+    }
+
+    /** Awakened bosses are immune to stat drains (OSRS Wiki, each boss's "Awakened mode"). */
+    public static boolean drainImmune(boolean awakened) {
+        return awakened;
+    }
+
+    /**
+     * An awakened boss's defence bonus against a style where it differs from the post-quest one (osrs-dps-calc "Awakened"
+     * versions: only Duke Sucellus's slash defence, +65 instead of +45), or null.
+     */
+    public static Integer defenceBonus(String bossId, com.runecraft.osrs.AttackType type) {
+        return "duke_sucellus".equals(bossId) && type == com.runecraft.osrs.AttackType.SLASH ? 65 : null;
+    }
+
     /** Kill-count key of a boss's awakened kills. */
     public static String kcKey(String bossId) {
         return bossId + "_awakened";

@@ -30,6 +30,10 @@ public final class Slayer {
             // A companion's death is part of its main boss's kill (Dawn: OSRS gives task progress and Slayer XP on Dusk's).
             return;
         }
+        if (entity instanceof com.runecraft.boss.DataBossEntity d
+                && com.runecraft.osrs.content.bosses.AwakenedBosses.offTask(d.awakened())) {
+            return; // an awakened Desert Treasure II boss is no Slayer task kill (OSRS Wiki)
+        }
         if (stats != null && stats.profile() != null
                 && !com.runecraft.osrs.content.bosses.SlayerBossRules.taskKill(stats.profile().id)) {
             // Araxxor's araxytes: Slayer XP while they are on task, but no task kill (OSRS Wiki).

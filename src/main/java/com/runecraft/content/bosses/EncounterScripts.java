@@ -537,6 +537,15 @@ final class EncounterScripts {
             return super.multiplier(boss) * scale;
         }
 
+        /** Awakened, his slash defence is +65 instead of +45 (osrs-dps-calc "Awakened"); his other bonuses don't change. */
+        @Override
+        public void adjustDefence(DataBossEntity boss, ServerPlayer attacker, AttackType type, com.runecraft.osrs.PlayerHitCalc.Input in) {
+            Integer awakened = boss.awakened() ? com.runecraft.osrs.content.bosses.AwakenedBosses.defenceBonus("duke_sucellus", type) : null;
+            if (awakened != null) {
+                in.targetDefenceBonus = awakened;
+            }
+        }
+
         @Override
         protected boolean driven() {
             return true;

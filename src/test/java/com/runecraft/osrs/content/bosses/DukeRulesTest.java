@@ -6,6 +6,7 @@ import com.runecraft.osrs.data.Untradeables;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -41,6 +42,21 @@ class DukeRulesTest {
         assertEquals(10_000.0, 6000 / 3 * DukeRules.SALT_XP);
         assertEquals(2, DukeRules.poisons(12, 12, 13));
         assertEquals(1, DukeRules.poisons(12, 6, 12));
+    }
+
+    @Test
+    void aVatBrewsOnePoisonAtATime() {
+        // OSRS Wiki: one batch of six of each per vat, fermenting "for several seconds" (a 6-tick recipe) before collection.
+        DukeRules.Vat vat = new DukeRules.Vat();
+        assertTrue(vat.empty());
+        assertFalse(vat.collect(0));
+        assertTrue(vat.fill(10));
+        assertFalse(vat.fill(11), "a vat holds one batch");
+        assertFalse(vat.collect(10 + DukeRules.FERMENT_TICKS - 1), "still fermenting");
+        assertEquals(1, vat.ticksLeft(10 + DukeRules.FERMENT_TICKS - 1));
+        assertTrue(vat.collect(10 + DukeRules.FERMENT_TICKS));
+        assertTrue(vat.empty());
+        assertEquals(6, DukeRules.FERMENT_TICKS);
     }
 
     @Test

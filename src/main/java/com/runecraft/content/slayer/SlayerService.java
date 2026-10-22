@@ -417,7 +417,8 @@ public final class SlayerService {
     /** True if the entity counts towards the player's current task right now (location rules included). */
     public static boolean isOnTask(ServerPlayer player, LivingEntity entity) {
         SlayerState.Profile p = profile(player);
-        if (!p.hasTask()) {
+        if (!p.hasTask() || com.runecraft.osrs.content.bosses.AwakenedBosses.offTask(entity instanceof com.runecraft.boss.DataBossEntity b
+                && b.awakened())) {
             return false;
         }
         if (!counts(p.task, MonsterStats.of(entity), p.master)) {

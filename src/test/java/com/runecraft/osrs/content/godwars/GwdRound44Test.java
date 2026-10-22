@@ -105,6 +105,36 @@ class GwdRound44Test {
         }
     }
 
+    private static int rarity(MonsterDef m, String item) {
+        for (com.runecraft.osrs.data.Drop d : m.drops) {
+            if (d.item().equals(item)) {
+                return d.rarity();
+            }
+        }
+        return -1;
+    }
+
+    @Test
+    void prisonFollowersDropTheWikiZarosTables() {
+        // OSRS Wiki: the Zaros versions of the spiritual creatures and the Ancient Prison's blood reavers.
+        for (String id : new String[]{"gwd_spiritual_warrior_zaros", "gwd_spiritual_ranger_zaros", "gwd_spiritual_mage_zaros",
+                "gwd_blood_reaver"}) {
+            MonsterDef m = ContentRegistry.monster(id);
+            assertNotNull(m, id);
+            assertEquals(-1, rarity(m, "bones"), id + ": spiritual creatures and reavers leave no bones");
+            for (String piece : new String[]{"mask", "top", "legs", "gloves", "boots"}) {
+                assertEquals(640, rarity(m, "ancient_ceremonial_" + piece), id + " " + piece);
+            }
+            assertEquals(128, rarity(m, "nihil_shard"), id + " nihil shards 1/128");
+        }
+        assertEquals(128, rarity(ContentRegistry.monster("gwd_spiritual_mage_zaros"), "dragon_boots"));
+        assertEquals(14, rarity(ContentRegistry.monster("gwd_spiritual_mage_zaros"), "grimy_torstol"));
+        assertEquals(68, rarity(ContentRegistry.monster("gwd_spiritual_warrior_zaros"), "grimy_torstol"));
+        assertEquals(1, rarity(ContentRegistry.monster("gwd_blood_reaver"), "malicious_ashes"));
+        assertEquals(112, rarity(ContentRegistry.monster("gwd_blood_reaver"), "clue_scroll_hard"));
+        assertEquals(128, rarity(ContentRegistry.monster("gwd_spiritual_ranger_zaros"), "shark"));
+    }
+
     @Test
     void nexAndHerReaversMatchTheWiki() {
         BossDef nex = ContentRegistry.boss("nex");
