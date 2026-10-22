@@ -242,6 +242,9 @@ final class DungeonsKandarin {
      * against 5 in the open chamber, kept by Jelly the mountain troll). The chambers are laid out by
      * hand, so the task-only cavern's place is approx.
      */
+    /** Kurask respawn after 15 ticks (OSRS Wiki infobox). */
+    static final int KURASK_RESPAWN = 15;
+
     static Dungeons.Dungeon fremennikSlayerDungeon() {
         Cave c = new Cave("dng_fremennik_slayer_dungeon", "Fremennik Slayer Dungeon", mc("stone"), mc("cobblestone"), mc("glowstone"));
         int f = 22;
@@ -276,7 +279,8 @@ final class DungeonsKandarin {
             int[] p = centres[i];
             c.pillar(p[0] - 8, p[1] - 6, f, 4, mc("cobblestone"));
             c.pillar(p[0] + 8, p[1] + 6, f, 4, mc("mossy_cobblestone"));
-            c.camp(p[0] - 11, p[1] - 9, p[0] + 11, p[1] + 9, f, 5, 25, chambers[i]);
+            int respawn = chambers[i][0].equals("kurask") ? KURASK_RESPAWN : 25;
+            c.camp(p[0] - 11, p[1] - 9, p[0] + 11, p[1] + 9, f, 5, respawn, chambers[i]);
         }
         // The strange floor (81) from the cave crawlers to the pyrefiends and the narrow crevice (62) from the
         // basilisks to the turoth.
@@ -284,7 +288,7 @@ final class DungeonsKandarin {
         c.shortcut("fremennik_slayer_crevice", centres[4][0] + 10, centres[4][1] + 8, f, centres[6][0] - 10, centres[6][1] - 8, f);
         c.pillar(kurask[0] - 6, kurask[1] + 27, f, 4, mc("mossy_cobblestone"));
         c.pillar(kurask[0] + 6, kurask[1] + 27, f, 4, mc("cobblestone"));
-        c.camp(taskOnly[0] + 2, taskOnly[1] + 2, taskOnly[2] - 2, taskOnly[3] - 2, f, 9, 25, "kurask");
+        c.camp(taskOnly[0] + 2, taskOnly[1] + 2, taskOnly[2] - 2, taskOnly[3] - 2, f, 9, KURASK_RESPAWN, "kurask");
         c.taskOnly("kurask", "Jelly", taskOnly[0], taskOnly[1], taskOnly[2], taskOnly[3], f, 7);
         c.entrance(ox, oz, f, mc("spruce_planks"), mc("cobblestone"), 'n');
         return c.build();

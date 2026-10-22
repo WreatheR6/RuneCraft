@@ -265,6 +265,9 @@ final class DungeonsAsgarnia {
      * players on a skeletal wyvern task fight; added 21 January 2016). The dungeon is laid out by hand
      * (not on cache tiles), so the upper area's place is approx.
      */
+    /** Skeletal wyverns respawn after 15 ticks (OSRS Wiki infobox). */
+    static final int SKELETAL_WYVERN_RESPAWN = 15;
+
     static Dungeons.Dungeon iceDungeon() {
         Cave c = new Cave("dng_asgarnian_ice_dungeon", "Asgarnian Ice Dungeon", mc("packed_ice"), mc("snow_block"), mc("sea_lantern"));
         int f = 26;
@@ -297,11 +300,12 @@ final class DungeonsAsgarnia {
         c.camp(lx - 40, lz - 14, lx - 18, lz + 14, f, 4, 25, "pirate", "mugger");
         c.camp(lx + 22, lz - 4, lx + 42, lz + 18, f, 4, 25, "hobgoblin");
         c.camp(lx + 12, lz - 68, lx + 68, lz - 22, f, 7, 25, "ice_warrior", "ice_giant");
-        c.camp(lx + 92, lz - 74, lx + 138, lz - 22, f, 4, 50, "skeletal_wyvern");
+        // OSRS Wiki: 22 skeletal wyverns in all, 8 in the open lair and 14 in the upper area; they respawn after 15 ticks.
+        c.camp(lx + 92, lz - 74, lx + 138, lz - 22, f, 8, SKELETAL_WYVERN_RESPAWN, "skeletal_wyvern");
         // Two ice pillars to safespot behind (OSRS Wiki shows a safespot in the upper area), clear of the camp's centre.
         c.pillar(lx + 96, lz - 93, up, 7, mc("blue_ice"));
         c.pillar(lx + 112, lz - 93, up, 7, mc("blue_ice"));
-        c.camp(lx + 88, lz - 102, lx + 120, lz - 84, up, 14, 50, "skeletal_wyvern");
+        c.camp(lx + 88, lz - 102, lx + 120, lz - 84, up, 14, SKELETAL_WYVERN_RESPAWN, "skeletal_wyvern");
         c.taskOnly("skeletal_wyverns", "Pieve", lx + 86, lz - 104, lx + 122, lz - 82, up, 7);
         return c.build();
     }

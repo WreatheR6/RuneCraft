@@ -637,6 +637,11 @@ final class SlayerChecks {
             if (area.guardian() == null ? own == null || !said.equals(own) : !said.startsWith(area.guardian())) {
                 throw failure("no Slayer guardian speaks for " + area.dungeon() + ": " + said);
             }
+            // 1b. Lured out of its area after a player (its spawn point stays inside), it is still task-only.
+            String lured = luredOutRefused(mob, area, said);
+            if (lured != null) {
+                throw failure(lured);
+            }
             // 2. The task from a master who assigns it, talked to for it.
             boolean wild = com.runecraft.world.Gielinor.wildernessLevel(mob) > 0;
             SlayerMasters.Master master = masterFor(spot.task(), wild);
@@ -697,6 +702,40 @@ final class SlayerChecks {
             prof.storedRemaining = 0;
             c.home();
         }
+    }
+
+    /**
+     * Stands the task-only {@code mob} a block outside its area (the nearest side that is in no task-only area), tries the
+     * off-task hits there and puts it back: null when the guardian still refused them, else what went wrong. Nothing ticks
+     * in between, so the wall it may stand in doesn't hurt it.
+     */
+    private String luredOutRefused(LivingEntity mob, Dungeons.TaskOnlyArea area, String said) {
+        BlockPos from = mob.blockPosition();
+        int y = from.getY();
+        int[][] sides = {{area.x1() - 1, from.getZ()}, {area.x2() + 1, from.getZ()}, {from.getX(), area.z1() - 1},
+                {from.getX(), area.z2() + 1}};
+        for (int[] s : sides) {
+            if (Dungeons.taskOnlyArea(s[0], y, s[1]) != null || !c.world.hasChunk(s[0] >> 4, s[1] >> 4)) {
+                continue;
+            }
+            double bx = mob.getX();
+            double by = mob.getY();
+            double bz = mob.getZ();
+            float hp = mob.getHealth();
+            try {
+                mob.setPos(s[0] + 0.5, y, s[1] + 0.5);
+                String denied = com.runecraft.combat.CombatHooks.deniedDamage(p(), mob);
+                realAttack(mob);
+                if (!said.equals(denied) || CombatHandler.applyDamage(p(), mob, 3) != 0 || mob.getHealth() < hp) {
+                    return "a " + area.task() + " lured " + s[0] + "," + s[1] + " out of " + area.dungeon()
+                            + "'s task-only area was hurt off task (" + denied + ")";
+                }
+                return null;
+            } finally {
+                mob.setPos(bx, by, bz);
+            }
+        }
+        return null; // walled in by other task-only areas on every side
     }
 
     // ------------------------------------------------------------------ rewards (round 44)

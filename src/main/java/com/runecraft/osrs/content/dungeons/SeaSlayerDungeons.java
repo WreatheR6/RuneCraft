@@ -19,7 +19,10 @@ import static com.runecraft.osrs.content.dungeons.Cave.mc;
  */
 final class SeaSlayerDungeons {
     static final int RESPAWN = CacheDungeons.RESPAWN;
-    static final int DRAGON_RESPAWN = CacheDungeons.DRAGON_RESPAWN;
+    /** Frost dragons respawn after 7 ticks (OSRS Wiki infobox; 4.2 s since 3 December 2025, down from 18 s). */
+    static final int FROST_DRAGON_RESPAWN = 7;
+    /** Chilled jellies respawn after 15 ticks (OSRS Wiki infobox). */
+    static final int CHILLED_JELLY_RESPAWN = 15;
 
     /** Grimstone's cave entrance (2912, 4066) over the instance tile (2912, 10466). */
     static final int GRIMSTONE_DY = 4066 - 10466;
@@ -66,8 +69,8 @@ final class SeaSlayerDungeons {
         }
         c.entrance(s.x(2912), s.z(10466), f, mc("polished_deepslate"), mc("packed_ice"), 'w');
         s.taskOnly(GRIMSTONE_WEST, f, 8, "frost_dragons", null);
-        s.camps(rooms, f, DRAGON_RESPAWN, "frost_dragon", FROST_DRAGONS);
-        s.camps(rooms, f, RESPAWN, "chilled_jelly", GRIMSTONE_JELLIES);
+        s.camps(rooms, f, FROST_DRAGON_RESPAWN, "frost_dragon", FROST_DRAGONS);
+        s.camps(rooms, f, CHILLED_JELLY_RESPAWN, "chilled_jelly", GRIMSTONE_JELLIES);
         return c.build();
     }
 
@@ -84,7 +87,7 @@ final class SeaSlayerDungeons {
         c.carve();
         c.entrance(s.x(3120), s.z(8878), f, mc("sandstone"), mc("smooth_sandstone"), 'w');
         s.multi(south, f, 7);
-        s.camps(rooms, f, RESPAWN, "gryphon", GRYPHONS_WEST);
+        s.camps(rooms, f, RESPAWN, "gryphon", GRYPHONS_WEST); // the wiki gives no gryphon respawn: approx
         return c.build();
     }
 

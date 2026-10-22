@@ -36,6 +36,17 @@ class TaskOnlyAreasTest {
         return out;
     }
 
+    /** The respawn times (game ticks) of the dungeon's camps holding {@code creature}. */
+    private static java.util.Set<Integer> respawns(String dungeon, String creature) {
+        java.util.Set<Integer> out = new java.util.TreeSet<>();
+        for (Dungeons.Camp c : Dungeons.camps()) {
+            if (c.dungeon().equals(dungeon) && c.creatures().contains(creature)) {
+                out.add(c.respawnTicks());
+            }
+        }
+        return out;
+    }
+
     private static Dungeons.TaskOnlyArea areaOf(String dungeon, String creature, boolean taskOnly) {
         for (Dungeons.Camp c : Dungeons.camps()) {
             if (c.dungeon().equals(dungeon) && c.creatures().contains(creature)) {
@@ -158,6 +169,9 @@ class TaskOnlyAreasTest {
         assertNull(a.guardian());
         assertTrue(Dungeons.TASK_ONLY_LINES.get(d).startsWith("You feel a strange coldness"));
         assertFalse(MultiCombat.isMultiAtBlock(a.centreX(), a.y1() + 1, a.centreZ()), "single-way");
+        // Infoboxes: frost dragons respawn after 7 ticks (4.2 s since 3 December 2025), chilled jellies after 15.
+        assertEquals(java.util.Set.of(7), respawns(d, "frost_dragon"));
+        assertEquals(java.util.Set.of(15), respawns(d, "chilled_jelly"));
     }
 
     @Test
@@ -178,7 +192,10 @@ class TaskOnlyAreasTest {
         // OSRS Wiki "Asgarnian Ice Dungeon": fourteen more skeletal wyverns up the icy steps, task-only (Pieve).
         String d = "dng_asgarnian_ice_dungeon";
         assertEquals(Map.of("skeletal_wyvern", 14), taskOnlyCaps(d, true));
-        assertEquals(4, taskOnlyCaps(d, false).get("skeletal_wyvern"));
+        // 22 in all (the wiki's monster table): 8 in the open lair (the LocLine's blue pins), 14 upstairs.
+        assertEquals(8, taskOnlyCaps(d, false).get("skeletal_wyvern"));
+        assertEquals(22, taskOnlyCaps(d, false).get("skeletal_wyvern") + taskOnlyCaps(d, true).get("skeletal_wyvern"));
+        assertEquals(java.util.Set.of(15), respawns(d, "skeletal_wyvern"));
         Dungeons.TaskOnlyArea a = areaOf(d, "skeletal_wyvern", true);
         assertEquals("Pieve", a.guardian());
         assertEquals("skeletal_wyverns", a.task());
@@ -190,6 +207,7 @@ class TaskOnlyAreasTest {
         String d = "dng_fremennik_slayer_dungeon";
         assertEquals(Map.of("kurask", 9), taskOnlyCaps(d, true));
         assertEquals(5, taskOnlyCaps(d, false).get("kurask"));
+        assertEquals(java.util.Set.of(15), respawns(d, "kurask"));
         Dungeons.TaskOnlyArea a = areaOf(d, "kurask", true);
         assertEquals("Jelly", a.guardian());
         assertEquals("kurask", a.task());

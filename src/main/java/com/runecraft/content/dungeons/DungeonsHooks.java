@@ -234,6 +234,12 @@ public final class DungeonsHooks implements ModuleHooks {
         }
         BlockPos at = target.blockPosition();
         Dungeons.TaskOnlyArea area = Dungeons.taskOnlyArea(at.getX(), at.getY(), at.getZ());
+        // A task-only monster stays task-only when it chases a player out of its area (in OSRS it never leaves it): its
+        // spawn point decides too.
+        BlockPos home = target instanceof net.minecraft.world.entity.Mob mob ? com.runecraft.entity.MonsterHome.get(mob) : null;
+        if (area == null && home != null) {
+            area = Dungeons.taskOnlyArea(home.getX(), home.getY(), home.getZ());
+        }
         if (area == null) {
             return null;
         }
