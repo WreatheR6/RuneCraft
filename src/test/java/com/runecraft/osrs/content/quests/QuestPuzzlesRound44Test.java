@@ -411,4 +411,35 @@ class QuestPuzzlesRound44Test {
             assertEquals(cells, variants.get(i).solutions().get(0));
         }
     }
+
+    /**
+     * Underground Pass (wiki): every grid path starts at the east edge before the middle row, never goes back east, never steps
+     * north or south in the middle column, stays on the grid without crossing itself, and leaves it to the west.
+     */
+    @Test
+    void undergroundPassGridPathsFollowTheWikisRules() {
+        assertTrue(hasPuzzle("underground_pass", ElfQuests.UP_GRID));
+        assertEquals(4, BOOK.spec("underground_pass").stages.size(), "the saved stage count");
+        List<Variant> variants = ElfQuests.UP_GRID.rooms.get(0).variants();
+        assertEquals(ElfQuests.UP_GRID_PATHS.length, variants.size());
+        for (int[] path : ElfQuests.UP_GRID_PATHS) {
+            int row = 2;
+            int col = -1;
+            java.util.Set<Integer> seen = new java.util.HashSet<>();
+            for (int i = 0; i < path.length; i++) {
+                assertTrue(col < 5, "the path has left the grid already");
+                if (path[i] == 0) {
+                    col++;
+                } else {
+                    assertTrue(col >= 0 && col != 2, "no sidestep before the grid or in the middle column");
+                    row += path[i] == 1 ? -1 : 1;
+                }
+                assertTrue(row >= 0 && row < 5, "on the grid");
+                if (col < 5) {
+                    assertTrue(seen.add(row * 5 + col), "the path never crosses itself");
+                }
+            }
+            assertEquals(5, col, "the path leaves the grid to the west");
+        }
+    }
 }

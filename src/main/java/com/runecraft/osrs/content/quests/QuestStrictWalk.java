@@ -43,7 +43,7 @@ public final class QuestStrictWalk {
             // round 44: puzzle quests given their real steps and puzzles
             "the_golem", "hazeel_cult", "the_curse_of_arrav", "defender_of_varrock", "the_blood_moon_rises", "grim_tales",
             "the_fremennik_exiles", "the_heart_of_darkness", "the_final_dawn", "enakhras_lament",
-            "sins_of_the_father");
+            "sins_of_the_father", "underground_pass");
 
     private QuestStrictWalk() {
     }
