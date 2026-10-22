@@ -497,13 +497,30 @@ public final class BossWalks {
             throw fail("the new moon didn't bring Searing Rays but " + m.special);
         }
         m.curse(p).remove(200);
-        int ticks = until(boss, d, 24, () -> {
-            d.walkTo(m.shelter(boss), boss);
-            return m.special == null;
-        });
-        if (ticks < 0) {
+        // Round 44: watched every Minecraft tick. The shield moves an eighth of a turn every 2 game ticks, right after its rays
+        // fire; a reaction time after it moves the player steps into its new shelter (a ray misses within 1.6 blocks of its
+        // middle: the player aims 0.4 from it), judged against the 2 game ticks to the next rays. Followed a game tick at a
+        // time, a move just after a check left the player standing still for its first 12 MC.
+        int mc = 0;
+        Vec3 lit = m.shelter(boss);
+        while (m.special != null && mc < 24 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK) {
+            Vec3 s = m.shelter(boss);
+            if (s.distanceToSqr(lit) > 0.04) {
+                lit = s;
+                Vec3 off = p.position().subtract(s).multiply(1, 0, 1);
+                Vec3 into = off.lengthSqr() < 1e-4 ? s : s.add(off.normalize().scale(0.4));
+                long before = com.runecraft.action.ActionManager.mcTick();
+                d.walkOut("searing_rays", into, 0, 2 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK, boss);
+                mc += (int) (com.runecraft.action.ActionManager.mcTick() - before);
+                continue;
+            }
+            d.mcTicks(boss, 1);
+            mc++;
+        }
+        if (m.special != null) {
             throw fail("rays: the shield never finished its turn");
         }
+        int ticks = mc / com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK;
         if (m.curse(p).stacks() >= MoonsRules.RAY_CURSE) {
             throw fail("rays: a ray found the player behind the shield (" + m.curse(p).stacks() + " curse stacks)");
         }
