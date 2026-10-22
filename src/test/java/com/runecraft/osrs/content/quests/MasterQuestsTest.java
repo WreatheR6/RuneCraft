@@ -146,7 +146,7 @@ class MasterQuestsTest {
     void dragonSlayerWalksMelzarsMazeAndTheMagicDoor() {
         inOrder("dragon_slayer_i", "talk guildmaster", "talk oziach", "talk guildmaster",
                 "reach melzars_maze", "kill zombie_rat", "kill maze_ghost", "kill maze_skeleton", "kill maze_zombie", "kill melzar_the_mad",
-                "kill maze_lesser_demon", "talk wormbrain", "talk oracle", "reach dwarven_mine_north", "talk klarense", "talk klarense", "talk ned",
+                "kill maze_lesser_demon", "talk wormbrain", "talk oracle", "puzzle dwarven_mine_north", "talk klarense", "talk klarense", "talk ned",
                 "kill elvarg", "talk oziach");
         BossDef elvarg = ContentRegistry.boss("elvarg");
         assertTrue(elvarg.attacks.stream().anyMatch(a -> a.name().equals("dragonfire") && a.maxHit() == QuestBossRules.ELVARG_DRAGONFIRE_MAX

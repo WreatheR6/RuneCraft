@@ -345,4 +345,70 @@ class QuestPuzzlesRound44Test {
                 "only melee harms Ennius");
         assertTrue(q.triggers().stream().noneMatch(t -> "fortis_colosseum".equals(t.target)), "no colosseum battle in the quest");
     }
+
+    /**
+     * Enakhra's Lament (wiki quick guide, quest-helper): any head but the player's own, the limbs to their doors (right arm
+     * north-east, left leg north-west, left arm south-west, right leg south-east), the rooms around the barrier, and the six
+     * braziers' fuels (logs south-west, oak south, willow south-east, maple north-west, a candle north, coal north-east).
+     */
+    @Test
+    void enakhrasLamentPuzzlesTakeTheWikiAnswers() {
+        QuestSpec q = BOOK.spec("enakhras_lament");
+        assertEquals(6, q.stages.size(), "the saved stage count");
+        for (QuestPuzzle p : List.of(MahjarratQuests.EL_HEAD, MahjarratQuests.EL_DOORS, MahjarratQuests.EL_ROOMS,
+                MahjarratQuests.EL_BRAZIERS)) {
+            assertTrue(hasPuzzle("enakhras_lament", p), p.key);
+        }
+        Variant head = MahjarratQuests.EL_HEAD.rooms.get(0).variants().get(0);
+        assertEquals(-1, head.check(List.of(0)), "not the player's own head");
+        assertEquals(1, head.check(List.of(2)));
+        Variant doors = MahjarratQuests.EL_DOORS.rooms.get(0).variants().get(0);
+        assertEquals(List.of("Stone right arm", "Stone left leg", "Stone left arm", "Stone right leg"),
+                doors.solutions().get(0).stream().map(doors.options()::get).toList());
+        Variant rooms = MahjarratQuests.EL_ROOMS.rooms.get(0).variants().get(0);
+        assertEquals(List.of("Cast a wind bolt", "Give him food", "Cast a fire bolt"),
+                rooms.solutions().get(0).stream().map(rooms.options()::get).toList());
+        Variant braziers = MahjarratQuests.EL_BRAZIERS.rooms.get(0).variants().get(0);
+        assertEquals(List.of("Logs", "Oak logs", "Willow logs", "Maple logs", "A candle", "Coal"),
+                braziers.solutions().get(0).stream().map(braziers.options()::get).toList());
+        assertTrue(q.triggers().stream().anyMatch(t -> t.kind == QuestSpec.Trigger.Kind.KILL && t.target.equals("quest_boneguard")));
+    }
+
+    /** Dragon Slayer I (wiki): the Oracle's riddle names the four things Thalzar's magic door takes, in any order. */
+    @Test
+    void dragonSlayerMagicDoorTakesTheRiddlesFourThings() {
+        assertTrue(hasPuzzle("dragon_slayer_i", F2pQuests.DS1_MAGIC_DOOR));
+        Variant door = F2pQuests.DS1_MAGIC_DOOR.rooms.get(0).variants().get(0);
+        List<Integer> four = List.of(door.options().indexOf("Unfired bowl"), door.options().indexOf("Silk"),
+                door.options().indexOf("Lobster pot"), door.options().indexOf("Wizard's mind bomb"));
+        assertEquals(1, door.check(four), "any order");
+        assertEquals(-1, door.check(List.of(door.options().indexOf("Bowl"))), "a fired bowl won't do");
+        var trigger = BOOK.spec("dragon_slayer_i").triggers().stream().filter(t -> t.puzzle == F2pQuests.DS1_MAGIC_DOOR).findFirst()
+                .orElseThrow();
+        assertTrue(trigger.take.keySet().containsAll(List.of("unfired_bowl", "silk", "lobster_pot", "wizards_mind_bomb")));
+    }
+
+    /** Sins of the Father (wiki): the mausoleum door is a Kakurasu, and every board has exactly one shading. */
+    @Test
+    void sinsOfTheFatherMausoleumDoorIsAKakurasu() {
+        assertTrue(hasPuzzle("sins_of_the_father", MorytaniaQuests.SOTF_MAUSOLEUM));
+        assertEquals(5, BOOK.spec("sins_of_the_father").stages.size(), "the saved stage count");
+        List<Variant> variants = MorytaniaQuests.SOTF_MAUSOLEUM.rooms.get(0).variants();
+        assertEquals(MorytaniaQuests.SOTF_BOARDS.size(), variants.size());
+        for (int i = 0; i < variants.size(); i++) {
+            MorytaniaQuests.SotfBoard board = MorytaniaQuests.SOTF_BOARDS.get(i);
+            List<List<Integer>> all = MorytaniaQuests.sotfKakurasu(board.rows(), board.cols());
+            assertEquals(1, all.size(), "board " + i + " has one shading");
+            List<Integer> cells = all.get(0);
+            int[] rows = new int[5];
+            int[] cols = new int[5];
+            for (int cell : cells) {
+                rows[cell / 5] += cell % 5 + 1;
+                cols[cell % 5] += cell / 5 + 1;
+            }
+            assertArrayEquals(board.rows(), rows);
+            assertArrayEquals(board.cols(), cols);
+            assertEquals(cells, variants.get(i).solutions().get(0));
+        }
+    }
 }

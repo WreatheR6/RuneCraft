@@ -511,9 +511,10 @@ final class MorytaniaQuests {
                 .say("* Your Ivandis flail cuts the vampyres down. You reach Burgh de Rott and Ivan heads for the boathouse.")
                 .talk("ivan_strom").stay().needFlag("sotf_bridge").unlessFlag("sotf_trek").spawn("sotf_juvinate")
                 .say("A vampyre is still on us!")
-                .reach("quest_icyene_graveyard", 8).stay().needFlag("sotf_trek").unlessFlag("sotf_graveyard").flag("sotf_graveyard")
-                .say("* Ivan rows you to the Icyene graveyard. You solve the mausoleum door, and Vertida, Kael, Radigad, Polmafi, Ivan and",
-                        "* Veliaf each have their say.")
+                .puzzle("quest_icyene_graveyard", SOTF_MAUSOLEUM).stay().needFlag("sotf_trek").unlessFlag("sotf_mausoleum").flag("sotf_mausoleum")
+                .say("* Ivan rows you to the Icyene graveyard. The mausoleum door's strange lock clicks open.")
+                .reach("quest_icyene_graveyard", 8).stay().needFlag("sotf_mausoleum").unlessFlag("sotf_graveyard").flag("sotf_graveyard")
+                .say("* In the mausoleum Vertida, Kael, Radigad, Polmafi, Ivan and Veliaf each have their say.")
                 .reach("sotf_daeyalt_mine", 8).stay().needFlag("sotf_graveyard").unlessFlag("sotf_mine").needTool("pickaxe").flag("sotf_mine")
                 .say("* The Vyrewatch send you to the mines. You mine 15 daeyalt ore into the cart, then slip through a slashed tapestry",
                         "* to Safalaan's hideout.")
@@ -573,6 +574,91 @@ final class MorytaniaQuests {
      * The arboretum's valves (wiki quick guide's table): the old note names the gallons the tree needs, 7 per turn of the north
      * valve and 4 per turn of the south valve (0-5 each), so each amount has one setting.
      */
+    /** A mausoleum door board: the totals beside its five rows (top to bottom) and under its five columns (left to right). */
+    record SotfBoard(int[] rows, int[] cols) {
+    }
+
+    /** Boards with one shading each ({@link #sotfKakurasu} checks it). // approx: the door's boards differ per player */
+    static final java.util.List<SotfBoard> SOTF_BOARDS = java.util.List.of(
+            new SotfBoard(new int[]{10, 8, 7, 13, 1}, new int[]{12, 5, 4, 5, 10}),
+            new SotfBoard(new int[]{6, 14, 5, 10, 4}, new int[]{7, 3, 2, 15, 6}),
+            new SotfBoard(new int[]{14, 11, 9, 2, 2}, new int[]{2, 15, 6, 4, 3}),
+            new SotfBoard(new int[]{6, 3, 15, 5, 12}, new int[]{9, 9, 6, 8, 12}),
+            new SotfBoard(new int[]{6, 8, 10, 7, 13}, new int[]{5, 8, 10, 6, 14}),
+            new SotfBoard(new int[]{11, 11, 1, 5, 9}, new int[]{3, 8, 5, 8, 7}),
+            new SotfBoard(new int[]{4, 9, 5, 7, 7}, new int[]{3, 4, 8, 5, 9}),
+            new SotfBoard(new int[]{6, 15, 11, 3, 2}, new int[]{3, 11, 7, 5, 5}));
+
+    /**
+     * Every shading of the 5x5 Kakurasu lock that meets the totals, as its shaded squares (row * 5 + column, row by row): a
+     * shaded square adds its column number (1-5) to its row's total and its row number to its column's.
+     */
+    static java.util.List<java.util.List<Integer>> sotfKakurasu(int[] rows, int[] cols) {
+        java.util.List<java.util.List<Integer>> out = new java.util.ArrayList<>();
+        sotfSearch(rows, cols, 0, new int[5], out);
+        return out;
+    }
+
+    private static void sotfSearch(int[] rows, int[] cols, int r, int[] masks, java.util.List<java.util.List<Integer>> out) {
+        if (r == 5) {
+            for (int c = 0; c < 5; c++) {
+                int sum = 0;
+                for (int i = 0; i < 5; i++) {
+                    sum += (masks[i] >> c & 1) * (i + 1);
+                }
+                if (sum != cols[c]) {
+                    return;
+                }
+            }
+            java.util.List<Integer> cells = new java.util.ArrayList<>();
+            for (int i = 0; i < 5; i++) {
+                for (int c = 0; c < 5; c++) {
+                    if ((masks[i] >> c & 1) == 1) {
+                        cells.add(i * 5 + c);
+                    }
+                }
+            }
+            out.add(cells);
+            return;
+        }
+        for (int mask = 0; mask < 32; mask++) {
+            int sum = 0;
+            for (int c = 0; c < 5; c++) {
+                sum += (mask >> c & 1) * (c + 1);
+            }
+            if (sum == rows[r]) {
+                masks[r] = mask;
+                sotfSearch(rows, cols, r + 1, masks, out);
+            }
+        }
+    }
+
+    /**
+     * Sins of the Father (wiki: the mausoleum door's lock is a Kakurasu: mark squares so each row's and column's marked numbers
+     * add up to its total; it differs per player). The squares are marked row by row, left to right.
+     */
+    static final QuestPuzzle SOTF_MAUSOLEUM = sotfMausoleum();
+
+    private static QuestPuzzle sotfMausoleum() {
+        String[] options = new String[25];
+        for (int i = 0; i < 25; i++) {
+            options[i] = "Row " + (i / 5 + 1) + ", square " + (i % 5 + 1);
+        }
+        QuestPuzzle.Builder b = QuestPuzzle.builder("sotf_mausoleum").room("door");
+        for (SotfBoard board : SOTF_BOARDS) {
+            java.util.List<Integer> cells = sotfKakurasu(board.rows(), board.cols()).get(0);
+            b.variant(null).prompt("* There's a strange lock on the mausoleum door: a grid of five rows of five squares. A marked square "
+                                    + "counts its column's number (1 to 5, left to right) toward its row, and its row's number (1 to 5, top "
+                                    + "to bottom) toward its column.",
+                            "* The rows must total, top to bottom: " + java.util.Arrays.toString(board.rows()).replaceAll("[\\[\\]]", "") + ".",
+                            "* The columns must total, left to right: " + java.util.Arrays.toString(board.cols()).replaceAll("[\\[\\]]", "")
+                                    + ".",
+                            "* Mark the squares row by row, left to right.")
+                    .options(options).solution(cells.stream().mapToInt(Integer::intValue).toArray());
+        }
+        return b.failLines("* The lock's squares flash red and clear.").build();
+    }
+
     static final QuestPuzzle SOTF_VALVES = sotfValves();
 
     private static QuestPuzzle sotfFollow() {

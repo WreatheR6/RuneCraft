@@ -38,6 +38,13 @@ final class MahjarratQuests {
         makingFriendsWithMyArm(b);
     }
 
+    /**
+     * Enakhra's Lament, after the wiki walkthrough and quest-helper's steps: Lazim's statue (a base from 32kg of sandstone, a
+     * body from 20kg, a granite head of the player's choosing), the fall into the temple, the limbs chiselled off the statue to
+     * open the four outer doors ({@link #EL_DOORS}), the sigils for the central room, the camel head moulded in soft clay for
+     * the pedestal, the four rooms around the barrier ({@link #EL_ROOMS}, the braziers {@link #EL_BRAZIERS}), the first Boneguard
+     * crumbled, and Akthanakos, the second Boneguard, freed by finishing the wall that hides him from Enakhra.
+     */
     private static void enakhrasLament(QuestBook b) {
         b.spot("lazim_quarry", "Desert Quarry (Lazim)", 3191, 2926); // north-east of the Desert Quarry (cache tile)
         Cast.npc(b, "lazim", "Lazim", "lazim_quarry", 0, 0, Cast.BROWN, 0xC0A060);
@@ -56,23 +63,128 @@ final class MahjarratQuests {
                 .xp(Skill.CRAFTING, 7000).xp(Skill.MINING, 7000).xp(Skill.FIREMAKING, 7000).xp(Skill.MAGIC, 7000).reward("camulet")
                 .unlock("Access to Enakhra's Temple; talking to camels with the camulet")
                 .stage("I can start this quest by speaking to Lazim just north-east of the Desert Quarry. (Requires 50 Crafting, 45 Firemaking, 43 Prayer, 39 Magic.)")
-                .talk("lazim").say("I need a statue carved for this ancient temple. Bring me sandstone and granite from the Desert Quarry and I'll show you where to carve.")
-                .stage("I should carve a statue for Lazim from 10kg of sandstone and 5kg of granite, using a chisel.")
-                .talk("lazim").take("sandstone_10kg", "granite_5kg").need("chisel").give("quest_sandstone_statue")
-                .say("*You carve the head and body of a woman.* Excellent... she looks just like Enakhra. Now place it within.")
-                .missing("I need 10kg of sandstone, 5kg of granite and a chisel.")
-                .stage("I should set the statue in the temple and light the four braziers with fire spells and logs.")
-                .reach("quest_enakhras_temple", 6).take("quest_sandstone_statue", "logs:4", "fire_rune:4").need("tinderbox")
-                .say("* The statue clicks into place and the braziers roar. The ancient doors grind open... and a Boneguard rises from the dust!")
-                .missing("* I need the statue, 4 logs, 4 fire runes and a tinderbox to light the temple's braziers.")
-                .stage("I must defeat the Boneguard.")
-                .kill("quest_boneguard").say("* The Boneguard collapses. A camel in the next chamber begins to speak: it is the Mahjarrat Akthanakos, cursed by Enakhra!")
-                .stage("I should speak to Akthanakos and free him from Enakhra's curse.")
-                .talk("akthanakos").say("Lazim is Enakhra in disguise! She cursed me into this camel form. *You break the spell.* Free at last. Take this camulet, friend.",
-                        "* Enakhra and Akthanakos vanish, to settle their quarrel elsewhere.")
-                .stage("I should take a last look around the temple with Lazim gone.")
-                .reach("quest_enakhras_temple", 10).say("* The temple is silent. The camulet lets you return here, and talk to camels.");
+                .talk("lazim").say("I was a sculptor once, for royalty. Since my accident I can't hold a chisel. Help me raise a statue here, in this "
+                        + "desolate place? Bring me 32 kilograms of sandstone from the quarry.")
+                .stage("I should build Lazim's statue: 32kg of sandstone for the base, 20kg for the body and a 5kg piece of granite for "
+                        + "the head, each shaped with a chisel.")
+                // playability: Lazim takes the weights as three 10kg blocks and a 2kg one (OSRS: any pieces adding up to 32kg)
+                .talk("lazim").stay().unlessFlag("el_base").take("sandstone_10kg:3", "sandstone_2kg").need("chisel").flag("el_base")
+                .say("> I have the sandstone.", "*He binds the pieces together with a word: a 32kg block.* Chisel it into a base, and set it "
+                        + "on the flat ground here.", "* You chisel a sandstone base and set it beside Lazim.",
+                        "Now 20 kilograms more, for the body.")
+                .talk("lazim").stay().needFlag("el_base").unlessFlag("el_body").take("sandstone_10kg:2").need("chisel").flag("el_body")
+                .say("*Another block of 20kg.* The body. Try not to ruin it.", "* You chisel a sandstone body and fit it to the base.",
+                        "It's missing something... a head! Granite, from the same quarry. Whose head should it bear?")
+                .puzzle("lazim", EL_HEAD).stay().needFlag("el_body").unlessFlag("el_head")
+                .flag("el_head").say("Fine. Carve it from a 5kg piece of granite, and set it on the statue.")
+                .talk("lazim").needFlag("el_head").take("granite_5kg").need("chisel").travel("quest_enakhras_temple")
+                .say("* You chisel the granite into a head and set it on the statue. The ground gives way: the statue falls into a hole...",
+                        "* As you peer in, Lazim pushes you! You land in an ancient temple far below, beside the broken statue.",
+                        "Everything as I planned. Treasure lies above us, friend, and the doors here want stone limbs, not keys.")
+                .missing("?!el_base|Thirty-two kilograms of sandstone for the base: three 10kg blocks and a 2kg piece. And your chisel.",
+                        "?el_base|?!el_body|Twenty kilograms of sandstone for the body: two 10kg blocks.",
+                        "?el_body|?!el_head|Whose head should it bear? Tell me.",
+                        "?el_head|A 5kg piece of granite for the head, and your chisel.")
+                .stage("I'm in Enakhra's temple. I should chisel the limbs off the broken statue to open the four outer doors, take the "
+                        + "Z, R, K and M sigils for the central room, then solve the rooms around the barrier upstairs.")
+                .reach("quest_enakhras_temple", 10).stay().unlessFlag("el_limbs").need("chisel").flag("el_limbs")
+                .say("* You chisel the broken statue's arms and legs off: four stone limbs. Lazim hands back its stone head.")
+                .missing("* The statue's limbs would come away with a chisel.")
+                .puzzle("quest_enakhras_temple", EL_DOORS).stay().needFlag("el_limbs").unlessFlag("el_doors").flag("el_doors")
+                .say("* Behind the doors, visions of Enakhra: her temple finished for her lord, the Knights of Avarrocka frozen by her "
+                        + "magic, Akthanakos come to turn her, the bones she raised. On the pedestals: the Z, R and K sigils.",
+                        "* With the M sigil from your own room the consonants of Zamorak open the central room. You climb the ladder.")
+                .reach("quest_enakhras_temple", 10).stay().needFlag("el_doors").unlessFlag("el_pedestal").take("soft_clay", "granite_5kg")
+                .need("chisel").flag("el_pedestal")
+                .say("* By the ladder a pedestal has a recess. The statue's head almost fits. You press soft clay into it: a camel's head.",
+                        "* From the mould you chisel a camel head out of granite. It fits: a vision of Enakhra freezing Akthanakos.",
+                        "Well done! The barrier will open when the four rooms around it are set right: their globes will light.")
+                .missing("* The pedestal's recess is the shape of some head. A mould of soft clay, and 5kg of granite to chisel, would match it.")
+                .puzzle("quest_enakhras_temple", EL_ROOMS).stay().needFlag("el_pedestal").unlessFlag("el_rooms")
+                .reqSkill(Skill.MAGIC, 35).take("air_rune:5", "fire_rune:4", "chaos_rune:2", "bread").flag("el_rooms")
+                .say("* A wind bolt clears the furnace, a fire bolt thaws the fountain, and Pentyn eats your bread and remembers his family.",
+                        "* In the dark room six braziers wait to be relit.")
+                .missing("* The furnace and the fountain want a wind bolt and a fire bolt (5 air, 4 fire, 2 chaos runes; 35 Magic); the "
+                        + "frozen knight is starving (a loaf of bread; OSRS takes a pie, cake, pizza or potato too).")
+                .puzzle("quest_enakhras_temple", EL_BRAZIERS).needFlag("el_rooms").reqSkill(Skill.FIREMAKING, 45)
+                .take("logs", "oak_logs", "willow_logs", "maple_logs", "candle", "coal").need("tinderbox")
+                .say("* The last brazier blazes and the fourth globe lights. The magic barrier fades.")
+                .missing("?el_rooms|* The six braziers want logs, oak, willow and maple logs, a candle and some coal, and a tinderbox.")
+                .stage("I must get past the Boneguard beyond the barrier. It will not let me by unless it crumbles to dust.")
+                .kill("quest_boneguard")
+                .say("* The Boneguard collapses. Its freed spirit thanks you. Down the ladder stands a second Boneguard, held by Enakhra's spells.")
+                .stage("I should help the second Boneguard: it asks me to finish the wall that hides it from Enakhra, with stones from the "
+                        + "rubble trimmed by a chisel.")
+                .talk("akthanakos").stay().unlessFlag("el_wall_asked").flag("el_wall_asked")
+                .say("* It swings at you, and again; under Protect from Melee you hardly flinch. It lowers its club.",
+                        "Impressive. I am her slave: Enakhra tricked me into this shape. Finish my wall so she cannot see me, and I am free.",
+                        "Three loads of stone from the rubble, trimmed to fit with a chisel.")
+                .reach("quest_enakhras_temple", 10).needFlag("el_wall_asked").need("chisel")
+                .say("* You stack three loads of sandstone from the rubble on the wall and trim each to fit. Enakhra shrieks with fury.")
+                .missing("* The unfinished wall needs stones from the rubble, and a chisel to trim them.")
+                .stage("The wall is finished. I should speak to the Boneguard.")
+                .talk("akthanakos")
+                .say("* The Boneguard crumbles: it is the Mahjarrat Akthanakos, camel-headed, free after thousands of years.",
+                        "Take my amulet, friend. It speaks to camels, and brings you back here.",
+                        "* Enakhra blows the wall apart. The two Mahjarrat take their skeletal forms and leave to settle their rivalry in the North.");
     }
+
+    /**
+     * Enakhra's Lament (wiki): Lazim lets the player choose the statue's head: Lazim's own, a camel's, Zamorak's or Icthlarin's.
+     * The player's own head he won't allow.
+     */
+    static final QuestPuzzle EL_HEAD = QuestPuzzle.builder("el_head").variant(null)
+            .prompt("Whose head should the statue bear?")
+            .options("My own", "Lazim's", "A camel's", "Zamorak's", "Icthlarin's")
+            .solution(1).solution(2).solution(3).solution(4)
+            .failLines("Your head? On my statue? Certainly not. Choose again.").build();
+
+    /**
+     * Enakhra's Lament: the four outer doors open to the stone limbs (quest-helper: the right arm door to the north-east, the
+     * left leg door to the north-west, the left arm door to the south-west, the right leg door to the south-east), walked
+     * anticlockwise for the visions to come in order.
+     */
+    static final QuestPuzzle EL_DOORS = QuestPuzzle.builder("el_doors").shuffle().variant(null)
+            .prompt("* Four doors ring the temple, each with a recess cut to the shape of a stone limb. Walk them anticlockwise, "
+                            + "from the north-east, and the visions behind them come in order.",
+                    "* North-east: the recess of a right arm. North-west: of a left leg. South-west: of a left arm. South-east: of a "
+                            + "right leg.",
+                    "* Fit a limb to each door in turn.")
+            .options("Stone right arm", "Stone left arm", "Stone right leg", "Stone left leg")
+            .solution(0, 3, 1, 2)
+            .failLines("* The limb doesn't fit the recess. You take your limbs back.").build();
+
+    /**
+     * Enakhra's Lament (wiki): the four rooms around the barrier. Smoke (north-east): the furnace's grate wants a strong blast
+     * of air, a wind bolt or stronger; shadow (south-east): six braziers to relight; blood (north-west): Pentyn, a frozen knight,
+     * wants food; ice (south-west): a frozen fountain that yields only to a fire bolt or stronger.
+     */
+    static final QuestPuzzle EL_ROOMS = QuestPuzzle.builder("el_rooms").shuffle().variant(null)
+            .prompt("* Four rooms surround the barrier, each with a globe on the pedestal: unlit.",
+                    "* North-east: a furnace, its grate choked with fumes. North-west: an old knight, frozen in place, wounded and starving.",
+                    "* South-west: a fountain frozen solid; ordinary fire and swords have not touched it. South-east: six cold braziers "
+                            + "in the dark.",
+                    "* What does each room need, north-east, north-west, then south-west? (The braziers come last.)")
+            .options("Cast a wind bolt", "Cast a fire bolt", "Cast a water bolt", "Give him food", "Strike it with a sword",
+                    "Light a tinderbox")
+            .solution(0, 3, 1)
+            .failLines("* Nothing happens. The globe stays dark.").build();
+
+    /**
+     * Enakhra's Lament (wiki, quest-helper): each brazier in the shadow room shows what burned there (45 Firemaking reads them
+     * all): normal logs to the south-west, oak to the south, willow to the south-east, maple to the north-west, a candle to the
+     * north and coal to the north-east.
+     */
+    static final QuestPuzzle EL_BRAZIERS = QuestPuzzle.builder("el_braziers").shuffle().variant(null)
+            .prompt("* You look into each brazier for what once burned in it.",
+                    "* South-west: plain, pale wood ash. South: ash and a scrap of thick, ridged bark. South-east: ash and the curl of a "
+                            + "thin, drooping twig.",
+                    "* North-west: ash and a scorched winged seed. North: a hardened puddle of wax and a burnt wick. North-east: black, "
+                            + "glittering dust that smudges your fingers.",
+                    "* Relight them in that order: south-west, south, south-east, north-west, north, north-east.")
+            .options("Logs", "Oak logs", "Willow logs", "Maple logs", "A candle", "Coal")
+            .solution(0, 1, 2, 3, 4, 5)
+            .failLines("* The fuel smoulders and goes out. The braziers fall dark again.").build();
 
     private static void deviousMinds(QuestBook b) {
         Cast.npc(b, "devious_monk", "Monk", "quest_paterdomus_hills", 0, 0, Cast.FAIR, 0x6A4A2A);
