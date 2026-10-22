@@ -64,6 +64,16 @@ final class NightmareMuspahWalks {
         return d;
     }
 
+    /** Every prayer off through the prayer keys' path (round 44: walks never set the active prayers themselves). */
+    private static void prayersOff(ServerPlayer p) {
+        PlayerData data = Players.data(p);
+        for (Prayer pr : Prayer.values()) {
+            if (data.isActive(pr)) {
+                PrayerService.set(p, pr, false);
+            }
+        }
+    }
+
     private static void kill(ServerPlayer p, Mob m) {
         for (int i = 0; i < 4 && m.isAlive(); i++) {
             CombatHandler.applyDamage(p, m, (int) Math.ceil(m.getHealth()) + 1);
@@ -393,7 +403,7 @@ final class NightmareMuspahWalks {
             }
             case CURSE -> {
                 data.setPrayerPoints(Math.max(data.prayerPoints(), 50));
-                data.activePrayers().clear();
+                prayersOff(p);
                 n.curse(boss, p);
                 check(NightmareScript.CURSED.containsKey(p.getUUID()), "not cursed");
                 PrayerService.toggle(p, Prayer.PROTECT_FROM_MELEE);
@@ -417,7 +427,7 @@ final class NightmareMuspahWalks {
                 boolean freed = data.isActive(Prayer.PROTECT_FROM_MELEE) && !NightmareScript.CURSED.containsKey(p.getUUID());
                 String prayers = data.activePrayers().toString();
                 p.setPos(at.x, at.y, at.z);
-                data.activePrayers().clear();
+                prayersOff(p);
                 check(away, "a player " + (int) (NightmareScript.FIGHT_RADIUS + 16) + " blocks away still counts as in her dream");
                 check(freed, "the curse still shuffled the prayers of a player who left her dream (" + prayers + ")");
                 // Nor does it outlast its time limit.
@@ -426,7 +436,7 @@ final class NightmareMuspahWalks {
                         ActionManager.gameTick() - 1));
                 PrayerService.toggle(p, Prayer.PROTECT_FROM_MELEE);
                 boolean expired = data.isActive(Prayer.PROTECT_FROM_MELEE) && !NightmareScript.CURSED.containsKey(p.getUUID());
-                data.activePrayers().clear();
+                prayersOff(p);
                 check(expired, "the curse outlasted its time limit");
                 step(boss, p, NightmareRules.RANGED_WIND_UP);
                 return "curse";
@@ -666,7 +676,7 @@ final class NightmareMuspahWalks {
             return String.join("; ", log) + ", kc +1";
         } finally {
             if (!hadSmite) {
-                data.activePrayers().remove(Prayer.SMITE);
+                PrayerService.set(p, Prayer.SMITE, false);
             }
             sp.corruptionPending = 0;
             p.removeEffect(MobEffects.DARKNESS);
