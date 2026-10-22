@@ -35,7 +35,10 @@ public final class SlayerHooks implements ModuleHooks {
                         && !SlayerService.profile(player).unlocks.contains("broader_fletching")
                         ? "You need to learn Broader Fletching from a Slayer master first." : null);
         TormentedDemonCombat.register();
+        SlayerItemService.register();
+        SlayerPlaces.register();
         SlayerCommands.register();
+        com.runecraft.combat.CombatHooks.addDropTransformer(SlayerService::dulyNoted);
         BlockHooks.register("brimstone_chest", (player, pos, state) -> openChest(player, "brimstone_key",
                 "brimstone chest", SlayerChests.BRIMSTONE_MAIN, SlayerChests.BRIMSTONE_RARE));
         BlockHooks.register("larrans_big_chest", (player, pos, state) -> openChest(player, "larran_key",
@@ -45,6 +48,7 @@ public final class SlayerHooks implements ModuleHooks {
     private static final java.util.Set<String> WRAPPED = new java.util.HashSet<>();
 
     private static void wrapQuestMasters() {
+        wrapOtto();
         for (SlayerMasters.Master m : SlayerMasters.all()) {
             if (m.quest() == null || !WRAPPED.add(m.npcId())) {
                 continue;
@@ -58,6 +62,32 @@ public final class SlayerHooks implements ModuleHooks {
                 }
             });
         }
+    }
+
+    /**
+     * Otto Godblessed (Otto's Grotto) repairs every broken dragon hasta the player carries for free (OSRS Wiki "Broken
+     * dragon hasta"); otherwise he talks as before (Barbarian Training).
+     */
+    private static void wrapOtto() {
+        String otto = com.runecraft.osrs.content.slayer.SlayerRewards.OTTO;
+        if (!WRAPPED.add(otto)) {
+            return;
+        }
+        BiConsumer<ServerPlayer, QuestNpcEntity> before = QuestScripts.handler(otto);
+        QuestScripts.onTalk(otto, (player, npc) -> {
+            String broken = com.runecraft.osrs.content.slayer.SlayerRewards.BROKEN_HASTA;
+            int n = Inv.count(player, broken);
+            if (n > 0) {
+                Inv.remove(player, broken, n);
+                Inv.give(player, com.runecraft.osrs.content.slayer.SlayerRewards.DRAGON_HASTA, n);
+                QuestApi.say(player, "Otto Godblessed", "A fine weapon, broken by careless hands. There - it is whole again.");
+                Msg.game(player, "Otto repairs your broken dragon hasta" + (n > 1 ? "s" : "") + ".");
+            } else if (before != null) {
+                before.accept(player, npc);
+            } else {
+                QuestApi.say(player, "Otto Godblessed", "Greetings, outerlander.");
+            }
+        });
     }
 
     /**

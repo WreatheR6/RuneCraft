@@ -1248,6 +1248,10 @@ final class ItemCombatChecks {
         c.completeQuests(null);
         SlayerState.Profile prof = SlayerService.profile(p());
         SlayerService.talk(p(), master);
+        if (!prof.hasTask() && master.id().equals(com.runecraft.osrs.content.slayer.Mortimer.ID)) {
+            // Mortimer offers a choice: take the first.
+            SlayerService.chooseMortimer(p(), 1);
+        }
         if (!prof.hasTask()) {
             throw failure("gave no task to a maxed player");
         }
@@ -1265,8 +1269,13 @@ final class ItemCombatChecks {
             LivingEntity victim = spawn(type, 3, 0);
             BlockPos at = victim.blockPosition();
             String here = com.runecraft.osrs.world.TaskRegions.at(at.getX(), at.getY(), at.getZ()).name();
+            // Her task names one of its locations (or, for a task none of whose locations is built, a kingdom).
+            boolean inside = prof.region.startsWith(SlayerService.LOCATION)
+                    ? com.runecraft.osrs.content.slayer.KonarLocations.counts(prof.region.substring(SlayerService.LOCATION.length()),
+                            at.getX(), at.getY(), at.getZ(), null)
+                    : prof.region.equals(here);
             killAsPlayer(victim);
-            if (prof.remaining != before && !prof.region.equals(here)) {
+            if (prof.remaining != before && !inside) {
                 throw failure("a kill in " + here + ", outside Konar's region " + prof.region + ", counted");
             }
             note += ", outside " + prof.region + " ignored";

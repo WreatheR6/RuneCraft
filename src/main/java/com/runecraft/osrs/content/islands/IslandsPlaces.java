@@ -149,10 +149,7 @@ public final class IslandsPlaces {
         int cave = IslandsKit.CAVE_FLOOR_Y + 1;
         return List.of(
                 new Camp(FOSSIL_NORTH_COAST, 0, 0, 12, 5, SURFACE, List.of("ammonite_crab")),
-                // The long-tailed and ancient wyverns, in the dungeons module's Wyvern Cave (which keeps its own
-                // spitting and taloned wyverns).
-                new Camp(MUSHROOM_MEADOW, IslandsStructures.WYVERN_CAMP_DX, IslandsStructures.WYVERN_CAMP_DZ, 16, 4,
-                        IslandsStructures.WYVERN_CAVE_FLOOR_Y, List.of("long_tailed_wyvern", "ancient_wyvern")),
+                // The long-tailed and ancient wyverns live in the dungeons module's Wyvern Cave on their cache tiles.
                 // Cache spawns: 9 monkey guards at 2788-2805, 2775-2789 (east Marim); monkey archers all over the town.
                 new Camp(APE_ATOLL, 76, -6, 10, 4, SURFACE, List.of("monkey_guard")),
                 new Camp(APE_ATOLL, 0, 14, 10, 3, SURFACE, List.of("monkey_archer")),

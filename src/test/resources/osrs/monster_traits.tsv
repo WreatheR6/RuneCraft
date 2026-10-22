@@ -729,3 +729,5 @@ mature_custodian_stalker	Mature custodian stalker		117	190	1		yes	yes	190
 elder_custodian_stalker	Elder custodian stalker		142	250	1		yes	yes	250
 skogre	Skogre	1	44	71	2	undead	no	no	71
 rooster	Rooster	Level 3	3	7	1		yes	yes	7
+frost_dragon	Frost dragon		202	230	4	dragon,fiery	no	no	235.5
+gryphon	Gryphon		95	110	2		no	no	110

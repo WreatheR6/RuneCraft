@@ -645,7 +645,7 @@ final class EasternWilderness {
         return k.build();
     }
 
-    /** The Pirates' Hideout: walled compound on the north coast with Larran's big chest. */
+    /** The Pirates' Hideout: walled compound on the north coast (Larran's big chest is on the ship west of it). */
     static StructureDef piratesHideout() {
         EasternKit k = new EasternKit("pirates_hideout", "Pirates' Hideout").replaces("pirates_hideout");
         int g = k.g;
@@ -658,7 +658,8 @@ final class EasternWilderness {
         k.gate(3041, 3944, 3043, 3944, 4);
         k.floor(3035, 3945, 3049, 3961, "minecraft:spruce_planks");
         int[] hut = k.house(3037, 3952, 3047, 3959, 1, WILD, "south");
-        k.set((hut[0] + hut[2]) / 2, g, hut[1] + 1, "runecraft:larrans_big_chest");
+        // Larran's big chest is on the ship west of the hideout (slayer module, OSRS 3018, 3955), not in the hut.
+        k.set((hut[0] + hut[2]) / 2, g, hut[1] + 1, "minecraft:barrel[facing=up]");
         k.fill(hut[0] + 1, g, hut[1] + 1, hut[0] + 3, g, hut[1] + 1, "minecraft:barrel[facing=up]");
         k.set(bx(3036), g, bz(3946), "minecraft:barrel[facing=up]");
         k.set(bx(3037), g, bz(3946), "minecraft:barrel[facing=up]");

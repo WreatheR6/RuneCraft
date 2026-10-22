@@ -73,21 +73,24 @@ public final class SlayerCombat {
         });
     }
 
-    /** Game tick until which a molanisk has been lured off its wall by a slayer bell. */
+    /** Molanisks lured off their wall by a slayer bell (they stay down until they die). */
     private static final Map<LivingEntity, Long> LURED = new WeakHashMap<>();
 
-    /** Rings a slayer bell: molanisks nearby drop off the walls and can be fought for a while. Returns how many. */
+    /**
+     * Rings a slayer bell: molanisks within 3 tiles drop off the walls for good and attack the player who rang it (OSRS
+     * Wiki). Returns how many.
+     */
     public static int ringBell(ServerPlayer player) {
         if (Players.data(player).skills().level(Skill.SLAYER) < SlayerGear.BELL_SLAYER_LEVEL) {
             Msg.game(player, "You need a Slayer level of " + SlayerGear.BELL_SLAYER_LEVEL + " to use the slayer bell.");
             return 0;
         }
-        long until = ActionManager.gameTick() + SlayerGear.BELL_LURE_TICKS;
         List<OsrsMonsterEntity> near = player.level().getEntitiesOfClass(OsrsMonsterEntity.class,
                 player.getBoundingBox().inflate(SlayerGear.BELL_RADIUS),
-                m -> m.isAlive() && SlayerGear.BELL_CATEGORY.equals(category(m)));
+                m -> m.isAlive() && SlayerGear.BELL_CATEGORY.equals(category(m)) && !lured(m));
         for (OsrsMonsterEntity m : near) {
-            LURED.put(m, until);
+            LURED.put(m, Long.MAX_VALUE);
+            m.setTarget(player);
         }
         Msg.game(player, near.isEmpty() ? "You ring the bell. Nothing happens." : "You ring the bell. A molanisk drops off the wall!");
         return near.size();
@@ -136,10 +139,9 @@ public final class SlayerCombat {
             int health = (int) Math.ceil(target.getHealth());
             if (damage >= health) {
                 SlayerState.Profile p = SlayerService.profile(player);
-                if (p.unlocks.contains(f.unlock()) && Inv.has(player, f.item(), 1)) {
-                    if (f.consumed()) {
-                        Inv.remove(player, f.item(), 1);
-                    }
+                String carried = carriedFinisher(player, f);
+                if (p.unlocks.contains(f.unlock()) && carried != null) {
+                    spendFinisher(player, f, carried, null);
                     Msg.game(player, f.verb());
                     return damage;
                 }
@@ -182,11 +184,46 @@ public final class SlayerCombat {
         return def != null && def.kind() == ItemDef.Kind.ARROW;
     }
 
-    /** Using a rock hammer / bag of salt / ice cooler / fungicide spray on a weakened creature finishes it. */
+    /**
+     * The finishing item the player carries for {@code f}: its own item (a fungicide spray only with a charge left) or its
+     * alternate (a rock thrownhammer for the rock hammer), or null.
+     */
+    private static String carriedFinisher(ServerPlayer player, SlayerGear.Finisher f) {
+        if ("fungicide_spray".equals(f.item())) {
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                ItemStack s = player.getInventory().getItem(i);
+                if ("fungicide_spray".equals(Inv.idOf(s)) && SlayerItemService.sprayCharges(s) > 0) {
+                    return f.item();
+                }
+            }
+            return null;
+        }
+        if (Inv.has(player, f.item(), 1)) {
+            return f.item();
+        }
+        String alt = SlayerGear.FINISHER_ALTERNATES.get(f.item());
+        return alt != null && Inv.has(player, alt, 1) ? alt : null;
+    }
+
+    /** Uses up what a finish costs: a consumed item (from {@code held} when given), a spray charge. */
+    private static void spendFinisher(ServerPlayer player, SlayerGear.Finisher f, String item, ItemStack held) {
+        if ("fungicide_spray".equals(item)) {
+            SlayerItemService.useSprayCharge(player);
+        } else if (f.consumed() || SlayerGear.CONSUMED_ALTERNATES.contains(item)) {
+            if (held != null) {
+                held.shrink(1);
+            } else {
+                Inv.remove(player, item, 1);
+            }
+        }
+    }
+
+    /** Using a rock hammer / thrownhammer / bag of salt / ice cooler / fungicide spray on a weakened creature finishes it. */
     private static boolean useFinisher(ServerPlayer player, LivingEntity target) {
         String category = category(target);
         SlayerGear.Finisher f = category == null ? null : SlayerGear.finisher(creatureId(target), category);
-        if (f == null || !f.item().equals(Inv.idOf(player.getMainHandItem()))) {
+        String held = Inv.idOf(player.getMainHandItem());
+        if (f == null || !(f.item().equals(held) || held.equals(SlayerGear.FINISHER_ALTERNATES.get(f.item())))) {
             return false;
         }
         int health = (int) Math.ceil(target.getHealth());
@@ -194,8 +231,14 @@ public final class SlayerCombat {
             Msg.game(player, "The creature isn't weak enough yet.");
             return true;
         }
-        if (f.consumed()) {
-            player.getMainHandItem().shrink(1);
+        if ("fungicide_spray".equals(held) && SlayerItemService.sprayCharges(player.getMainHandItem()) <= 0) {
+            Msg.game(player, "Your fungicide spray is empty. Refill it with fungicide.");
+            return true;
+        }
+        if ("fungicide_spray".equals(held)) {
+            SlayerItemService.spendSprayCharge(player.getMainHandItem());
+        } else {
+            spendFinisher(player, f, held, player.getMainHandItem());
         }
         Msg.game(player, f.verb());
         CombatHandler.applyDamage(player, target, health);

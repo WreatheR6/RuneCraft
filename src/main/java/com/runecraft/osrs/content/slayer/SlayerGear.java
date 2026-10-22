@@ -89,6 +89,14 @@ public final class SlayerGear {
             new Finisher("mutated_zygomites", "fungicide_spray", 7, false, "shroom_sprayer",
                     "The zygomite seems to wither and dies."));
 
+    /**
+     * Other items that finish a creature like a {@link Finisher}'s own (OSRS Wiki "Rock thrownhammer": it finishes gargoyles
+     * like the rock hammer, from a distance, and is used up).
+     */
+    public static final Map<String, String> FINISHER_ALTERNATES = Map.of("rock_hammer", "rock_thrownhammer");
+    /** Alternates that are used up on use. */
+    public static final List<String> CONSUMED_ALTERNATES = List.of("rock_thrownhammer");
+
     /** Categories only hurt by leaf-bladed weapons, broad ammunition or Magic Dart (slayer staff). */
     public static final List<String> LEAF_BLADED_CATEGORIES = List.of("turoth", "kurask");
     public static final List<String> LEAF_BLADED_WEAPONS = List.of("leaf_bladed_spear", "leaf_bladed_sword",
@@ -97,14 +105,14 @@ public final class SlayerGear {
     public static final List<String> MAGIC_DART_STAVES = List.of("slayer_staff", "staff_of_the_dead");
 
     /**
-     * Molanisks cling to the walls until a slayer bell (39 Slayer) is rung nearby (OSRS Wiki); until then they can't be
-     * hurt. A ring lures those within {@link #BELL_RADIUS} blocks for {@link #BELL_LURE_TICKS} game ticks (approx).
+     * Molanisks cling to the walls until a slayer bell (39 Slayer) is rung nearby (OSRS Wiki "Molanisk": the bell "only
+     * works within 3 tiles of the wall the molanisk is attached to"); until then they can't be hurt. A ring lures those
+     * within {@link #BELL_RADIUS} blocks (3 tiles) off their walls for good, aggressive towards the player who rang it.
      */
     public static final String BELL_CATEGORY = "molanisks";
     public static final String SLAYER_BELL = "slayer_bell";
     public static final int BELL_SLAYER_LEVEL = 39;
-    public static final int BELL_RADIUS = 8;
-    public static final int BELL_LURE_TICKS = 100;
+    public static final int BELL_RADIUS = 6;
 
     /** Harpie bug swarms can only be damaged while carrying a lit bug lantern. */
     public static final Map<String, String> LIGHT_SOURCE = Map.of("harpie_bug_swarms", "bug_lantern");
@@ -143,20 +151,14 @@ public final class SlayerGear {
     public static final String HOT_FLOOR_DUNGEON = "dng_karuulm_slayer_dungeon";
     public static final int HOT_FLOOR_DAMAGE = 4;
     public static final List<String> HOT_FLOOR_BOOTS = List.of("boots_of_stone", "boots_of_brimstone", "granite_boots");
-    /** The dungeon's entrance tile (its carved entrance chamber spans this many blocks around it and is safe). */
+    /** The dungeon's entrance tile (its ladder lands in the entrance chamber, which is safe). */
     public static final int KARUULM_ENTRANCE_X = 1299;
     public static final int KARUULM_ENTRANCE_Y = 3806;
-    public static final int ENTRANCE_CHAMBER_RADIUS = 7;
     public static final String HOT_FLOOR_MESSAGE = "The volcanic floor of the dungeon burns your feet!";
 
-    /** True if a player standing at this block is on the Karuulm Slayer Dungeon's burning floor. */
+    /** True if a player standing at this block is on the Karuulm Slayer Dungeon's burning floor (beyond the entrance chamber). */
     public static boolean hotFloorAt(int x, int y, int z) {
-        if (!Dungeons.inside(HOT_FLOOR_DUNGEON, x, y, z)) {
-            return false;
-        }
-        int ex = StructureDef.bx(KARUULM_ENTRANCE_X);
-        int ez = StructureDef.bz(KARUULM_ENTRANCE_Y);
-        return Math.max(Math.abs(x - ex), Math.abs(z - ez)) > ENTRANCE_CHAMBER_RADIUS;
+        return Dungeons.inside(HOT_FLOOR_DUNGEON, x, y, z) && !Dungeons.karuulmEntranceChamber(x, z);
     }
 
     /** Burn damage per tick for a player on the hot floor wearing {@code feet} (0 when protected). */

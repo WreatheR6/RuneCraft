@@ -23,6 +23,17 @@ public final class SlayerRewards {
     public static int blockSlots(int questPoints, boolean eliteLumbridgeDiary) {
         return Math.min(6, Math.max(0, questPoints) / 50) + (eliteLumbridgeDiary ? 1 : 0);
     }
+
+    /** Block slots on a master's list: Mortimer has only two (OSRS Wiki "Mortimer"). */
+    public static int blockSlots(String masterId, int questPoints, boolean eliteLumbridgeDiary) {
+        int slots = blockSlots(questPoints, eliteLumbridgeDiary);
+        return Mortimer.ID.equals(masterId) ? Math.min(Mortimer.BLOCK_SLOTS, slots) : slots;
+    }
+
+    /** Points to cancel a task of the master's: 30, Mortimer's 100 (OSRS Wiki "Mortimer"). */
+    public static int skipCost(String masterId) {
+        return Mortimer.ID.equals(masterId) ? Mortimer.SKIP_COST : SKIP_COST;
+    }
     /** Superior slayer creatures spawn at 1/200 on task once "Bigger and Badder" is unlocked. */
     public static final int SUPERIOR_CHANCE = 200;
 
@@ -52,11 +63,14 @@ public final class SlayerRewards {
     public record ShopItem(String item, int price, int slayerLevel) {
     }
 
+    /** The "Task Storage" unlock: one task can be stored for later, and swapped back in for free. */
+    public static final String TASK_STORAGE = "task_storage";
+    /** The "Duly Noted" unlock: mithril dragons killed on task drop their mithril bars as banknotes. */
+    public static final String DULY_NOTED = "duly_noted";
+
     /**
      * The OSRS Wiki's Slayer Rewards "Unlock", "Extend" and "Cosmetics" tabs (July 2026; snapshot in
-     * {@code src/test/resources/osrs/slayer/reward_shop.txt}). Not offered: Task Storage and Duly Noted, and the
-     * Twisted Vision, Absolutely Slayin' and Oath Breaker recolours (their twisted horns, slayer hood and demonic quill
-     * don't exist in RuneCraft yet).
+     * {@code src/test/resources/osrs/slayer/reward_shop.txt}), every one of them.
      */
     public static final List<Unlock> UNLOCKS = List.of(
             new Unlock("gargoyle_smasher", "Gargoyle smasher", 120, Kind.FEATURE, null,
@@ -85,6 +99,8 @@ public final class SlayerRewards {
                     "Konar, Chaeldar, Nieve and Duradel may assign lizardmen."),
             new Unlock("bigger_and_badder", "Bigger and Badder", 50, Kind.FEATURE, null,
                     "Superior slayer creatures may appear while you're on task."),
+            new Unlock(DULY_NOTED, "Duly Noted", 200, Kind.FEATURE, "metal_dragons",
+                    "Mithril dragons drop mithril bars in banknote form while killed on assignment."),
             new Unlock("stop_the_wyvern", "Stop the Wyvern", 500, Kind.FEATURE, "fossil_island_wyverns",
                     "Never be assigned Fossil Island wyverns, without using a block slot."),
             new Unlock("double_trouble", "Double Trouble", 500, Kind.FEATURE, "boss_grotesque_guardians",
@@ -93,6 +109,8 @@ public final class SlayerRewards {
                     "Konar, Duradel and Nieve may assign basilisks (basilisk knights count)."),
             new Unlock("actual_vampyre_slayer", "Actual Vampyre Slayer", 80, Kind.TASK_UNLOCK, "vampyres",
                     "Chaeldar, Konar, Nieve and Duradel may assign vampyres."),
+            new Unlock(TASK_STORAGE, "Task Storage", 500, Kind.FEATURE, null,
+                    "Store your current task for free and take it up again later (one stored task at a time)."),
             new Unlock("i_wildy_more_slayer", "I Wildy More Slayer", 0, Kind.TASK_UNLOCK, null,
                     "Krystilia may assign jellies, dust devils, nechryael and abyssal demons."),
             new Unlock("warped_reality", "Warped Reality", 60, Kind.TASK_UNLOCK, "warped_creatures",
@@ -161,7 +179,13 @@ public final class SlayerRewards {
             new Unlock("use_more_head", "Use More Head", 1000, Kind.COSMETIC, null,
                     "Combine Alchemical Hydra heads with a slayer helmet to theme it like the Alchemical Hydra."),
             new Unlock("eye_see_you", "Eye see you", 1000, Kind.COSMETIC, null,
-                    "Combine an araxyte head with a slayer helmet to theme it like Araxxor."));
+                    "Combine an araxyte head with a slayer helmet to theme it like Araxxor."),
+            new Unlock("twisted_vision", "Twisted Vision", 200, Kind.COSMETIC, null,
+                    "Combine twisted horns with a slayer helmet to theme it like the Great Olm."),
+            new Unlock("absolutely_slayin", "Absolutely Slayin'", 1000, Kind.COSMETIC, null,
+                    "Combine the Slayer skillcape hood with a slayer helmet to show your mastery (99 Slayer)."),
+            new Unlock("oath_breaker", "Oath Breaker", 200, Kind.COSMETIC, null,
+                    "Combine a demonic quill with a slayer helmet to theme it like Oathplate."));
 
     public static final List<PointBuy> BUY = List.of(
             new PointBuy("slayer_ring_8", 1, 75, null),
@@ -169,12 +193,15 @@ public final class SlayerRewards {
             new PointBuy("broad_bolts", 250, 35, null),
             new PointBuy("broad_arrowheads", 100, 25, "broader_fletching"),
             new PointBuy("herb_sack", 1, 750, null),
+            new PointBuy("rune_pouch", 1, 750, null),
             new PointBuy("looting_bag", 1, 10, null));
+
+    /** Point-shop items a player may own only one of (OSRS: the rune pouch). */
+    public static final List<String> ONE_ONLY = List.of("rune_pouch");
 
     /**
      * The Slayer Equipment shop (OSRS Wiki "Slayer Equipment (shop)", July 2026): prices are the items' values and nothing
-     * needs a Slayer level to buy. Not stocked yet: fishing explosives, fungicide refills, the broad arrowhead and bolt
-     * packs, rock thrownhammers and reinforced goggles (RuneCraft has no such items).
+     * needs a Slayer level to buy (the reinforced goggles need A Porcine of Interest, see {@link #SHOP_QUESTS}).
      */
     public static final List<ShopItem> SHOP = List.of(
             new ShopItem("enchanted_gem", 1, 1),
@@ -188,19 +215,33 @@ public final class SlayerRewards {
             new ShopItem("nose_peg", 200, 1),
             new ShopItem("slayer_staff", 21000, 1),
             new ShopItem("spiny_helmet", 650, 1),
+            new ShopItem("fishing_explosive", 60, 1),
             new ShopItem("ice_cooler", 1, 1),
             new ShopItem("slayer_gloves", 200, 1),
             new ShopItem("unlit_bug_lantern", 130, 1),
             new ShopItem("insulated_boots", 200, 1),
             new ShopItem("fungicide_spray", 300, 1),
+            new ShopItem("fungicide", 10, 1),
             new ShopItem("witchwood_icon", 900, 1),
             new ShopItem("slayer_bell", 150, 1),
             new ShopItem("broad_arrowheads", 55, 1),
+            new ShopItem("broad_arrowhead_pack", 5500, 1),
             new ShopItem("unfinished_broad_bolts", 55, 1),
+            new ShopItem("unfinished_broad_bolt_pack", 5500, 1),
+            new ShopItem("rock_thrownhammer", 200, 1),
             new ShopItem("boots_of_stone", 200, 1),
+            new ShopItem("reinforced_goggles", 100, 1),
             // Not sold by slayer masters in OSRS (Duke Horacio / potion shops); offered here for convenience.
             new ShopItem("antifire_potion", 1500, 1),
             new ShopItem("anti_dragon_shield", 1000, 1));
+
+    /** Shop items sold only after a quest (OSRS: spare reinforced goggles after A Porcine of Interest). */
+    public static final java.util.Map<String, String> SHOP_QUESTS = java.util.Map.of("reinforced_goggles", "a_porcine_of_interest");
+
+    /** Item packs bought from the shop and opened in the inventory: pack id to {item, count} (OSRS: 100 each). */
+    public static final java.util.Map<String, Input> PACKS = java.util.Map.of(
+            "broad_arrowhead_pack", new Input("broad_arrowheads", 100),
+            "unfinished_broad_bolt_pack", new Input("unfinished_broad_bolts", 100));
 
     /** Fletching recipes (skilling module) that need the "Broader fletching" unlock first (OSRS). */
     public static final List<String> BROADER_FLETCHING_RECIPES = List.of("fletch_broad_arrows", "fletch_broad_bolts",
@@ -242,7 +283,13 @@ public final class SlayerRewards {
             new Recolour("purple", "dark_claw", "dark_mantle"),
             new Recolour("turquoise", "vorkaths_head", "undead_head"),
             new Recolour("hydra", "alchemical_hydra_heads", "use_more_head"),
-            new Recolour("araxyte", "araxyte_head", "eye_see_you"));
+            new Recolour("araxyte", "araxyte_head", "eye_see_you"),
+            new Recolour("twisted", "twisted_horns", "twisted_vision"),
+            new Recolour("hooded", "slayer_hood", "absolutely_slayin"),
+            new Recolour("oathplate", "demonic_quill", "oath_breaker"));
+
+    /** The hooded slayer helmet needs 99 Slayer to make (its hood is the Slayer skillcape's). */
+    public static final int HOODED_SLAYER_LEVEL = 99;
 
     /**
      * The Combat Achievement helmets Ghommal and Laidee Gnonock style a slayer helmet into, with no other item (OSRS Wiki):
@@ -266,9 +313,12 @@ public final class SlayerRewards {
                     Skill.SLAYER, 44, 0, null, null),
             new Craft("brimstone_ring", 1, List.of(new Input("hydras_eye", 1), new Input("hydras_fang", 1),
                     new Input("hydras_heart", 1)), Skill.CRAFTING, 1, 0, null, null),
-            new Craft("ferocious_gloves", 1, List.of(new Input("hydra_leather", 1)), Skill.CRAFTING, 1, 0, null, "hammer"),
-            // approx: Otto Godblessed repairs a broken dragon hasta for free in OSRS; here the slayer master does.
-            new Craft("dragon_hasta", 1, List.of(new Input("broken_dragon_hasta", 1)), Skill.ATTACK, 1, 0, null, null));
+            new Craft("ferocious_gloves", 1, List.of(new Input("hydra_leather", 1)), Skill.CRAFTING, 1, 0, null, "hammer"));
+
+    /** Otto Godblessed repairs broken dragon hastas (from the brimstone chest) for free (OSRS Wiki "Broken dragon hasta"). */
+    public static final String OTTO = "otto_godblessed";
+    public static final String BROKEN_HASTA = "broken_dragon_hasta";
+    public static final String DRAGON_HASTA = "dragon_hasta";
 
     /** The recolour crafts: plain and imbued helmet for every {@link #RECOLOURS} line and {@link #CA_HELMETS} entry. */
     public static final List<Craft> HELMET_CRAFTS = helmetCrafts();
@@ -276,10 +326,13 @@ public final class SlayerRewards {
     private static List<Craft> helmetCrafts() {
         List<Craft> out = new java.util.ArrayList<>();
         for (Recolour r : RECOLOURS) {
+            boolean hood = r.colour().equals("hooded");
+            Skill skill = hood ? Skill.SLAYER : Skill.CRAFTING;
+            int level = hood ? HOODED_SLAYER_LEVEL : 1;
             out.add(new Craft(r.colour() + "_slayer_helmet", 1, List.of(new Input("slayer_helmet", 1), new Input(r.head(), 1)),
-                    Skill.CRAFTING, 1, 0, r.unlock(), null));
+                    skill, level, 0, r.unlock(), null));
             out.add(new Craft(r.colour() + "_slayer_helmet_i", 1, List.of(new Input("slayer_helmet_i", 1), new Input(r.head(), 1)),
-                    Skill.CRAFTING, 1, 0, r.unlock(), null));
+                    skill, level, 0, r.unlock(), null));
         }
         for (String[] ca : CA_HELMETS) {
             out.add(new Craft(ca[0] + "_slayer_helmet", 1, List.of(new Input("slayer_helmet", 1)), Skill.CRAFTING, 1, 0, null, null,
@@ -304,6 +357,74 @@ public final class SlayerRewards {
     }
 
     /**
+     * What a slayer helmet's "Disassemble" option gives back (OSRS Wiki "Slayer helmet"): its components (the black mask,
+     * imbued for an imbued helmet, earmuffs, facemask, nose peg, spiny helmet and enchanted gem) and, for a recolour, the
+     * head or item that coloured it (a Combat Achievement helmet gives nothing more). Empty for anything else.
+     */
+    public static List<Input> disassembly(String helmet) {
+        if (helmet == null || !helmet.contains("slayer_helmet")) {
+            return List.of();
+        }
+        boolean imbued = helmet.endsWith("_i");
+        String base = imbued ? helmet.substring(0, helmet.length() - 2) : helmet;
+        String colour = base.equals("slayer_helmet") ? null : base.substring(0, base.length() - "_slayer_helmet".length());
+        String head = null;
+        if (colour != null) {
+            for (Recolour r : RECOLOURS) {
+                if (r.colour().equals(colour)) {
+                    head = r.head();
+                }
+            }
+            boolean ca = CA_HELMETS.stream().anyMatch(c -> c[0].equals(colour));
+            if (head == null && !ca) {
+                return List.of();
+            }
+        }
+        List<Input> out = new java.util.ArrayList<>();
+        for (String part : HELMET_PARTS) {
+            out.add(new Input(imbued && part.equals("black_mask") ? "black_mask_i" : part, 1));
+        }
+        if (head != null) {
+            out.add(new Input(head, 1));
+        }
+        return List.copyOf(out);
+    }
+
+    /**
+     * A drop that is likelier when the creature is killed on a Slayer task (OSRS Wiki drop tables): 1 in {@code baseRarity}
+     * off task, 1 in {@code taskRarity} on task.
+     */
+    public record OnTaskDrop(String creature, String item, int baseRarity, int taskRarity) {
+        /**
+         * The chance of the extra roll made for an on-task kill on top of the creature's own table, so that the item comes
+         * at the on-task rate overall (approx: the extra roll is independent of the table's own roll).
+         */
+        public double extraChance() {
+            double base = 1.0 / baseRarity;
+            return (1.0 / taskRarity - base) / (1 - base);
+        }
+    }
+
+    /** Frost dragons' dragon metal sheet: 1/100, 1/40 on task (OSRS Wiki "Frost dragon", since 3 December 2025). */
+    public static final List<OnTaskDrop> ON_TASK_DROPS = List.of(new OnTaskDrop("frost_dragon", "dragon_metal_sheet", 100, 40));
+
+    /** The on-task drops of a creature (empty for most). */
+    public static List<OnTaskDrop> onTaskDrops(String creature) {
+        List<OnTaskDrop> out = new java.util.ArrayList<>();
+        for (OnTaskDrop d : ON_TASK_DROPS) {
+            if (d.creature().equals(creature)) {
+                out.add(d);
+            }
+        }
+        return out;
+    }
+
+    /** "Duly Noted": whether a drop of {@code item} by {@code monsterId}, killed on task with the unlock, comes noted. */
+    public static boolean dulyNoted(String monsterId, String item) {
+        return "mithril_bar".equals(item) && monsterId != null && monsterId.startsWith("mithril_dragon");
+    }
+
+    /**
      * Points to block the current task, by the master who assigned it (OSRS, August 2025): Turael and
      * Spria 40, Mazchna 50, Vannaka 60, Chaeldar 70, Konar 80, Nieve 90, Duradel and Krystilia 100.
      */
@@ -318,6 +439,7 @@ public final class SlayerRewards {
             case "chaeldar" -> 70;
             case "konar" -> 80;
             case "nieve", "steve" -> 90;
+            case Mortimer.ID -> Mortimer.BLOCK_COST;
             default -> BLOCK_COST;
         };
     }

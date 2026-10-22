@@ -41,9 +41,21 @@ final class DungeonsAsgarnia {
      * druids, the blue dragons behind the dusty-key gate to the north-east, baby blue dragons to the
      * east, the caged lesser demons, the hellhounds by the way to Cerberus in the north-west, the
      * black demons' cavern to the south-west and the poison spiders' pit to the south-east. Past the
-     * hellhounds lies the far west (OSRS 2774-2835, 9803-9841): the baby black dragons' cave with two
-     * black dragons, and up a stair the black dragons' upper cavern.
+     * hellhounds lies the far west: the two black dragons' cave (OSRS 2829-2835, 9824-9826). The upper level
+     * (OSRS plane 1, on its tiles: dungeon y - 6400), where the dragons can only be fought on a Slayer task: up the steps
+     * north of the entrance, Slieve's black dragon side with the five baby black dragons (2817-2862, 9818-9828) and the
+     * twelve black dragons (2774-2807, 9803-9841); up the steps east of the blue dragons, Eve's twelve blue dragons
+     * (2889-2955, 9804-9827). The main level's rooms and the steps' positions are approx.
      */
+    /** Floor of Taverley Dungeon's upper level (OSRS plane 1), above every main-level cavern. */
+    static final int TAVERLEY_UPPER = 32;
+    // Cache spawn tiles of the upper level (mejrs/data_osrs plane 1; the blue dragons are the wiki's 12 LocLine tiles).
+    static final int[] TAVERLEY_BABY_BLACKS = {2817, 9818, 2820, 9819, 2824, 9818, 2858, 9828, 2862, 9826};
+    static final int[] TAVERLEY_UPPER_BLACKS = {2775, 9834, 2785, 9808, 2798, 9809, 2798, 9828, 2774, 9812, 2783, 9838, 2785, 9823,
+            2799, 9818, 2775, 9803, 2777, 9826, 2796, 9841, 2807, 9814};
+    static final int[] TAVERLEY_UPPER_BLUES = {2889, 9804, 2891, 9810, 2896, 9813, 2917, 9812, 2922, 9809, 2926, 9812, 2942, 9818,
+            2944, 9809, 2946, 9824, 2951, 9814, 2953, 9827, 2955, 9821};
+
     static Dungeons.Dungeon taverley() {
         Cave c = new Cave("dng_taverley_dungeon", "Taverley Dungeon", mc("stone_bricks"), mc("cobblestone"), mc("glowstone"));
         int f = 20;
@@ -64,14 +76,29 @@ final class DungeonsAsgarnia {
         c.room(ox - 44, oz + 30, ox - 4, oz + 64, f, 9);               // black demons
         c.hallZ(ox + 37, oz + 8, ox + 37, oz + 36, f, 3, 4);
         c.room(ox + 22, oz + 36, ox + 50, oz + 60, f, 5);              // poison spiders
-        // The far west: the baby black dragons' cave and, up a stair, the black dragons' cavern.
+        // The far west: the two black dragons' cave.
         int bw = bx(2818);
         c.hall(ox - 54, oz - 46, bx(2836) + 1, oz - 46, f, 3, 4);
-        c.room(bw, bz(3427), bx(2836) + 1, bz(3411) + 1, f, 6);         // baby black dragons
-        int top = f + 6;
-        c.stairs(bw, bz(3419), 'w', f, top, 3, 5);
-        int bx2 = bw - (top - f) - 1;
-        c.room(bx(2774), bz(3442), bx2, bz(3402) + 1, top, 10);         // black dragons
+        c.room(bw, bz(3427), bx(2836) + 1, bz(3411) + 1, f, 6);         // black dragons
+        // The upper level (task-only), on the OSRS tiles.
+        CacheDungeons.Shifted up = new CacheDungeons.Shifted(c, 0, -6400);
+        int top = TAVERLEY_UPPER;
+        int[] slieve = {2872, 9819, 2884, 9830};
+        int[] babies = {2814, 9814, 2866, 9832};
+        int[] blacks = {2770, 9800, 2810, 9844};
+        int[] blues = {2886, 9800, 2959, 9830};
+        int[][] upper = {slieve, babies, blacks, blues};
+        for (int[] r : upper) {
+            up.room(r, top, 8);
+        }
+        up.hall(2866, 9825, 2872, 9825, top);
+        up.hall(2810, 9820, 2814, 9820, top);
+        // The black dragons' steps: north of the entrance (the main hall's branch) up to Slieve's landing.
+        c.hallZ(ox + 16, oz, ox + 16, oz - 28, f, 3, 4);
+        c.stairs(ox + 16, oz - 28, 'n', f, top, 3, 5);
+        // The blue dragons' steps: east of the blue dragons' cavern, under the upper level, up to Eve's cavern.
+        c.hall(ox + 60, bz(3415), bx(2966), bz(3415), f, 3, 4);
+        c.stairs(bx(2966), bz(3415), 'w', f, top, 3, 5);
         c.carve();
         // The dusty-key gate before the blue dragons.
         gate(c, ox + 37, oz - 20, f, 'z');
@@ -93,11 +120,13 @@ final class DungeonsAsgarnia {
             c.set(x, f + 5, oz + 37, mc("cobweb")).set(x + 2, f + 1, oz + 59, mc("cobweb"));
         }
         c.set(ox - 5, f + 1, oz - 5, mc("skeleton_skull[rotation=3]"));
-        for (int x = bx(2780); x < bx2 - 4; x += 16) {
-            c.pillar(x, bz(3434), top, 10, mc("chiseled_stone_bricks"));
-            c.pillar(x, bz(3410), top, 10, mc("chiseled_stone_bricks"));
+        for (int x = bx(2780); x < bx(2806); x += 16) {
+            c.pillar(x, bz(3434), top, 8, mc("chiseled_stone_bricks"));
+            c.pillar(x, bz(3410), top, 8, mc("chiseled_stone_bricks"));
         }
         c.set(bx(2777), top + 1, bz(3405), mc("bone_block[axis=y]")).set(bx(2778), top + 1, bz(3405), mc("skeleton_skull"));
+        // Blue dragon eggs in Eve's cavern.
+        c.set(bx(2950), top + 1, bz(3405), mc("sniffer_egg")).set(bx(2952), top + 1, bz(3406), mc("sniffer_egg"));
         c.entrance(ox, oz, f, mc("mossy_stone_bricks"), mc("cobblestone"), 'w');
         c.camp(ox - 5, oz - 5, ox + 5, oz + 5, f, 2, 25, "minecraft:skeleton", "ghost");
         c.camp(ox + 31, oz - 7, ox + 43, oz + 7, f, 4, 25, "chaos_druid");
@@ -107,8 +136,14 @@ final class DungeonsAsgarnia {
         c.camp(ox - 52, oz - 60, ox - 20, oz - 32, f, 5, 25, "hellhound");
         c.camp(ox - 42, oz + 32, ox - 6, oz + 62, f, 4, 50, "black_demon");
         c.camp(ox + 24, oz + 38, ox + 48, oz + 58, f, 5, 25, "poison_spider");
-        c.camp(bw + 2, bz(3426), bx(2836) - 1, bz(3412), f, 4, 35, "baby_black_dragon", "baby_black_dragon", "black_dragon");
-        c.camp(bx(2775), bz(3441), bx2 - 2, bz(3403), top, 4, 50, "black_dragon");
+        c.camp(bw + 2, bz(3426), bx(2836) - 1, bz(3412), f, 2, 50, "black_dragon");
+        up.camps(upper, top, CacheDungeons.RESPAWN, "baby_black_dragon", TAVERLEY_BABY_BLACKS);
+        up.camps(upper, top, CacheDungeons.DRAGON_RESPAWN, "black_dragon", TAVERLEY_UPPER_BLACKS);
+        up.camps(upper, top, CacheDungeons.DRAGON_RESPAWN, "blue_dragon", TAVERLEY_UPPER_BLUES);
+        up.taskOnly(slieve, top, 8, "black_dragons", "Slieve");
+        up.taskOnly(babies, top, 8, "black_dragons", "Slieve");
+        up.taskOnly(blacks, top, 8, "black_dragons", "Slieve");
+        up.taskOnly(blues, top, 8, "blue_dragons", "Eve");
         return c.build();
     }
 
@@ -225,8 +260,14 @@ final class DungeonsAsgarnia {
     /**
      * Below Mudskipper Point (tile 3012, 3154): pirates and muggers by the entrance, hobgoblins to
      * the east, the frozen cavern of ice warriors and ice giants with the blurite rocks, and the
-     * skeletal wyverns' lair beyond the icy passage.
+     * skeletal wyverns' lair beyond the icy passage, with the task-only upper area up the icy steps
+     * by its entrance (OSRS Wiki "Asgarnian Ice Dungeon": fourteen more wyverns that Pieve lets only
+     * players on a skeletal wyvern task fight; added 21 January 2016). The dungeon is laid out by hand
+     * (not on cache tiles), so the upper area's place is approx.
      */
+    /** Skeletal wyverns respawn after 15 ticks (OSRS Wiki infobox). */
+    static final int SKELETAL_WYVERN_RESPAWN = 15;
+
     static Dungeons.Dungeon iceDungeon() {
         Cave c = new Cave("dng_asgarnian_ice_dungeon", "Asgarnian Ice Dungeon", mc("packed_ice"), mc("snow_block"), mc("sea_lantern"));
         int f = 26;
@@ -241,6 +282,10 @@ final class DungeonsAsgarnia {
         c.room(lx + 10, lz - 70, lx + 70, lz - 20, f, 8, mc("packed_ice")); // ice warriors and ice giants
         c.hall(lx + 70, lz - 45, lx + 90, lz - 45, f, 3, 5);
         c.room(lx + 90, lz - 76, lx + 140, lz - 20, f, 10, mc("blue_ice")); // skeletal wyverns
+        // The icy steps up from the lair's north-west corner to the task-only upper area.
+        int up = f + 4;
+        c.stairs(lx + 98, lz - 76, 'n', f, up, 3, 5);
+        c.room(lx + 86, lz - 104, lx + 122, lz - 82, up, 7, mc("blue_ice"));
         c.carve();
         c.rocks(lx + 12, lz - 68, lx + 30, lz - 68, f + 1, 6, rc("blurite_rock"));
         for (int x = lx + 16; x <= lx + 64; x += 12) {
@@ -255,7 +300,13 @@ final class DungeonsAsgarnia {
         c.camp(lx - 40, lz - 14, lx - 18, lz + 14, f, 4, 25, "pirate", "mugger");
         c.camp(lx + 22, lz - 4, lx + 42, lz + 18, f, 4, 25, "hobgoblin");
         c.camp(lx + 12, lz - 68, lx + 68, lz - 22, f, 7, 25, "ice_warrior", "ice_giant");
-        c.camp(lx + 92, lz - 74, lx + 138, lz - 22, f, 4, 50, "skeletal_wyvern");
+        // OSRS Wiki: 22 skeletal wyverns in all, 8 in the open lair and 14 in the upper area; they respawn after 15 ticks.
+        c.camp(lx + 92, lz - 74, lx + 138, lz - 22, f, 8, SKELETAL_WYVERN_RESPAWN, "skeletal_wyvern");
+        // Two ice pillars to safespot behind (OSRS Wiki shows a safespot in the upper area), clear of the camp's centre.
+        c.pillar(lx + 96, lz - 93, up, 7, mc("blue_ice"));
+        c.pillar(lx + 112, lz - 93, up, 7, mc("blue_ice"));
+        c.camp(lx + 88, lz - 102, lx + 120, lz - 84, up, 14, SKELETAL_WYVERN_RESPAWN, "skeletal_wyvern");
+        c.taskOnly("skeletal_wyverns", "Pieve", lx + 86, lz - 104, lx + 122, lz - 82, up, 7);
         return c.build();
     }
 }

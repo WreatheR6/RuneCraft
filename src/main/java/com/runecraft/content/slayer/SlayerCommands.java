@@ -68,7 +68,29 @@ final class SlayerCommands {
                                                 IntegerArgumentType.getInteger(ctx, "amount")), true)))))
                 .then(Commands.literal("craft").executes(ctx -> run(ctx, SlayerCommands::crafts, true))
                         .then(Commands.argument("item", StringArgumentType.word())
-                                .executes(ctx -> run(ctx, p -> craft(p, StringArgumentType.getString(ctx, "item")), true)))));
+                                .executes(ctx -> run(ctx, p -> craft(p, StringArgumentType.getString(ctx, "item")), true))))
+                .then(Commands.literal("store").executes(ctx -> run(ctx, SlayerService::storeTask, true)))
+                .then(Commands.literal("choose").then(Commands.argument("n", IntegerArgumentType.integer(1, 3))
+                        .executes(ctx -> run(ctx, p -> SlayerService.chooseMortimer(p, IntegerArgumentType.getInteger(ctx, "n")),
+                                false))))
+                .then(Commands.literal("unstore").executes(ctx -> run(ctx, SlayerService::unstoreTask, true)))
+                // Disassembling a helmet and using the rune pouch need no master (OSRS: item options).
+                .then(Commands.literal("disassemble").then(Commands.argument("helmet", StringArgumentType.word())
+                        .executes(ctx -> run(ctx, p -> SlayerItemService.disassemble(p, StringArgumentType.getString(ctx, "helmet")),
+                                false))))
+                .then(Commands.literal("pouch").executes(ctx -> run(ctx, SlayerItemService::showPouch, false))
+                        .then(Commands.literal("deposit").then(Commands.argument("rune", StringArgumentType.word())
+                                .executes(ctx -> run(ctx, p -> {
+                                    SlayerItemService.depositRunes(p, StringArgumentType.getString(ctx, "rune"));
+                                    SlayerItemService.showPouch(p);
+                                }, false))))
+                        .then(Commands.literal("withdraw").then(Commands.argument("rune", StringArgumentType.word())
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(1, 16000))
+                                        .executes(ctx -> run(ctx, p -> {
+                                            SlayerItemService.withdrawRunes(p, StringArgumentType.getString(ctx, "rune"),
+                                                    IntegerArgumentType.getInteger(ctx, "amount"));
+                                            SlayerItemService.showPouch(p);
+                                        }, false)))))));
     }
 
     private interface Action {
@@ -107,10 +129,12 @@ final class SlayerCommands {
         SlayerState.Profile p = SlayerService.profile(player);
         if (!p.hasTask()) {
             Msg.game(player, "You don't have a task to cancel.");
-        } else if (p.points < SlayerRewards.SKIP_COST) {
-            Msg.game(player, "You need " + SlayerRewards.SKIP_COST + " slayer points to cancel a task.");
+        } else if (p.points < SlayerRewards.skipCost(p.master)) {
+            Msg.game(player, "You need " + SlayerRewards.skipCost(p.master) + " slayer points to cancel this task.");
         } else {
-            p.points -= SlayerRewards.SKIP_COST;
+            p.points -= SlayerRewards.skipCost(p.master);
+            p.modifier = null;
+            p.modifierValue = 0;
             Msg.game(player, "Your task (" + SlayerTasks.displayName(p.task) + ") has been cancelled. Your streak is kept.");
             p.task = null;
             p.remaining = 0;
@@ -123,9 +147,9 @@ final class SlayerCommands {
         SlayerState.Profile p = SlayerService.profile(player);
         if (!p.hasTask()) {
             Msg.game(player, "You don't have a task to block.");
-        } else if (SlayerRewards.blockedFor(p.blocked, p.master).size() >= blockSlots(player)) {
-            Msg.game(player, blockSlots(player) == 0 ? "You need 50 quest points to block a task."
-                    : "That master's block list is full (" + blockSlots(player) + " slots: one per 50 quest points, one for the"
+        } else if (SlayerRewards.blockedFor(p.blocked, p.master).size() >= blockSlots(player, p.master)) {
+            Msg.game(player, blockSlots(player, p.master) == 0 ? "You need 50 quest points to block a task."
+                    : "That master's block list is full (" + blockSlots(player, p.master) + " slots: one per 50 quest points, one for the"
                     + " elite Lumbridge & Draynor Diary). Unblock something first: "
                     + String.join(", ", SlayerRewards.blockedFor(p.blocked, p.master)));
         } else if (p.points < SlayerRewards.blockCost(p.master)) {
@@ -134,6 +158,8 @@ final class SlayerCommands {
             p.points -= SlayerRewards.blockCost(p.master);
             // Each master keeps their own block list (OSRS, August 2025); Turael and Spria share one.
             p.blocked.add(SlayerRewards.blockKey(p.master, p.task));
+            p.modifier = null;
+            p.modifierValue = 0;
             Msg.game(player, "You will no longer be assigned " + SlayerTasks.displayName(p.task) + " by "
                     + masterName(p.master) + ".");
             p.task = null;
@@ -145,10 +171,15 @@ final class SlayerCommands {
 
     /** Block slots on each master's list: one per 50 quest points (6 at 300) plus one for the elite Lumbridge diary. */
     static int blockSlots(ServerPlayer player) {
+        return blockSlots(player, null);
+    }
+
+    /** Block slots on the list of the master {@code masterId} (Mortimer: two at most). */
+    static int blockSlots(ServerPlayer player, String masterId) {
         boolean elite = com.runecraft.osrs.content.systems.Diaries.tierComplete(
                 com.runecraft.content.systems.SysState.of(player).diaryDone, "lumbridge",
                 com.runecraft.osrs.content.systems.Diaries.Tier.ELITE);
-        return SlayerRewards.blockSlots(Players.data(player).questPoints(), elite);
+        return SlayerRewards.blockSlots(masterId, Players.data(player).questPoints(), elite);
     }
 
     private static String masterName(String masterId) {
@@ -229,6 +260,8 @@ final class SlayerCommands {
             Msg.game(player, "That isn't sold for slayer points.");
         } else if (b.requiresUnlock() != null && !p.unlocks.contains(b.requiresUnlock())) {
             Msg.game(player, "You need to unlock " + SlayerRewards.unlock(b.requiresUnlock()).name() + " first.");
+        } else if (SlayerRewards.ONE_ONLY.contains(b.item()) && (Inv.has(player, b.item(), 1) || banked(player, b.item()))) {
+            Msg.game(player, "You may only own one " + name(b.item()).toLowerCase(java.util.Locale.ROOT) + ".");
         } else if (p.points < b.cost()) {
             Msg.game(player, "You need " + b.cost() + " slayer points.");
         } else {
@@ -264,6 +297,13 @@ final class SlayerCommands {
             Msg.game(player, "You need a Slayer level of " + s.slayerLevel() + " to buy that.");
             return;
         }
+        String quest = SlayerRewards.SHOP_QUESTS.get(item);
+        if (quest != null && com.runecraft.osrs.content.ContentRegistry.quest(quest) != null
+                && !com.runecraft.quest.QuestApi.isComplete(player, quest)) {
+            Msg.game(player, "The slayer master only sells those to those who have completed "
+                    + com.runecraft.osrs.content.ContentRegistry.quest(quest).displayName() + ".");
+            return;
+        }
         long cost = (long) s.price() * amount;
         if (Inv.count(player, Inv.COINS) < cost) {
             Msg.game(player, "You don't have enough coins.");
@@ -278,6 +318,15 @@ final class SlayerCommands {
 
     private static void crafts(ServerPlayer player) {
         player.displayClientMessage(Component.literal("--- Slayer crafting ---").withStyle(ChatFormatting.GOLD), false);
+        // Helmets carried can be taken apart again (their recolour item comes back).
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            String id = Inv.idOf(player.getInventory().getItem(i));
+            if (!SlayerRewards.disassembly(id).isEmpty() && seen.add(id)) {
+                player.displayClientMessage(Component.literal(name(id) + " ").append(SlayerService.button("[Disassemble]",
+                        "/slayer disassemble " + id, "Take it apart into its components")), false);
+            }
+        }
         for (SlayerRewards.Craft c : SlayerRewards.allCrafts()) {
             StringBuilder needs = new StringBuilder();
             for (SlayerRewards.Input in : c.inputs()) {
@@ -333,6 +382,15 @@ final class SlayerCommands {
             XpService.add(player, c.skill(), c.xp());
         }
         Msg.game(player, "You make " + Msg.article(name(c.product())) + ".");
+    }
+
+    /** Whether the player's bank holds the item. */
+    private static boolean banked(ServerPlayer player, String item) {
+        try {
+            return Players.data(player).bank().count(item, "") > 0;
+        } catch (RuntimeException e) {
+            return false;
+        }
     }
 
     /** Whether the player has unlocked the Combat Achievement tier {@code tier} (a {@code CombatAchievements.Tier} name). */

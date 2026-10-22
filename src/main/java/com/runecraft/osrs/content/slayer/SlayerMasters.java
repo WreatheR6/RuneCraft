@@ -502,6 +502,60 @@ public final class SlayerMasters {
                 a("spiritual_creatures", 6, 100, 150).ext(181, 250),
                 a("zombies", 3, 75, 125),
                 a(SlayerBossTasks.CATEGORY, 8, 3, 35).withUnlock(SlayerBossTasks.UNLOCK));
+        mortimer();
+    }
+
+    /**
+     * Mortimer of Wyrmscraig (OSRS Wiki "Mortimer" and "Slayer Master", July 2026): 100 combat, 70 Slayer and Fallen From
+     * Grace; only tasks whose monsters have a superior, offered as a choice ({@link Mortimer}); no points except through a
+     * task's modifier. His table without venators (not in the game). The unlocks, quests and combat levels a task needs
+     * are those Duradel (else Nieve, Konar, Chaeldar) asks for it: the wiki table lists none (approx).
+     */
+    private static void mortimer() {
+        Assignment[] list = {
+                a("crawling_hands", 10, 35, 50),
+                a("cave_crawlers", 10, 35, 50),
+                a("banshees", 10, 35, 50),
+                a("rockslugs", 10, 35, 50),
+                a("cockatrice", 10, 35, 50),
+                a("pyrefiends", 10, 35, 50),
+                a("infernal_mages", 10, 35, 50),
+                a("bloodveld", 8, 120, 180).ext(200, 250),
+                a("gryphons", 10, 80, 120).ext(160, 200),
+                a("jellies", 10, 80, 120),
+                a("custodian_stalkers", 8, 80, 120).ext(200, 250),
+                a("turoth", 10, 80, 120),
+                a("warped_creatures", 10, 80, 120),
+                a("cave_horrors", 10, 80, 120).ext(200, 250),
+                a("aberrant_spectres", 10, 80, 120).ext(200, 250),
+                a("basilisks", 10, 40, 60).ext(200, 250),
+                a("wyrms", 10, 80, 120).ext(200, 250),
+                a("dust_devils", 8, 120, 180).ext(200, 250),
+                a("kurask", 10, 40, 60),
+                a("gargoyles", 10, 120, 180).ext(200, 250),
+                a("aquanites", 10, 40, 60).ext(150, 200),
+                a("nechryael", 8, 150, 200).ext(200, 250),
+                a("drakes", 10, 40, 60),
+                a("abyssal_demons", 8, 120, 180).ext(200, 250),
+                a("dark_beasts", 10, 40, 60).ext(110, 135),
+                a("araxytes", 8, 120, 180).ext(200, 250),
+                a("smoke_devils", 8, 80, 120),
+                a("hydras", 10, 150, 200)};
+        for (int i = 0; i < list.length; i++) {
+            Assignment like = null;
+            for (String other : List.of("duradel", "nieve", "konar", "chaeldar", "vannaka", "mazchna")) {
+                like = ALL.get(other).assignment(list[i].category());
+                if (like != null) {
+                    break;
+                }
+            }
+            if (like != null) {
+                Assignment a = list[i];
+                list[i] = new Assignment(a.category(), a.weight(), a.min(), a.max(), a.extMin(), a.extMax(), like.unlock(),
+                        like.minCombat(), like.quests());
+            }
+        }
+        master(Mortimer.ID, "Mortimer", Mortimer.ID, 100, 70, 0, false, false, Mortimer.QUEST, null, 0, list);
     }
 
     public static Master get(String id) {

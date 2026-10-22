@@ -201,7 +201,7 @@ class IslandsContentTest {
 
     @Test
     void caveCampsLieInsideCarvedCaves() {
-        // Ours (the Corsair Cove Dungeon) or the dungeons module's (the Wyvern Cave).
+        // Ours (the Corsair Cove Dungeon; the Wyvern Cave's wyverns are the dungeons module's own camps).
         List<StructureDef> all = ContentRegistry.structures();
         int caves = 0;
         for (IslandsPlaces.Camp camp : IslandsPlaces.camps()) {
@@ -224,7 +224,7 @@ class IslandsContentTest {
             }
             assertTrue(covered, camp.place() + " camp must lie inside a carved cave: " + cx + "," + cz + " r" + camp.radius());
         }
-        assertEquals(2, caves);
+        assertEquals(1, caves);
     }
 
     // ------------------------------------------------------------------ structures

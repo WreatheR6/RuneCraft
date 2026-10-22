@@ -16,13 +16,14 @@ public final class NpcStoreys {
     /**
      * Module NPCs that stand in a carved dungeon below their place: the block y of their feet (the place's dx/dz still
      * give the column). The dungeons module's tests check each spot is carved air: Zooknock, Bunkwicket and Waymottin
-     * at the end of the Ape Atoll Dungeon, Bardur on Waterbirth sublevel 2.
+     * at the end of the Ape Atoll Dungeon, Bardur on Waterbirth sublevel 2, Vannaka in the Edgeville Dungeon.
      */
     private static final Map<String, Integer> UNDERGROUND_FEET = Map.of(
             "zooknock", 7, "bunkwicket", 7, "waymottin", 7, "bardur", 7,
             "quest_viggora_3", 27, // Curse of the Empty Lord, the Edgeville Dungeon's earth warrior room
             "quest_ashuelot_reis", 21, // before the God Wars Dungeon's frozen door (godwars GwdDungeon, level 2 floor 20)
-            "rev_emblem_trader", 5); // the Revenant Caves (godwars RevenantCaves, floor 4)
+            "rev_emblem_trader", 5, // the Revenant Caves (godwars RevenantCaves, floor 4)
+            "vannaka", 27); // the Edgeville Dungeon, east of the Wilderness gate (slayer module, OSRS 3147, 9914)
 
     private NpcStoreys() {
     }

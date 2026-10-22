@@ -75,6 +75,11 @@ final class CacheDungeons {
             c.multi(x(r[0]), z(r[3]), x(r[2]) + 1, z(r[1]) + 1, f, h);
         }
 
+        /** Marks the cache tile box {x1, y1, x2, y2} on floor f (height h) as a Slayer task-only area. */
+        void taskOnly(int[] r, int f, int h, String task, String guardian) {
+            c.taskOnly(task, guardian, x(r[0]), z(r[3]), x(r[2]) + 1, z(r[1]) + 1, f, h);
+        }
+
         /** A 3-wide passage between two cache tiles (along x first, then along y). */
         void hall(int ax, int ay, int bx, int by, int f) {
             c.hall(x(ax), z(ay), x(bx), z(by), f, 3, 5);
@@ -334,30 +339,46 @@ final class CacheDungeons {
     /** The stairs (3260, 3663) lead down to cache tile (3385, 10052). */
     static final int WSC_DX = 3260 - 3385;
     static final int WSC_DY = 3663 - 10052;
-    static final int[] WSC_ICE_GIANTS = {3333, 10052, 3334, 10060, 3336, 10056, 3342, 10056, 3345, 10052, 3350, 10052};
+    // The wiki's LocLines (July 2026) hold more ice giants, ankou and hellhounds than the 2019 cache snapshot.
+    static final int[] WSC_ICE_GIANTS = {3333, 10052, 3334, 10060, 3336, 10056, 3342, 10056, 3345, 10052, 3355, 10054, 3357, 10052,
+            3354, 10058, 3350, 10052, 3350, 10052, 3339, 10059, 3339, 10054, 3332, 10057, 3347, 10056};
     static final int[] WSC_ANKOU = {3348, 10075, 3351, 10084, 3353, 10080, 3357, 10076, 3360, 10081, 3364, 10074, 3364, 10079,
-            3369, 10068, 3370, 10064, 3372, 10066};
+            3369, 10068, 3370, 10064, 3372, 10066, 3351, 10079, 3367, 10072, 3361, 10076, 3354, 10077, 3358, 10079, 3356, 10081};
     static final int[] WSC_LESSER = {3332, 10125, 3333, 10130, 3335, 10138, 3337, 10134, 3339, 10144, 3340, 10130, 3341, 10138};
     static final int[] WSC_BLACK_DEMONS = {3354, 10120, 3359, 10114, 3361, 10125, 3367, 10117};
     static final int[] WSC_BLACK_DRAGONS = {3356, 10157, 3361, 10159, 3366, 10155};
     static final int[] WSC_GREEN_DRAGONS = {3396, 10119, 3397, 10124, 3402, 10119, 3410, 10065, 3415, 10068, 3418, 10063};
     static final int[] WSC_GREATER = {3421, 10153, 3421, 10159, 3424, 10148, 3425, 10156, 3426, 10143, 3428, 10151, 3432, 10148,
             3432, 10152, 3433, 10139, 3434, 10144};
-    static final int[] WSC_HELLHOUNDS = {3439, 10082, 3439, 10088, 3444, 10077, 3444, 10096, 3445, 10085};
+    static final int[] WSC_HELLHOUNDS = {3439, 10082, 3439, 10088, 3444, 10077, 3444, 10096, 3445, 10085, 3443, 10081, 3444, 10089,
+            3440, 10085, 3443, 10093};
+    // The 2022 task-only rooms (wiki LocLines; Peeve stops anyone off task). The jelly at 3433, 10097 stands one tile north
+    // (approx) so a wall parts the jellies from the hellhounds.
+    static final int[] WSC_ABYSSAL_DEMONS = {3335, 10161, 3339, 10164, 3340, 10159, 3340, 10168, 3343, 10163, 3345, 10158, 3345, 10167,
+            3347, 10161};
+    static final int[] WSC_DUST_DEVILS = {3431, 10117, 3433, 10124, 3434, 10120, 3437, 10127, 3439, 10119, 3439, 10123, 3444, 10121,
+            3444, 10126, 3448, 10123};
+    static final int[] WSC_GREATER_NECHRYAEL = {3335, 10114, 3332, 10101, 3334, 10105, 3334, 10110, 3336, 10102, 3337, 10107, 3339, 10104,
+            3341, 10101};
+    static final int[] WSC_JELLIES = {3429, 10100, 3435, 10106, 3434, 10102, 3426, 10102, 3430, 10104, 3427, 10106, 3433, 10098,
+            3424, 10108, 3439, 10107, 3433, 10100, 3433, 10104, 3427, 10100, 3425, 10105, 3432, 10106};
     static final int[] WSC_RATS = {3419, 10078, 3433, 10061, 3440, 10072};
     static final int[] WSC_BANDIT = {3430, 10070};
 
     /**
      * The Wilderness Slayer Cave under the Wilderness north of Varrock (the cache snapshot's layout): ice giants by the
      * stairs, ankou, lesser, black and greater demons, green and black dragons and hellhounds in their own caverns off a
-     * northern spine, and the level 130 bandit and 3 rats in the eastern corner.
+     * northern spine, and the level 130 bandit and 3 rats in the eastern corner. The 2022 task-only rooms (Revenant
+     * Maledictus &amp; Wilderness Changes): greater Nechryael west of the lesser demons, abyssal demons west of the black
+     * dragons, jellies north of the hellhounds and dust devils south of the greater demons, where Peeve stops anyone off
+     * task (their doorways are approx). The whole cave is multicombat.
      */
     static Dungeons.Dungeon wildernessSlayerCave() {
         Cave c = new Cave("dng_wilderness_slayer_cave", "Wilderness Slayer Cave", mc("deepslate_bricks"), mc("tuff"), mc("shroomlight"));
         Shifted s = new Shifted(c, WSC_DX, WSC_DY);
         int f = 20;
         int[] stairs = {3378, 10044, 3392, 10058};
-        int[] iceGiants = {3328, 10047, 3356, 10064};
+        int[] iceGiants = {3328, 10047, 3358, 10064};
         int[] ankou = {3344, 10062, 3376, 10090};
         int[] lesser = {3328, 10120, 3346, 10148};
         int[] black = {3350, 10108, 3372, 10132};
@@ -365,9 +386,14 @@ final class CacheDungeons {
         int[] greensNorth = {3390, 10112, 3408, 10130};
         int[] greensSouth = {3404, 10058, 3424, 10074};
         int[] greater = {3416, 10134, 3440, 10164};
-        int[] hellhounds = {3434, 10074, 3450, 10100};
+        int[] hellhounds = {3434, 10074, 3450, 10096};
         int[] bandit = {3416, 10058, 3442, 10080}; // the bandit's and the rats' corner between the green dragons and hellhounds
-        int[][] rooms = {stairs, iceGiants, ankou, lesser, black, blackDragons, greensNorth, greensSouth, greater, hellhounds, bandit};
+        int[] nechryael = {3330, 10099, 3343, 10116};
+        int[] abyssal = {3332, 10155, 3348, 10170};
+        int[] jellies = {3421, 10098, 3441, 10110};
+        int[] dustDevils = {3430, 10114, 3451, 10130};
+        int[][] rooms = {stairs, iceGiants, ankou, lesser, black, blackDragons, greensNorth, greensSouth, greater, hellhounds, bandit,
+                nechryael, abyssal, jellies, dustDevils};
         for (int[] r : rooms) {
             s.room(r, f, 7);
             // the whole cave is multicombat (wiki: Ice Barrage and the cannon in multi); the halls between rooms are
@@ -384,6 +410,10 @@ final class CacheDungeons {
         s.hall(3408, 10124, 3428, 10134, f);
         s.hall(3392, 10052, 3410, 10058, f);
         s.hall(3424, 10070, 3440, 10074, f);
+        s.hall(3344, 10088, 3337, 10099, f);         // ankou to the greater Nechryael
+        s.hall(3350, 10160, 3348, 10160, f);         // black dragons to the abyssal demons
+        s.hallZ(3440, 10096, 3440, 10098, f);        // hellhounds to the jellies
+        s.hallZ(3432, 10134, 3432, 10130, f);        // greater demons to the dust devils
         c.carve();
         c.pool(s.x(3362), s.z(10163), s.x(3370), s.z(10160), f, mc("lava"));
         c.entrance(s.x(3385), s.z(10052), f, mc("deepslate_bricks"), mc("polished_deepslate"), 's');
@@ -397,6 +427,14 @@ final class CacheDungeons {
         s.camps(rooms, f, RESPAWN, "hellhound", WSC_HELLHOUNDS);
         s.camps(rooms, f, RESPAWN, "rat", WSC_RATS);
         s.camps(rooms, f, RESPAWN, "wilderness_bandit", WSC_BANDIT);
+        s.camps(rooms, f, RESPAWN, "greater_nechryael", WSC_GREATER_NECHRYAEL);
+        s.camps(rooms, f, RESPAWN, "abyssal_demon", WSC_ABYSSAL_DEMONS);
+        s.camps(rooms, f, RESPAWN, "jelly", WSC_JELLIES);
+        s.camps(rooms, f, RESPAWN, "dust_devil", WSC_DUST_DEVILS);
+        s.taskOnly(nechryael, f, 7, "nechryael", "Peeve");
+        s.taskOnly(abyssal, f, 7, "abyssal_demons", "Peeve");
+        s.taskOnly(jellies, f, 7, "jellies", "Peeve");
+        s.taskOnly(dustDevils, f, 7, "dust_devils", "Peeve");
         return c.build();
     }
 

@@ -26,7 +26,9 @@ public enum Bone {
     BAT_BONES("bat_bones", "Bat bones", 5.3, 0x8A8070),
     WOLF_BONES("wolf_bones", "Wolf bones", 4.5, 0xE0D8C8),
     WYRMLING_BONES("wyrmling_bones", "Wyrmling bones", 21.0, 0xC8C0B0),
-    ZOGRE_BONES("zogre_bones", "Zogre bones", 22.5, 0xB8C0A0);
+    ZOGRE_BONES("zogre_bones", "Zogre bones", 22.5, 0xB8C0A0),
+    // Round 44: frost dragons (Grimstone Dungeon, slayer module); OSRS Wiki "Frost dragon bones": 100 Prayer XP.
+    FROST_DRAGON_BONES("frost_dragon_bones", "Frost dragon bones", 100.0, 0xD8E8F0);
 
     /** Best bone-offering multiplier at a gilded altar (both incense burners lit); see {@link PrayerAltars}. */
     public static final double ALTAR_MULTIPLIER = 3.5;
