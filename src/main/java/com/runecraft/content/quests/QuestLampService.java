@@ -80,6 +80,25 @@ public final class QuestLampService {
         return QuestLamps.owedUses(l.id(), g -> granted(p, g), used(p, l.id()));
     }
 
+    /**
+     * The choice a player must make before this one ({@link Grant#needsChoice()}: Duke trains only players Daero trained), or
+     * null when nothing blocks it. A player who completed the granting quest before the choices existed was trained with fixed
+     * XP then, so the need counts as met.
+     */
+    public static Lamp blockedBy(ServerPlayer p, Lamp l) {
+        for (Grant g : QuestLamps.grants()) {
+            if (g.lamp().equals(l.id()) && !QuestLamps.needMet(g, need -> used(p, need) > 0, need -> completedWithoutGrant(p, need))) {
+                return QuestLamps.get(g.needsChoice());
+            }
+        }
+        return null;
+    }
+
+    /** Whether the player completed a grant's quest without receiving the grant (before the lamps existed). */
+    private static boolean completedWithoutGrant(ServerPlayer p, Grant g) {
+        return QuestApi.isComplete(p, g.quest()) && !QuestsState.get(p).hasFlag(p.getUUID(), grantKey(g));
+    }
+
     /** Items of a lamp the player carries or banks (an old reward item that now works as it counts too). */
     static int held(ServerPlayer p, String lamp) {
         int n = Inv.count(p, lamp) + bankCount(p, lamp);
@@ -129,10 +148,16 @@ public final class QuestLampService {
             Lamp l = QuestLamps.get(g.lamp());
             if (l.kind() == Kind.CHOICE) {
                 Msg.action(p, "Quest reward: " + l.name() + ", " + choices(l, n) + l.describe() + ".");
-                if (l.npc() != null) {
-                    Msg.game(p, "If you don't choose now, " + npcName(l.npc()) + " will offer it again later.");
+                Lamp need = blockedBy(p, l);
+                if (need != null) {
+                    Msg.game(p, "You can claim it" + (l.npc() != null ? " from " + npcName(l.npc()) : "") + " once you have accepted "
+                            + need.name() + ".");
+                } else {
+                    if (l.npc() != null) {
+                        Msg.game(p, "If you don't choose now, " + npcName(l.npc()) + " will offer it again later.");
+                    }
+                    open(p, l.id());
                 }
-                open(p, l.id());
             } else {
                 Inv.give(p, l.id(), n);
                 Msg.action(p, "Quest reward: " + (n > 1 ? n + " x " : "") + l.name() + " (" + l.describe()
@@ -170,6 +195,20 @@ public final class QuestLampService {
         return null;
     }
 
+    /**
+     * Whether a held lamp or tome may be used: a quest's lamp works only while its quest still owes the player a use, so one
+     * picked up from another player, or reclaimed while the first still lay on the floor, gives nothing. An old reward item
+     * from before the lamps (no grant to count) still works; the museum lamps aren't a quest's. Tells the player when not.
+     */
+    static boolean yours(ServerPlayer p, Lamp l, ItemStack stack) {
+        boolean legacy = QuestLamps.legacyItem(Inv.idOf(stack)) && !anyGrantMade(p, l);
+        if (!QuestLamps.granted(l.id()) || legacy || owed(p, l) > 0) {
+            return true;
+        }
+        Msg.game(p, "Nothing happens: this " + l.name().toLowerCase(Locale.ROOT) + " wasn't given to you.");
+        return false;
+    }
+
     /** Uses left on a held item: the wishes or chapters not yet taken. */
     static int usesLeft(ItemStack stack, Lamp l) {
         var tag = StackData.get(stack);
@@ -188,9 +227,14 @@ public final class QuestLampService {
             if (left <= 0) {
                 return;
             }
+            Lamp need = blockedBy(p, l);
+            if (need != null) {
+                Msg.game(p, "You must accept " + need.name() + " first.");
+                return;
+            }
         } else {
             ItemStack stack = heldStack(p, l.id());
-            if (stack == null) {
+            if (stack == null || !yours(p, l, stack)) {
                 return;
             }
             left = usesLeft(stack, l);
@@ -260,16 +304,17 @@ public final class QuestLampService {
             if (owed(p, l) <= 0) {
                 return false;
             }
-            for (Grant g : QuestLamps.grants()) {
-                if (g.lamp().equals(l.id()) && g.needsChoice() != null && used(p, g.needsChoice()) == 0) {
-                    Lamp need = QuestLamps.get(g.needsChoice());
-                    Msg.game(p, "You must accept " + need.name() + " first.");
-                    return false;
-                }
+            Lamp need = blockedBy(p, l);
+            if (need != null) {
+                Msg.game(p, "You must accept " + need.name() + " first.");
+                return false;
             }
         } else {
             stack = heldStack(p, l.id());
             if (stack == null) {
+                return false;
+            }
+            if (!yours(p, l, stack)) {
                 return false;
             }
         }
@@ -318,7 +363,8 @@ public final class QuestLampService {
                 continue;
             }
             if (l.kind() == Kind.CHOICE) {
-                if (owed(p, l) > 0) {
+                // a choice still blocked by another (Duke before Daero's training) leaves the NPC's own dialogue alone
+                if (owed(p, l) > 0 && blockedBy(p, l) == null) {
                     QuestApi.say(p, npcName(npcId), "You haven't claimed all of your reward yet. Choose wisely.");
                     open(p, l.id());
                     return true;

@@ -263,6 +263,16 @@ public final class QuestLamps {
         return ALIASES.getOrDefault(id, id);
     }
 
+    /** Whether this is an old reward item that now works as a lamp (handed out before the lamps existed, so never granted). */
+    public static boolean legacyItem(String id) {
+        return ALIASES.containsKey(id);
+    }
+
+    /** The old reward items that now work as lamps. */
+    public static Set<String> legacyItems() {
+        return ALIASES.keySet();
+    }
+
     public static List<Grant> grants() {
         return List.copyOf(GRANTS);
     }
@@ -335,6 +345,34 @@ public final class QuestLamps {
         return Math.max(0, total - used);
     }
 
+    /**
+     * Whether a grant's {@link Grant#needsChoice()} is met: the needed choice was made ({@code made}), or a quest that grants it
+     * was completed without that grant ({@code completedWithoutGrant}): the player finished it before the choice existed, when
+     * its training was fixed XP (Monkey Madness I gave Daero's Attack and Defence training as fixed XP).
+     */
+    public static boolean needMet(Grant g, java.util.function.Predicate<String> made,
+                                  java.util.function.Predicate<Grant> completedWithoutGrant) {
+        if (g.needsChoice() == null || made.test(g.needsChoice())) {
+            return true;
+        }
+        for (Grant need : GRANTS) {
+            if (need.lamp().equals(g.needsChoice()) && completedWithoutGrant.test(need)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Whether any quest hands out this lamp (the museum lamps come from another module instead). */
+    public static boolean granted(String lamp) {
+        for (Grant g : GRANTS) {
+            if (g.lamp().equals(lamp)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Items of a lamp a player may reclaim: whole items still owed beyond those they carry or bank. */
     public static int reclaimable(String lamp, java.util.function.ToIntFunction<Grant> granted, int used, int held) {
         Lamp l = LAMPS.get(lamp);
@@ -352,7 +390,7 @@ public final class QuestLamps {
                 || id.equals(CommonItems.MUSEUM_LAMP_DEFENDER) || id.equals(CommonItems.MUSEUM_LAMP_EMPTY_LORD);
     }
 
-    /** Registers the lamp and tome items. */
+    /** Registers the lamp and tome items: untradeable (Untradeables) and unalchable, as in OSRS. */
     static void items(QuestBook b) {
         b.items(s -> {
             for (Lamp l : LAMPS.values()) {
@@ -361,7 +399,7 @@ public final class QuestLamps {
                 }
                 s.add(l.id(), l.name(), ItemDef.Kind.SIMPLE, l.kind() == Kind.TOME ? "book" : "lamp",
                         l.kind() == Kind.TOME ? 0x6A3A8A : l.id().startsWith("magic_lamp") ? 0x5AC8E0 : 0xE8C030)
-                        .value(l.kind() == Kind.TOME ? 1 : 50).stack(1).examine(l.examine() + " (" + l.describe()
+                        .value(l.kind() == Kind.TOME ? 1 : 50).unalchable().stack(1).examine(l.examine() + " (" + l.describe()
                                 + (l.uses() > 1 ? ", " + l.uses() + (l.kind() == Kind.TOME ? " chapters)" : " wishes)") : ")"));
             }
         });

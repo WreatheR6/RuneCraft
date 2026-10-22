@@ -33,6 +33,15 @@ final class QuestLampChecks {
         for (String quest : QuestLamps.quests()) {
             checks.add(new SelfTest.Check("quest:lamps:" + quest, () -> {
                 QuestLampService.selfTestReset(c.player, quest);
+                for (Grant g : QuestLamps.grants(quest)) {
+                    // the needed choice handed out but not made yet (Daero's training owed): the check below must be refused
+                    for (Grant need : QuestLamps.grants()) {
+                        if (need.lamp().equals(g.needsChoice())) {
+                            QuestLampService.selfTestReset(c.player, need.quest());
+                            QuestLampService.grant(c.player, need.quest());
+                        }
+                    }
+                }
                 QuestLampService.grant(c.player, quest);
                 for (Grant g : QuestLamps.grants(quest)) {
                     Lamp l = QuestLamps.get(g.lamp());
@@ -47,6 +56,8 @@ final class QuestLampChecks {
         checks.add(new SelfTest.Check("quest:lamps:reclaim", () -> reclaim(c)));
         checks.add(new SelfTest.Check("quest:lamps:kingdom_divided", () -> kingdomDivided(c)));
         checks.add(new SelfTest.Check("quest:lamps:museum", () -> museum(c)));
+        checks.add(new SelfTest.Check("quest:lamps:daero_before_lamps", () -> daeroBeforeLamps(c)));
+        checks.add(new SelfTest.Check("quest:lamps:not_given", () -> notGiven(c)));
         return checks;
     }
 
@@ -76,6 +87,75 @@ final class QuestLampChecks {
             done.add(xp + " XP");
         }
         return "museum lamps rubbed: " + String.join(", ", done);
+    }
+
+    /**
+     * Duke's training after Monkey Madness I finished before the choices existed (Daero's training was fixed XP then, so there
+     * is no grant): Duke's choice can be made. A player Daero hasn't trained yet is refused, and King Narnode then keeps his
+     * own dialogue instead of opening a choice that can't be made.
+     */
+    private static String daeroBeforeLamps(TestContext c) {
+        ServerPlayer p = c.player;
+        PlayerData d = Players.data(p);
+        com.runecraft.osrs.QuestInfo mm1 = com.runecraft.quest.QuestApi.quest("monkey_madness_i");
+        int stage = d.questStage(mm1);
+        Lamp duke = QuestLamps.get("mm2_duke_training");
+        Skill s = firstSkill(p, duke);
+        try {
+            QuestLampService.selfTestReset(p, "monkey_madness_i");
+            QuestLampService.selfTestReset(p, "monkey_madness_ii");
+            d.setQuestStage(mm1, mm1.finalStage());
+            QuestLampService.grant(p, "monkey_madness_ii");
+            int before = d.skills().xpTenths(s);
+            if (!QuestLampService.choose(p, duke.id() + ":" + s.name()) || d.skills().xpTenths(s) - before != duke.xp() * 10) {
+                throw new AssertionError("Duke refused a player who finished Monkey Madness I before the lamps");
+            }
+            QuestLampService.selfTestReset(p, "monkey_madness_ii");
+            QuestLampService.grant(p, "monkey_madness_i"); // Daero's choice owed, not made
+            QuestLampService.grant(p, "monkey_madness_ii");
+            if (QuestLampService.choose(p, duke.id() + ":" + s.name())) {
+                throw new AssertionError("Duke trained a player Daero hasn't trained");
+            }
+            if (QuestLampService.talk(p, duke.npc())) {
+                throw new AssertionError("King Narnode opened Duke's choice before Daero's training");
+            }
+            return "Duke trains a player who finished Monkey Madness I before the lamps; before Daero's training he doesn't, "
+                    + "and King Narnode keeps his dialogue";
+        } finally {
+            d.setQuestStage(mm1, stage);
+            QuestLampService.selfTestReset(p, "monkey_madness_i");
+            QuestLampService.selfTestReset(p, "monkey_madness_ii");
+        }
+    }
+
+    /**
+     * A quest's lamp the quest didn't give this player (picked up from another, or bought) does nothing; the old book of
+     * knowledge from before the lamps still works as the lamp of knowledge.
+     */
+    private static String notGiven(TestContext c) {
+        ServerPlayer p = c.player;
+        PlayerData d = Players.data(p);
+        Lamp tombs = QuestLamps.get("quest_lamp_into_the_tombs");
+        QuestLampService.selfTestReset(p, "into_the_tombs");
+        Inv.remove(p, tombs.id(), Inv.count(p, tombs.id()));
+        Inv.give(p, tombs.id(), 1);
+        Skill s = firstSkill(p, tombs);
+        int before = d.skills().xpTenths(s);
+        if (QuestLampService.choose(p, tombs.id() + ":" + s.name()) || d.skills().xpTenths(s) != before) {
+            throw new AssertionError("a lamp Into the Tombs never gave this player was rubbed");
+        }
+        Inv.remove(p, tombs.id(), Inv.count(p, tombs.id()));
+        Lamp knowledge = QuestLamps.get("lamp_of_knowledge");
+        QuestLampService.selfTestReset(p, "in_search_of_knowledge");
+        Inv.remove(p, "book_of_knowledge", Inv.count(p, "book_of_knowledge"));
+        Inv.give(p, "book_of_knowledge", 1);
+        s = firstSkill(p, knowledge);
+        before = d.skills().xpTenths(s);
+        if (!QuestLampService.choose(p, knowledge.id() + ":" + s.name()) || d.skills().xpTenths(s) - before != knowledge.xp() * 10
+                || Inv.count(p, "book_of_knowledge") != 0) {
+            throw new AssertionError("the old book of knowledge didn't work as the lamp of knowledge");
+        }
+        return "a lamp not given does nothing; the old book of knowledge still works";
     }
 
     /** The first skill a player may put a lamp's XP into (every skill is 99 on the test player). */
@@ -201,8 +281,13 @@ final class QuestLampChecks {
         if (Inv.count(p, l.id()) != 1) {
             throw new AssertionError("Yanni gave back " + Inv.count(p, l.id()) + " lamps for the lost one, not 1");
         }
+        Inv.give(p, l.id(), 1); // the lost one found again: only one use is still owed
         rub(c, l.id());
         QuestLampService.choose(p, l.id() + ":" + firstSkill(p, l).name());
+        if (QuestLampService.choose(p, l.id() + ":" + firstSkill(p, l).name()) || Inv.count(p, l.id()) != 1) {
+            throw new AssertionError("the found lamp gave a third use");
+        }
+        Inv.remove(p, l.id(), 1);
         QuestInterpreter.selfTestTalk(p, l.npc());
         if (Inv.count(p, l.id()) != 0) {
             throw new AssertionError("Yanni gave a third lamp after both were rubbed");

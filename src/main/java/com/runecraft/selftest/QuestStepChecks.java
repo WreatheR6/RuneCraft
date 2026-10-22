@@ -123,6 +123,8 @@ final class QuestStepChecks {
         c.completeQuests(info);
         PlayerData data = Players.data(p());
         data.setQuestStage(info, 0);
+        // the walk replays the quest: its lamps are handed out again on completion (another walk may have claimed them)
+        com.runecraft.content.quests.QuestLampService.selfTestReset(p(), id);
         data.setQuestPoints(Math.max(q.minQuestPoints, 1000));
         int qpBefore = data.questPoints();
         Map<Skill, Integer> xpBefore = new HashMap<>();

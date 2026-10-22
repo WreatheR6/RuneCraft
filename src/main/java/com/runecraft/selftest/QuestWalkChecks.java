@@ -83,6 +83,8 @@ final class QuestWalkChecks {
         PlayerData data = Players.data(p);
         c.completeQuests(info);
         data.setQuestStage(info, 0);
+        // the walk replays the quest: its lamps are handed out again on completion (another walk may have claimed them)
+        com.runecraft.content.quests.QuestLampService.selfTestReset(p, id);
         data.setQuestPoints(1000);
         int qpBefore = data.questPoints();
         QuestStrictWalk.Plan plan = QuestStrictWalk.plan(q, p.getStringUUID());

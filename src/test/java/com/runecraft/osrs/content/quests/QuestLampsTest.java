@@ -131,6 +131,36 @@ class QuestLampsTest {
         // Duke trains only players Daero trained (wiki)
         Grant duke = QuestLamps.grants("monkey_madness_ii").get(0);
         assertEquals("mm1_daero_training", duke.needsChoice());
+        assertFalse(QuestLamps.needMet(duke, made -> false, g -> false), "Duke before Daero's training");
+        assertTrue(QuestLamps.needMet(duke, "mm1_daero_training"::equals, g -> false), "Duke after Daero's training");
+        // Monkey Madness I finished before the choices existed: Daero's training was fixed XP then, so Duke trains the player
+        assertTrue(QuestLamps.needMet(duke, made -> false, g -> g.quest().equals("monkey_madness_i")));
+        assertFalse(QuestLamps.needMet(duke, made -> false, g -> g.quest().equals("monkey_madness_ii")));
+        Grant daeroGrant = QuestLamps.grants("monkey_madness_i").get(0);
+        assertTrue(QuestLamps.needMet(daeroGrant, made -> false, g -> false), "Daero needs nothing");
+    }
+
+    /**
+     * Every lamp and tome is untradeable in OSRS (wiki: tradeable no), so the Grand Exchange and general stores refuse them:
+     * otherwise one bought for a few coins would give its XP without the quest.
+     */
+    @Test
+    void lampsAndTomesAreUntradeable() {
+        for (Lamp l : QuestLamps.all()) {
+            if (l.kind() != Kind.CHOICE) {
+                assertTrue(com.runecraft.osrs.data.Untradeables.untradeable(l.id()), l.id());
+                assertFalse(com.runecraft.osrs.data.GePrices.has(l.id()), l.id());
+                // alchemy would turn a lamp into coins and its NPC would hand over another
+                assertTrue(!ItemCatalog.get(l.id()).alchable() || ItemCatalog.get(l.id()).highAlch() == 0, l.id());
+            }
+        }
+        for (String id : QuestLamps.legacyItems()) {
+            assertTrue(com.runecraft.osrs.data.Untradeables.untradeable(id), id);
+        }
+        assertTrue(QuestLamps.granted("quest_lamp_into_the_tombs"));
+        assertFalse(QuestLamps.granted(com.runecraft.osrs.content.CommonItems.MUSEUM_LAMP_FINDS), "the museum's lamps aren't a quest's");
+        assertTrue(QuestLamps.legacyItem("book_of_knowledge"));
+        assertFalse(QuestLamps.legacyItem("lamp_of_knowledge"));
     }
 
     @Test
