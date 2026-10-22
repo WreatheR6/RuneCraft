@@ -696,7 +696,10 @@ final class BossFightChecks {
      * {@link #CRUSH_WEAPON}), the rest cycling through the others in case that style can't hurt it (a form immune to it).
      * Styles the boss is immune to by its definition ({@code CombatProfile.immuneTo}: Kree'arra can only be hurt by ranged and
      * magic, OSRS Wiki) are left out of both: CI on 3623edf7 picked melee as Kree'arra's weakest style (+180 against +200) and
-     * spent 15 of 21 attempts on a refused style. {@link #usableStyles}
+     * spent 15 of 21 attempts on a refused style. {@link #usableStyles} With the check's {@link #ACCURACY_BOOST} (x4 on the
+     * attack roll) Fire Surge hits Kree'arra about 29% of the time (108 x 74 x 4 against 209 x 264) and the magic shortbow
+     * about 40% (107 x 133 x 4 against 269 x 264), so the 15 to 21 attempts before he dies all miss about once in 1,000 to
+     * 7,000 runs (0.71 x 0.60 per pair of attempts).
      */
     private static AttackType playerStyle(LivingEntity boss, AttackType[] styles, int n) {
         com.runecraft.combat.MonsterStats stats = com.runecraft.combat.MonsterStats.of(boss);

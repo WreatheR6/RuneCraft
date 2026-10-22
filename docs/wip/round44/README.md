@@ -1,12 +1,12 @@
 # Round 44 (interrupted, not merged)
 
-Round 44 was stopped part-way to save usage. None of this is in the build: each patch is unreviewed work from one scope's
-worktree, diffed against the integration branch at 3623edf7. To resume, apply a patch on a fresh branch
+Round 44 was stopped part-way to save usage. Each patch left here is unreviewed work from one scope's worktree, diffed
+against the integration branch at 3623edf7, and is not in the build. To resume, apply a patch on a fresh branch
 (`git apply --3way docs/wip/round44/scopeN.patch`), finish it, run `tools/loop/verify.sh`, then review and merge as usual.
 
-- `scope1.patch`, **real-walks** (playability): self-test walks that move the real player with real movement, switch
-  prayers through the keys after a reaction delay, assert a walk-out budget for each dodged strike, and a no-heal pass for
-  bosses and raid rooms (also arms Zulrah's clouds on the strike floor). 3 commits, done through implementation; not reviewed.
+- **real-walks** (playability), done: its 3 commits were resumed and finished on their own branch (RealPlayer, GridPath and
+  RealReaction, NoHealChecks, the walk-out budget, prayers through the keys, Zulrah's clouds on the strike floor) and merge
+  with it, so its patch was removed. Don't re-apply an old copy of `scope1.patch`: it would duplicate that code.
 - `scope2.patch`, **slayer2**: per-area task-only gating and new task-only rooms; Task Storage, Duly Noted, the rune
   pouch, shop items and helmets; Vannaka in the Edgeville Dungeon, Konar on the summit, Larran's chest on the ship, bell
   radius, Otto repairs hastas; Konar names a location; Mortimer and five missing superiors. The last commit ("WIP slayer2")
