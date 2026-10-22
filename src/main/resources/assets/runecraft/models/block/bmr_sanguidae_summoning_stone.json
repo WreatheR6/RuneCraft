@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/bmr_sanguidae_summoning_stone_side",
+    "top": "runecraft:block/bmr_sanguidae_summoning_stone_top",
+    "bottom": "runecraft:block/bmr_sanguidae_summoning_stone_bottom"
+  }
+}

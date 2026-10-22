@@ -674,10 +674,10 @@ final class MahjarratQuests {
                 .take("mastaba_key").flag("coa_lever_north")
                 .say("* East of the imposing doors in the north-east you disarm the traps the same way and pull the north lever.",
                         "* The imposing doors to the west unlock.")
-                .reach("coa_mastaba", 6).stay().needFlag("coa_lever_north").unlessFlag("coa_golem_door").flag("coa_golem_door")
-                .spawn("coa_golem_guard")
+                // raises the golem again whenever the player comes back without having beaten it (a lost fight's boss vanishes)
+                .reach("coa_mastaba", 6).stay().needFlag("coa_lever_north").unlessFlag("coa_golem").spawn("coa_golem_guard")
                 .say("* You open the imposing doors. A golem guard lumbers to life!")
-                .kill("coa_golem_guard").stay().needFlag("coa_golem_door").unlessFlag("coa_golem").flag("coa_golem")
+                .kill("coa_golem_guard").stay().needFlag("coa_lever_north").unlessFlag("coa_golem").flag("coa_golem")
                 .say("* The golem guard crumbles. Stairs lead down from its chamber.")
                 .puzzle("coa_mastaba", COA_TILES).stay().needFlag("coa_golem").unlessFlag("coa_tiles").flag("coa_tiles")
                 .say("* You reach the far side and pull the lever there: the coloured tiles go dark.")
@@ -757,10 +757,10 @@ final class MahjarratQuests {
                 .reqSkill(Skill.RANGED, 62).reqSkill(Skill.AGILITY, 61).reqSkill(Skill.STRENGTH, 58).flag("coa_pipe")
                 .say("* You fire your mith grapple at the metal bars over the fire traps and swing across the pipe.")
                 .missing("* Fire traps guard the floor beyond the doors. A mith grapple could cross on the bars above them.")
-                .reach("coa_zemouregals_base", 8).stay().needFlag("coa_pipe").unlessFlag("coa_pedestal").need("canopic_jar_full")
-                .flag("coa_pedestal").spawn("arrav")
+                // raises Arrav again whenever the player comes back to the pedestal after a lost fight
+                .reach("coa_zemouregals_base", 8).stay().needFlag("coa_pipe").need("canopic_jar_full").spawn("arrav")
                 .say("* You reach for Arrav's heart on its pedestal. Arrav steps from the shadows, Zemouregal's will in his eyes!")
-                .kill("arrav").needFlag("coa_pedestal").take("canopic_jar_full").give("arravs_heart")
+                .kill("arrav").needFlag("coa_pipe").take("canopic_jar_full").give("arravs_heart")
                 .say("* Arrav falls to his knees. You seal his beating heart in the canopic jar, and Zemouregal's hold on him breaks.",
                         "* Zemouregal himself appears, cursing, and vanishes into the shadows.")
                 .missing("* Without the canopic jar there is nothing to hold Arrav's heart.")

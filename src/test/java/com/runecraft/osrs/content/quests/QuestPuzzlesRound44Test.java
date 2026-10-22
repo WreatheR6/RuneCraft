@@ -83,4 +83,73 @@ class QuestPuzzlesRound44Test {
         assertFalse(QuestBossRules.nthIsSpecial(4, QuestBossRules.COA_ARRAV_AXE_EVERY));
         assertEquals(5, q.stages.size(), "the saved stage count");
     }
+
+    /**
+     * The Blood Moon Rises (wiki quick guide, quest-helper): its eight saved stages hold the real chapters and puzzles, and the
+     * puzzles take the wiki's answers.
+     */
+    @Test
+    void bloodMoonRisesPuzzlesTakeTheWikiAnswers() {
+        QuestSpec q = BOOK.spec("the_blood_moon_rises");
+        assertEquals(8, q.stages.size(), "the saved stage count");
+        for (QuestPuzzle p : List.of(LateQuestsD.BMR_PLINTHS, LateQuestsD.BMR_BUSTS, LateQuestsD.BMR_CLOCKS, LateQuestsD.BMR_CRESCENT_CHEST,
+                LateQuestsD.BMR_STATUES, LateQuestsD.BMR_LOCKBOX, LateQuestsD.BMR_DAGGER_DOOR, LateQuestsD.BMR_GILDED_BOOKCASE,
+                LateQuestsD.BMR_BASINS, LateQuestsD.BMR_REFINER)) {
+            assertTrue(hasPuzzle("the_blood_moon_rises", p), p.key);
+        }
+        // north to south: Pious proceedings, The Life of Friar, Scruffy notebook, From Misthalin to Morytania, Sarl's journal,
+        // Essiandar's notes
+        Variant plinths = LateQuestsD.BMR_PLINTHS.rooms.get(0).variants().get(0);
+        assertEquals(List.of("Pious proceedings", "The Life of Friar", "Scruffy notebook", "From Misthalin to Morytania", "Sarl's journal",
+                "Essiandar's notes"), plinths.solutions().get(0).stream().map(plinths.options()::get).toList());
+        // the busts: third, fourth, first, second
+        assertEquals(List.of(2, 3, 0, 1), LateQuestsD.BMR_BUSTS.rooms.get(0).variants().get(0).solutions().get(0));
+        // the clocks: east 12 and 4, west 11 and 9
+        Variant clocks = LateQuestsD.BMR_CLOCKS.rooms.get(0).variants().get(0);
+        assertEquals(List.of("12", "4", "11", "9"), clocks.solutions().get(0).stream().map(clocks.options()::get).toList());
+        // the crescent moon chest: right, down, right, left, left
+        Variant chest = LateQuestsD.BMR_CRESCENT_CHEST.rooms.get(0).variants().get(0);
+        assertEquals(List.of("Right", "Down", "Right", "Left", "Left"), chest.solutions().get(0).stream().map(chest.options()::get).toList());
+        // the gilded bookcase: the eight houses in alphabetical order
+        Variant books = LateQuestsD.BMR_GILDED_BOOKCASE.rooms.get(0).variants().get(0);
+        List<String> houses = books.solutions().get(0).stream().map(books.options()::get).toList();
+        assertEquals(houses.stream().sorted().toList(), houses);
+        assertEquals(8, houses.size());
+        // the refiner: every accepted answer makes 53 from two waters, three bloods and three essences
+        Variant refiner = LateQuestsD.BMR_REFINER.rooms.get(0).variants().get(0);
+        int[] potential = {17, 13, 6};
+        for (List<Integer> answer : refiner.solutions()) {
+            assertEquals(53, answer.stream().mapToInt(i -> potential[i]).sum());
+            long blood = answer.stream().filter(i -> i <= 1).count();
+            long essence = answer.stream().filter(i -> i == 0 || i == 2).count();
+            long water = answer.stream().filter(i -> i >= 1).count();
+            assertTrue(blood <= 3 && essence <= 3 && water <= 2, answer.toString());
+        }
+        assertEquals(1, refiner.check(List.of(2, 0, 1, 0)));
+        assertEquals(-1, refiner.check(List.of(1, 1)));
+        // the passcode door: SPEAR, read through the grid
+        assertEquals(1, LateQuestsD.BMR_DAGGER_DOOR.rooms.get(0).variants().get(0).check(java.util.Arrays.stream(QuestPuzzle.word("SPEAR"))
+                .boxed().toList()));
+    }
+
+    /** Lowerniel Drakan's wiki infobox (level 1063, 3,000 HP) and the hitpoints each of his four fights takes. */
+    @Test
+    void bloodMoonRisesFightsDrakanFourTimes() {
+        QuestSpec q = BOOK.spec("the_blood_moon_rises");
+        List<String> kills = q.triggers().stream().filter(t -> t.kind == QuestSpec.Trigger.Kind.KILL).map(t -> t.target).toList();
+        assertTrue(kills.containsAll(List.of("bmr_drakan_woods", "bmr_drakan_siege", "bmr_drakan_blood_moon", "quest_lowerniel_drakan",
+                "bmr_wyrd", "bmr_vyrewatch", "bmr_vyrewatch_sentinel", "bmr_venator", "bmr_ancient_feral_vyre")), kills.toString());
+        java.util.Map<String, Integer> hp = java.util.Map.of("bmr_drakan_woods", 450, "bmr_drakan_siege", 1260, "bmr_drakan_blood_moon", 2100,
+                "quest_lowerniel_drakan", 3000, "bmr_wyrd", 990);
+        hp.forEach((id, h) -> {
+            var boss = BOOK.bosses.stream().filter(b -> b.id.equals(id)).findFirst().orElseThrow();
+            assertEquals(h, boss.hitpoints, id);
+        });
+        var drakan = BOOK.bosses.stream().filter(b -> b.id.equals("quest_lowerniel_drakan")).findFirst().orElseThrow();
+        assertEquals(1063, drakan.combatLevel);
+        assertEquals(2, drakan.phases.size());
+        // the final fight ends the quest (the tome of experience is its reward)
+        assertTrue(q.stages.get(7).triggers.stream().anyMatch(t -> t.kind == QuestSpec.Trigger.Kind.KILL
+                && t.target.equals("quest_lowerniel_drakan") && t.completes()));
+    }
 }
