@@ -22,7 +22,8 @@ public final class NpcStoreys {
             "zooknock", 7, "bunkwicket", 7, "waymottin", 7, "bardur", 7,
             "quest_viggora_3", 27, // Curse of the Empty Lord, the Edgeville Dungeon's earth warrior room
             "quest_ashuelot_reis", 21, // before the God Wars Dungeon's frozen door (godwars GwdDungeon, level 2 floor 20)
-            "rev_emblem_trader", 5); // the Revenant Caves (godwars RevenantCaves, floor 4)
+            "rev_emblem_trader", 5, // the Revenant Caves (godwars RevenantCaves, floor 4)
+            "movario", 23); // While Guthix Sleeps: by the Tears of Guthix pool, Lumbridge Swamp Caves (floor 22)
 
     private NpcStoreys() {
     }

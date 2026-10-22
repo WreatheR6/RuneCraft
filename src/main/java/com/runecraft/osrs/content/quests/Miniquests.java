@@ -70,8 +70,7 @@ final class Miniquests {
         b.quest("architectural_alliance", "Architectural Alliance (miniquest)", Difficulty.EXPERIENCED, 0)
                 .req(Skill.MINING, 42)
                 .reqNote("100% favour with each of Kourend's five houses before its architect will help (favour isn't modelled)")
-                // OSRS: a 10,000 XP antique lamp (any skill above 40) from Hosa. // approx
-                .xp(Skill.MINING, 1000)
+                // OSRS: a 10,000 XP antique lamp (any skill above 40) from Hosa (QuestLamps)
                 .unlock("Xeric's talisman teleport to Xeric's Heart")
                 .stage("I can start this miniquest by speaking to the ghost Hosa by the statue of King Rada I outside Kourend Castle. (Requires 42 Mining.)")
                 .talk("quest_hosa").say("A storm wrecked King Rada's statue, and I can't rebuild it alone. I need the architects of all five houses.",
@@ -392,7 +391,7 @@ final class Miniquests {
     private static void hisFaithfulServants(QuestBook b) {
         Cast.npc(b, "quest_strange_old_man_barrows", "Strange Old Man", "BARROWS", 5, -5, Cast.PALE, 0x5A5A3A);
         b.quest("his_faithful_servants", "His Faithful Servants (miniquest)", Difficulty.EXPERIENCED, 0)
-                .xp(Skill.PRAYER, 20000) // OSRS (current quest XP rewards)
+                // OSRS: the dusty lamp, 20,000 Prayer XP (QuestLamps)
                 .reqQuest("priest_in_peril")
                 .unlock("Barrows crypt tunnels can be cleared more quickly")
                 .stage("I can start this miniquest by speaking to the Strange Old Man at the Barrows. (Requires Priest in Peril.)")
@@ -445,8 +444,8 @@ final class Miniquests {
         // Forthos Dungeon (sun 1804,9934; moon 1804,9943; temple 1796,9935; the north-western set holds a scroll), here the
         // west druid room, whose surface tiles (the dungeon is shifted by -128, -6398) are around (1672, 3540).
         b.spot("isk_temple_library", "Forthos temple library", 1672, 3540);
+        // OSRS: the lamp of knowledge, 10,000 XP in a skill of level 40+ (QuestLamps); the old book of knowledge rubs as one
         b.quest("in_search_of_knowledge", "In Search of Knowledge (miniquest)", Difficulty.EXPERIENCED, 0)
-                .reward("book_of_knowledge")
                 .stage("I can start this miniquest by speaking to the starving Brother Aimeri in the Forthos Dungeon, by the entrance to Sarachnis' lair.")
                 .talk("quest_brother_aimeri").say("*He wolfs down the food you give him.* Thank you, friend. I came for the temple's old tomes, "
                         + "but the druids and the spiders... Find the tomes of the sun, moon and temple, and their lost pages, and take them to Logosia.")

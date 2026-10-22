@@ -20,7 +20,7 @@ import java.util.Map;
  * Desert, Morytania, Piscatoris and Great Kourend quests: Spirits of the Elid, Contact!, Beneath
  * Cursed Sands, Swan Song, Ratcatchers, Shades of Mort'ton, Rag and Bone Man I, The Depths of
  * Despair, The Queen of Thieves, Tale of the Righteous, The Forsaken Tower, The Ascent of Arceuus,
- * Getting Ahead and A Kingdom Divided. Lamp rewards are given as fixed XP (approximate).
+ * Getting Ahead and A Kingdom Divided. Lamp rewards are real lamps the player rubs ({@link QuestLamps}).
  */
 final class LateQuestsB {
     private LateQuestsB() {
@@ -89,7 +89,7 @@ final class LateQuestsB {
                 .drops(Drop.always("bones")).size(1.6f, 1.2f, 1.0f).at("sophanem_dungeon").arena(10, "sand"));
         b.quest("contact", "Contact!", Difficulty.EXPERIENCED, 1)
                 .reqQuest("prince_ali_rescue", "icthlarins_little_helper")
-                .xp(Skill.THIEVING, 7000).xp(Skill.RANGED, 7000).reward("keris")
+                .xp(Skill.THIEVING, 7000).reward("keris") // and the combat lamp, two wishes of 7,000 XP (QuestLamps)
                 .stage("I can start this quest by speaking to the High Priest in Sophanem. (Requires Prince Ali Rescue, Icthlarin's Little Helper.)")
                 .talk("high_priest_sophanem").say("Sophanem and Menaphos have lost contact! Is there any way into Menaphos from below?",
                         "Jex, a retired adventurer, lives in the north-easternmost building of the city. He knows the tunnels.")
@@ -661,9 +661,8 @@ final class LateQuestsB {
                 .reqQuest("the_depths_of_despair", "the_queen_of_thieves", "tale_of_the_righteous", "the_forsaken_tower", "the_ascent_of_arceuus")
                 .req(Skill.AGILITY, 54).req(Skill.THIEVING, 52).req(Skill.WOODCUTTING, 52).req(Skill.HERBLORE, 50)
                 .req(Skill.MINING, 42).req(Skill.CRAFTING, 38).req(Skill.MAGIC, 35)
-                // Wiki and quest-helper: the book of the dead and two antique lamps of 10,000 XP in any skill of level 40 or above.
-                // approx: the player picks the lamps' skills in OSRS
-                .xp(Skill.AGILITY, 10000).xp(Skill.HERBLORE, 10000)
+                // Wiki and quest-helper: the book of the dead and two antique lamps of 10,000 XP in any skill of level 40 or above
+                // (QuestLamps; one fewer for a player who claimed Architectural Alliance's)
                 .reward("book_of_the_dead")
                 .unlock("The Kourend Council's favour and the Kebos Lowlands")
                 .stage("I can start this quest by speaking to Martin Holt at the entrance to Kourend Castle. (Requires the five Kourend house quests and more.)")

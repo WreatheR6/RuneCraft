@@ -87,6 +87,7 @@ public final class QuestBook {
             QuestBook b = new QuestBook();
             QuestModels.register(b);
             QuestItemsData.register(b);
+            QuestLamps.items(b);
             F2pQuests.register(b);
             AsgarniaKandarinQuests.register(b);
             KandarinGnomeQuests.register(b);

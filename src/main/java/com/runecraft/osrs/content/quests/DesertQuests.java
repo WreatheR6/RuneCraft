@@ -205,7 +205,7 @@ final class DesertQuests {
                 .attack(AttackDef.of("scimitar", AttackType.SLASH, 8, 2.5, 10)).drops(Drop.always("bones"))
                 .skin(0xC08A5A, 0x6A5A3A, 0x3A2A1A, 0x2A2A2A).at("desert_mining_camp").arena(8, "sand"));
         b.quest("the_tourist_trap", "The Tourist Trap", Difficulty.INTERMEDIATE, 2)
-                .req(Skill.FLETCHING, 10).req(Skill.SMITHING, 20).xp(Skill.AGILITY, 4650).xp(Skill.THIEVING, 4650)
+                .req(Skill.FLETCHING, 10).req(Skill.SMITHING, 20) // Irena's two 4,650 XP rewards: the player picks (QuestLamps)
                 .stage("I can start this quest by speaking to Irena at the Shantay Pass. (Requires 10 Fletching, 20 Smithing.)")
                 .talk("irena").say("My daughter Ana was kidnapped and forced to work in the Desert Mining Camp! Please bring her home.")
                 .stage("I should get into the Desert Mining Camp. The Mercenary Captain has the gate key.")
@@ -224,6 +224,8 @@ final class DesertQuests {
         b.npc("archaeologist", "Archaeologist", "bandit_camp", 0, 3, 0xE0C0A1, 0x8A7A5B, 0x5A4A3B, 0xC0B081);
         b.npc("eblis", "Eblis", "bandit_camp", -3, -3, 0xB8885A, 0x5A3A2A, 0x3A2A1A, 0x2A2A2A);
         b.npc("rasolo", "Rasolo", "rasolo", 0, 0, 0xC8A070, 0x5A2A5A, 0x3A1A3A, 0x8A6A3A);
+        // Rasolo the Wandering Merchant sells papyrus (wiki store: value 10 at 200%), which The Golem's program is written on
+        b.shop("rasolo", "papyrus", 20, null, null, null, 0, "Papyrus? Twenty coins a sheet, friend. Good for notes, or programs.");
         b.npc("malak", "Malak", "CANIFIS", 6, 6, 0xC8C8D0, 0x3A0A1A, 0x1A0A0A, 0x1A1A1A);
         b.npc("troll_child", "Troll child", "trollheim_ice", 0, 0, 0x7A8A6A, 0x5A6A4A, 0x4A5A3A, 0x6A7A5A);
         b.npc("azzanadra", "Azzanadra", "quest_jaldraocht_pyramid", 0, 3, 0x6A3A6A, 0x3A1A4A, 0x2A0A2A, 0xC0A040);

@@ -72,7 +72,7 @@ final class LateQuestsD {
                 .at("quest_bull_pen").arena(8, "stone"));
         b.item("quest_milk_sample", "Milk sample", "vial", 0xF0F0E8, "A sample of sour milk from the Lumbridge cows.");
         b.quest("the_ides_of_milk", "The Ides of Milk", Difficulty.NOVICE, 1)
-                .xp(Skill.HITPOINTS, 1000) // approx: Gillie's lamp (1,000 XP in a combat skill or Prayer)
+                // Gillie Groats' magic lamp: 1,000 XP in a combat skill or Prayer (QuestLamps)
                 .unlock("Access to the Bull, the cow boss in the Lumbridge cow field")
                 .unlock("A cow bell amulet from Gillie Groats")
                 .stage("I can start this quest by speaking to Cassius by the pond north-west of Lumbridge.")
@@ -307,7 +307,7 @@ final class LateQuestsD {
                 .req(Skill.SLAYER, 74).req(Skill.WOODCUTTING, 74).req(Skill.SMITHING, 72).req(Skill.COOKING, 72)
                 .req(Skill.FLETCHING, 70).req(Skill.MINING, 66).req(Skill.HUNTER, 65).req(Skill.CRAFTING, 64)
                 .req(Skill.HERBLORE, 64).req(Skill.MAGIC, 57)
-                .unlock("Six tomes of experience (30,000 XP each in any skill of level 70 or higher)")
+                // OSRS: a tome of experience, 6 x 30,000 XP in any skill of level 70 or higher (QuestLamps)
                 .unlock("The Sunspear")
                 .unlock("Access to Vampyrium and Veliaf's pub in Burgh de Rott")
                 .unlock("The vyres of Morytania no longer attack you without a vyre noble outfit")

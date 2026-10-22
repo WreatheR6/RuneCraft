@@ -24,7 +24,11 @@ public final class QuestNpcMoves {
             "vestri", "gossip_kr", "ali_morrisane", "wanderer_sophanem", "akrisae", "ivy_sophista", "lord_kandur_lovakengj", "lazim",
             "dallas_jones", // round 37: Dallas Jones in the Musa Point pub (quest-helper tile)
             // Round 37: Archeio from the Arceuus town square into the Arceuus Library
-            "quest_archeio");
+            "quest_archeio",
+            // Round 44: Elissa from the ruins of Uzer to the north-east of the Digsite (The Golem, quest-helper tile)
+            "elissa",
+            // Round 44: Movario from the surface by Guthix's sanctum down to the Lumbridge Swamp Caves (While Guthix Sleeps)
+            "movario");
 
     /** Block x/z where the NPC is spawned (its place's centre plus its offset), or null if its place is unknown. */
     public static int[] homeBlock(NpcDef def) {

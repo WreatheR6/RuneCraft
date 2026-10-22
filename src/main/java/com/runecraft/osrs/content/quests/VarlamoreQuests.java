@@ -14,7 +14,7 @@ import com.runecraft.osrs.data.Drop;
  * Varlamore and its neighbours (2024-2025): Children of the Sun, Twilight's Promise, Perilous Moons,
  * At First Light, The Ribbiting Tale of a Lily Pad Labour Dispute, Death on the Isle, Meat and Greet,
  * The Heart of Darkness, Ethically Acquired Antiquities, Scrambled!, Shadows of Custodia and The Final
- * Dawn. Quest points and requirements follow OSRS; XP-lamp rewards are given as fixed XP and the
+ * Dawn. Quest points and requirements follow OSRS; XP-lamp rewards are real lamps ({@link QuestLamps}) and the
  * later quests' details are approximate.
  */
 final class VarlamoreQuests {

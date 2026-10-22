@@ -17,8 +17,8 @@ import java.util.Map;
 /**
  * Fairytale I and II, Garden of Tranquillity, The Path of Glouphrie, Elemental Workshop II, Eagles'
  * Peak, The Giant Dwarf, Olaf's Quest, The Fremennik Isles, Throne of Miscellania, Royal Trouble,
- * Cold War, Tower of Life, King's Ransom, Grim Tales and The Hand in the Sand. XP marked "approx" in
- * comments is a best-known value where OSRS gives a choice of lamps.
+ * Cold War, Tower of Life, King's Ransom, Grim Tales and The Hand in the Sand. Lamp and choice XP rewards
+ * are handed out by {@link QuestLamps}.
  */
 final class LateQuestsA {
     /**
@@ -300,7 +300,7 @@ final class LateQuestsA {
                 .attack(AttackDef.of("screech", AttackType.RANGED, 16, 8, 6))
                 .drops(Drop.always("bones")).size(1.0f, 2.0f, 1.0f).at("glouphrie_tunnels").arena(10, "void"));
         b.quest("the_path_of_glouphrie", "The Path of Glouphrie", Difficulty.EXPERIENCED, 2)
-                .xp(Skill.STRENGTH, 30000).xp(Skill.SLAYER, 20000).xp(Skill.THIEVING, 5000).xp(Skill.MAGIC, 5000) // OSRS (current quest XP rewards)
+                // OSRS: four magic lamps of Strength 30,000, Slayer 20,000, Thieving 5,000 and Magic 5,000 XP (QuestLamps)
                 .reqQuest("the_eyes_of_glouphrie", "waterfall_quest", "tree_gnome_village")
                 .req(Skill.STRENGTH, 60).req(Skill.SLAYER, 56).req(Skill.THIEVING, 56).req(Skill.RANGED, 47).req(Skill.AGILITY, 45)
                 .stage("I can start this quest by speaking to King Bolren in the Tree Gnome Village. (Requires The Eyes of Glouphrie and more.)")
@@ -474,8 +474,7 @@ final class LateQuestsA {
         b.quest("the_fremennik_isles", "The Fremennik Isles", Difficulty.EXPERIENCED, 1)
                 .reqQuest("fremennik_trials").req(Skill.CONSTRUCTION, 20) // 40 Agility only for the optional mine shortcut
                 .xp(Skill.CONSTRUCTION, 5000).xp(Skill.CRAFTING, 5000).xp(Skill.WOODCUTTING, 10000).reward("helm_of_neitiznot")
-                // Plus two 10,000 XP rewards in Attack, Strength, Defence or Hitpoints (player's choice). // approx: fixed skills
-                .xp(Skill.STRENGTH, 10000).xp(Skill.DEFENCE, 10000)
+                // Plus two 10,000 XP rewards in Attack, Strength, Defence or Hitpoints: the player picks (QuestLamps)
                 .stage("I can start this quest by speaking to Mord Gunnars at the northernmost dock of Rellekka. (Requires The Fremennik Trials, 20 Construction, 40 Agility.)")
                 .talk("mord_gunnars").travel("jatizso").say("To the isles? Jatizso and Neitiznot are at war with each other... and with the ice trolls. Off we go.")
                 // Wiki: on Jatizso King Gjuki's cat wants a raw tuna and the king his tax in ore, which buys the jester outfit; on
