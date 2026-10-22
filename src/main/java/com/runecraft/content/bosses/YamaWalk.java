@@ -199,12 +199,42 @@ public final class YamaWalk {
             for (Mob f : y4.walkFlareMobs()) {
                 CombatHandler.applyDamage(p, f, 500);
             }
+            // the partner lands the kill: the contract still goes back to its holder, and both fighters have 1/100 at Yami
+            // (the slayer: the boss engine's 1/2,500 topped up by the script; the holder: rollLoot's 1/100)
             int contracts = Inv.count(p, YamaContract.FAMILIAR_ACQUISITION.item);
-            BossWalks.finish(fourth, d, AttackType.SLASH, 600, 60);
-            if (Inv.count(p, YamaContract.FAMILIAR_ACQUISITION.item) != contracts + 1) {
-                throw fail("the familiar contract wasn't returned on the kill");
+            int partnerContracts = Inv.count(partner, YamaContract.FAMILIAR_ACQUISITION.item);
+            y4.walkCredit(p, 1000); // the holder's share, past the junk threshold
+            for (int t = 0; t < 60 && fourth.isAlive(); t++) {
+                partner.setHealth(partner.getMaxHealth());
+                if (fourth.script().isVulnerable(fourth)) {
+                    BossWalks.hit(fourth, partner, 600, AttackType.SLASH);
+                }
+                if (fourth.isAlive()) {
+                    d.ticks(fourth, 1);
+                }
             }
-            log.add("familiar contract: the partner joins, no food, 81-hp flares, contract returned");
+            if (fourth.isAlive()) {
+                throw fail("the familiar contract's partner couldn't finish Yama (" + Math.round(fourth.getHealth()) + " health)");
+            }
+            if (Inv.count(p, YamaContract.FAMILIAR_ACQUISITION.item) != contracts + 1
+                    || Inv.count(partner, YamaContract.FAMILIAR_ACQUISITION.item) != partnerContracts) {
+                throw fail("the familiar contract wasn't returned to its holder on the partner's kill");
+            }
+            int topUp = YamaLoot.killerExtraPetRate(YamaContract.FAMILIAR_ACQUISITION);
+            if (!y4.walkPetRolls(partner).equals(List.of(topUp))) {
+                throw fail("the partner who landed the kill had pet rolls " + y4.walkPetRolls(partner) + " (expected the 1/" + topUp
+                        + " top-up of the engine's 1/" + YamaLoot.PET + ")");
+            }
+            if (!y4.walkPetRolls(p).equals(List.of(BossMechanics.FAMILIAR_PET_RATE))) {
+                throw fail("the contract holder had pet rolls " + y4.walkPetRolls(p) + " (expected one 1/"
+                        + BossMechanics.FAMILIAR_PET_RATE + ")");
+            }
+            double slayerChance = 1.0 - (1.0 - 1.0 / YamaLoot.PET) * (1.0 - 1.0 / topUp);
+            if (Math.abs(slayerChance - 1.0 / BossMechanics.FAMILIAR_PET_RATE) > 1e-4) {
+                throw fail("the slayer's pet chance is " + slayerChance + ", not 1/" + BossMechanics.FAMILIAR_PET_RATE);
+            }
+            log.add("familiar contract: the partner joins, no food, 81-hp flares, contract returned to the holder on the"
+                    + " partner's kill, 1/100 at Yami each");
 
             // a fifth challenge under the Contract of forfeit breath: run energy drains 1% every 4 ticks and 1% a point of
             // damage Yama deals

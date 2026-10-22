@@ -57,9 +57,20 @@ class GwdRound44Test {
 
     @Test
     void umbraDrainsFifteenPercentAttack() {
-        assertEquals(14, GwdBosses.umbraDrain(99));
-        assertEquals(17, GwdBosses.umbraDrain(118));
-        assertEquals(0, GwdBosses.umbraDrain(5));
+        // 15% of the base level, on an undrained (or boosted) Attack
+        assertEquals(14, GwdBosses.umbraDrain(99, 0));
+        assertEquals(14, GwdBosses.umbraDrain(99, 19));
+        assertEquals(0, GwdBosses.umbraDrain(5, 0));
+        // OSRS Wiki, Shadow Barrage: "if it has not already been drained. This effect does not stack": a second hit, or a
+        // player drained by something else, loses nothing more
+        assertEquals(0, GwdBosses.umbraDrain(99, -14));
+        assertEquals(0, GwdBosses.umbraDrain(99, -1));
+        int level = 99;
+        int boost = 0;
+        for (int hit = 0; hit < 10; hit++) {
+            boost -= GwdBosses.umbraDrain(level, boost);
+        }
+        assertEquals(85, level + boost);
     }
 
     @Test

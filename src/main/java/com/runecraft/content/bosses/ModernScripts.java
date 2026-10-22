@@ -154,6 +154,8 @@ final class ModernScripts {
         /** Each fighter's damage to Yama (their contribution, YamaLoot) and the players themselves. */
         private final Map<UUID, Integer> damageBy = new java.util.LinkedHashMap<>();
         private final Map<UUID, ServerPlayer> fighters = new java.util.LinkedHashMap<>();
+        /** The pet rolls this script made on the kill, per player (1/n each; the boss engine's own roll isn't here). */
+        private final Map<UUID, List<Integer>> petRolls = new HashMap<>();
         /** Who showed Yama the contract (only they receive its reward) and their name. */
         private UUID contractHost;
         private String contractHostName = "my challenger";
@@ -253,8 +255,8 @@ final class ModernScripts {
                     Inv.give(p, com.runecraft.skill.Drops.withDoses(CombatHooks.dropStack(p, boss, d.item(), d.count()), d.doses()));
                     com.runecraft.collection.CollectionLog.obtain(p, d.item());
                 }
-                if (!YamaLoot.junk(share) && r.nextInt(YamaLoot.petRate(contract)) == 0) {
-                    givePet(p);
+                if (!YamaLoot.junk(share)) {
+                    y.rollPet(p, YamaLoot.petRate(contract), r::nextInt);
                 }
                 int kc = com.runecraft.player.Players.data(p).incrementKillCount("yama");
                 Msg.game(p, "Your Yama success count is: " + kc + ".");
@@ -263,6 +265,14 @@ final class ModernScripts {
                 }
             }
             return mine;
+        }
+
+        /** Rolls a 1/{@code rate} chance of Yami for a player (and notes the roll for the walk). */
+        private void rollPet(ServerPlayer p, int rate, java.util.function.IntUnaryOperator nextInt) {
+            petRolls.computeIfAbsent(p.getUUID(), k -> new ArrayList<>()).add(rate);
+            if (nextInt.applyAsInt(rate) == 0) {
+                givePet(p);
+            }
         }
 
         private static void givePet(ServerPlayer p) {
@@ -303,6 +313,11 @@ final class ModernScripts {
 
         YamaContract walkContract() {
             return contract;
+        }
+
+        /** The script's pet rolls on the kill for a player (1/n each), on top of the boss engine's 1/2,500 for the slayer. */
+        List<Integer> walkPetRolls(ServerPlayer p) {
+            return petRolls.getOrDefault(p.getUUID(), List.of());
         }
 
         int walkStage() {
@@ -1138,6 +1153,7 @@ final class ModernScripts {
                 // OSRS Wiki "Yama#Contracts": sigil contracts come back with their purifying sigil piece; acquisition
                 // contracts are used up and guarantee their reward (oathplate: the first piece the player isn't carrying).
                 // Only the player who showed Yama the contract receives it (the duo partner rolls the unique table only).
+                ServerPlayer slayer = killer; // who landed the kill: the boss engine rolled their pet, and rollLoot skipped them
                 ServerPlayer host = contractHost == null ? null : fighters.get(contractHost);
                 if (host != null && host.isAlive()) {
                     killer = host;
@@ -1146,10 +1162,11 @@ final class ModernScripts {
                     Inv.give(killer, contract.item, 1);
                     Msg.game(killer, "Yama returns your " + contract.displayName().toLowerCase(java.util.Locale.ROOT) + ".");
                 }
-                // The killer's pet: the boss engine rolled the usual 1/2,500 with the kill; the familiar contract tops it up to 1/100.
+                // The slayer's pet (the contract holder or their partner): the boss engine rolled the usual 1/2,500 with the
+                // kill; the familiar contract tops it up to 1/100, as rollLoot rolls 1/100 for every other fighter.
                 int extra = YamaLoot.killerExtraPetRate(contract);
-                if (extra > 0 && boss.getRandom().nextInt(extra) == 0) {
-                    givePet(killer);
+                if (extra > 0) {
+                    rollPet(slayer, extra, boss.getRandom()::nextInt);
                 }
                 String reward = contract.reward();
                 if (reward == null) {

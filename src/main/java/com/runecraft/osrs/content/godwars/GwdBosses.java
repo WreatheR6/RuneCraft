@@ -163,8 +163,13 @@ public final class GwdBosses {
     /** Umbra's Shadow Barrage lowers the Attack level of a player it hits by this share (OSRS Wiki, Umbra: 15%). */
     public static final int UMBRA_ATTACK_DRAIN_PERCENT = 15;
 
-    /** The Attack levels Umbra's Shadow Barrage drains from a player whose current Attack level is {@code attack}. */
-    public static int umbraDrain(int attack) {
-        return attack * UMBRA_ATTACK_DRAIN_PERCENT / 100;
+    /**
+     * The Attack levels Umbra's Shadow Barrage drains from a player with base Attack {@code level} and current boost
+     * {@code boost}: 15% of the base level, and nothing while their Attack is already drained (OSRS Wiki, Shadow Barrage:
+     * "reduces the target's Attack level by 15% if it has not already been drained. This effect does not stack ... and
+     * will not apply if the target's stats have already been drained from another source").
+     */
+    public static int umbraDrain(int level, int boost) {
+        return boost < 0 ? 0 : level * UMBRA_ATTACK_DRAIN_PERCENT / 100;
     }
 }
