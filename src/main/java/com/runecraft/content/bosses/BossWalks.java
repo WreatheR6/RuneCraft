@@ -268,7 +268,7 @@ public final class BossWalks {
         int n = light.size();
         // Round 44: walked in real time, nearest seed first, routed round the dark seeds the realm showed (a seed bursts the
         // moment a player is on it).
-        d.avoid(w.selfTestDarkSeeds(), 1.25);
+        d.avoid(w.selfTestDarkSeeds(), 1.5); // a seed bursts within 0.8 of the player: routes keep cell centres 1.8 off
         List<Vec3> left = new ArrayList<>(light);
         try {
             while (!left.isEmpty() && w.selfTestSpecialName() != null) {
