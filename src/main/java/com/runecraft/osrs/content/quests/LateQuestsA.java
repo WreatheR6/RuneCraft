@@ -684,31 +684,140 @@ final class LateQuestsA {
                 .missing("I am still a statue in the Black Knights' Fortress, as far as Camelot knows.");
     }
 
+    /**
+     * Grim Tales after the wiki quick guide and quest-helper (GrimTales): Grimgnash's bedtime story and his feather, Rupert the
+     * Beard in the witch's tower (the crumbling wall, the drain pipe, the beard), Princess Miazrqa's pendant from the witch's
+     * house (the piano's tune, the shrink-me-quick potions, the mouse hole's nail walls), and the magic beans: the beanstalk,
+     * Glod and his golden goblin, and the beanstalk chopped down.
+     */
     private static void grimTales(QuestBook b) {
         b.npc("sylas", "Sylas", "TAVERLEY", -14, -16, // in Taverley, south of the house portal (OSRS 2891, 3454)
                 0xE0B8B2, 0x5A6A3F, 0x3A4A2F, 0x9A9A9E);
+        // quest-helper tiles: Grimgnash on White Wolf Mountain (2862, 3511) by his nest (2864, 3510), Rupert at the top of the
+        // witch's tower (2968, 3467), Miazrqa north of it (2968, 3473) and the magic earth mound in south-east Taverley (2922, 3425)
+        b.npcAt("grimgnash", "Grimgnash", 2862, 3511, 0xC0A060, 0x8A6A3A, 0x6A4A2A, 0xE0C050);
+        b.npcAt("rupert_the_beard", "Rupert the Beard", 2968, 3467, 0xE0B8A0, 0x8A6A3A, 0x5A4A2A, 0xC08A3A);
+        b.npcAt("miazrqa", "Miazrqa", 2968, 3473, 0xF0D0C0, 0xC06AA0, 0x8A4A70, 0xE0C040);
+        b.spot("gt_grimgnash_nest", "Grimgnash's nest", 2864, 3510);
+        b.spot("gt_bean_mound", "Magic earth mound, Taverley", 2922, 3425);
         b.item("magic_beans", "Magic beans", "seed", 0x8A5AC0, "Some magic beans.");
         b.item("griffin_feather", "Griffin feather", "mark", 0xE0C050, "A feather from a griffin.");
-        b.boss(BossDef.of("glod", "Glod").level(138).stats(160, 120, 130, 100, 1, 1).speed(5)
+        b.item("ruperts_helmet", "Rupert's helmet", "full_helm", 0x8A6A3A, "Rupert the Beard's dwarven helmet.");
+        b.item("miazrqas_pendant", "Miazrqa's pendant", "amulet", 0xE0C040, "A princess's pendant, nibbled by a mouse.");
+        b.item("shrunk_ogleroot", "Shrunk ogleroot", "herb", 0x8A6A4A, "A tiny ogleroot.");
+        b.item("shrink_me_quick", "Shrink-me-quick", "potion", 0x6A8AC0, "It makes you small. Very small.");
+        b.item("golden_goblin", "Golden goblin", "skull", 0xE0C040, "Glod's golden goblin.");
+        // Glod (wiki infobox, MonsterStatsTable: level 138, 160 HP, crush up to 25 every 4 ticks) at the top of the beanstalk (an
+        // instance in OSRS; here the earth mound's arena)
+        b.boss(BossDef.of("glod", "Glod").level(138).stats(160, 115, 120, 110, 1, 1).speed(4)
+                .defenceBonus(105, 110, 130, 125, 80)
                 .attack(AttackDef.of("giant_club", AttackType.CRUSH, 25, 3, 8))
-                .attack(AttackDef.of("stomp", AttackType.CRUSH, 18, 5, 2).special(Special.KNOCKBACK, 3))
+                .attack(AttackDef.of("stomp", AttackType.CRUSH, 18, 5, 2).special(Special.KNOCKBACK, 3)) // approx: a stomp of up to 18
                 .drops(Drop.always("big_bones")).skin(0xC0A080, 0x6A4A2A, 0x4A3A1A, 0x2A1A0A).size(1.0f, 2.6f, 2.0f)
-                .at("grim_tales_tower").arena(11, "stone"));
+                .at("gt_bean_mound").arena(11, "stone"));
         b.quest("grim_tales", "Grim Tales", Difficulty.MASTER, 1)
                 .xp(Skill.WOODCUTTING, 60000).xp(Skill.AGILITY, 25000).xp(Skill.THIEVING, 25000).xp(Skill.HERBLORE, 15000).xp(Skill.FARMING, 10000).xp(Skill.HITPOINTS, 5000) // OSRS (current quest XP rewards)
                 .reward("dwarven_helmet")
                 .reqQuest("witchs_house").req(Skill.FARMING, 45).req(Skill.HERBLORE, 52).req(Skill.THIEVING, 58).req(Skill.AGILITY, 59).req(Skill.WOODCUTTING, 71)
                 .stage("I can start this quest by speaking to Sylas, north-west of Taverley. (Requires Witch's House and more.)")
-                .talk("sylas").say("The witch Grimgnash has a griffin feather I need for my magic beans... and a giant, Glod, lives above the clouds.")
-                .stage("I should get a griffin feather from Grimgnash's nest.")
-                .reach("grim_tales_tower", 10).give("griffin_feather").say("* You sneak past the sleeping griffin Grimgnash and pluck a feather.")
-                .stage("I should take the feather to Sylas.")
-                .talk("sylas").take("griffin_feather").give("magic_beans").say("Wonderful! Plant these magic beans and climb the beanstalk to Glod's castle in the clouds.")
-                .stage("I should climb the beanstalk and defeat the giant Glod.")
-                .kill("glod").take("magic_beans").say("* Glod topples from his cloud castle! His golden goblin is free.")
-                .stage("I should report to Sylas.")
-                .talk("sylas").say("Glod defeated! You're a hero of fairy tales. Here's your reward.");
+                .talk("sylas").say("I collect things from fairy tales. A griffin feather, say: Grimgnash nests on the north-east side of White "
+                        + "Wolf Mountain.")
+                // ---- Griffin's feather ----
+                .stage("I should get a griffin feather from Grimgnash's nest on White Wolf Mountain.")
+                .puzzle("grimgnash", GT_BEDTIME_STORY).stay().unlessFlag("gt_asleep").flag("gt_asleep")
+                .say("* Grimgnash's eyes droop. 'A hole... he could just... fit...' The griffin snores.")
+                .reach("gt_grimgnash_nest", 4).needFlag("gt_asleep").give("griffin_feather")
+                .say("* You tiptoe past the sleeping griffin and steal a feather from the pile beside his nest.")
+                .missing("* Grimgnash is wide awake, and he looks hungry. Perhaps a bedtime story would settle him.")
+                // ---- Rupert's helmet and Miazrqa's pendant ----
+                .stage("I should take the feather to Sylas, then get Rupert the Beard's helmet from the witch's tower south of the Mind Altar.")
+                .talk("sylas").stay().unlessFlag("gt_feather").take("griffin_feather").flag("gt_feather")
+                .say("Wonderful! Now, a dwarven helmet: Rupert the Beard's. He's locked in the tower south of the Mind Altar.")
+                .reach("grim_tales_tower", 8).stay().needFlag("gt_feather").unlessFlag("gt_wall").reqSkill(Skill.THIEVING, 58).flag("gt_wall")
+                .say("* The princess at the door won't let you in. Round the back you climb over the crumbling east wall and talk into the "
+                        + "drain pipe: a dwarf at the top of the tower answers, and throws down his beard.")
+                .missing("* The tower's east wall is crumbling, but climbing it takes 58 Thieving.")
+                .talk("rupert_the_beard").stay().needFlag("gt_wall").unlessFlag("gt_rupert").reqSkill(Skill.AGILITY, 59).flag("gt_rupert")
+                .say("* You climb the beard (59 Agility).", "My helmet? That princess took my armour and locked me up here. Talk to her.")
+                .missing("* Climbing Rupert's beard takes 59 Agility.")
+                .talk("miazrqa").stay().needFlag("gt_rupert").unlessFlag("gt_miazrqa").flag("gt_miazrqa")
+                .say("> I see there is an embarrassed-looking dwarf...", "A mouse in my second-cousin's house, twice removed, stole my pendant. "
+                        + "Get it back and the dwarf can go. Here's a key for the house.")
+                .puzzle("witchs_house", GT_PIANO).stay().needFlag("gt_miazrqa").unlessFlag("gt_piano").flag("gt_piano").give("shrunk_ogleroot:2")
+                .say("* The last note rings and a compartment in the piano opens: a shrinking recipe, a to-do list and two shrunk ogleroots.")
+                .reach("witchs_house", 10).stay().needFlag("gt_piano").unless("shrink_me_quick").unlessFlag("gt_pendant")
+                .reqSkill(Skill.HERBLORE, 52).take("shrunk_ogleroot:2", "tarromin_potion_unf:2").give("shrink_me_quick:2")
+                .say("* You add a shrunk ogleroot to each unfinished tarromin potion (52 Herblore): two shrink-me-quick potions.")
+                .missing("* The shrinking recipe wants a shrunk ogleroot in each of two unfinished tarromin potions, and 52 Herblore.")
+                .puzzle("witchs_house", GT_NAILS).stay().needFlag("gt_piano").need("shrink_me_quick:2").unless("miazrqas_pendant")
+                .unlessFlag("gt_pendant").take("shrink_me_quick").give("miazrqas_pendant")
+                .say("* By the mouse hole in the south room you drink a shrink-me-quick. High on the last ledge, past the mice, lies the pendant.")
+                .talk("miazrqa").stay().needFlag("gt_miazrqa").take("miazrqas_pendant").flag("gt_pendant")
+                .say("My pendant! Very well, the dwarf may go.")
+                .talk("rupert_the_beard").needFlag("gt_pendant").give("ruperts_helmet")
+                .say("Free at last! Take my helmet, with my thanks.")
+                .missing("?!gt_pendant|That princess won't let me go without her pendant.")
+                // ---- The beanstalk ----
+                .stage("I should give Rupert's helmet to Sylas, plant his magic beans in the earth mound in south-east Taverley and climb "
+                        + "the beanstalk to Glod.")
+                .talk("sylas").stay().unless("magic_beans").unlessFlag("gt_beans").take("ruperts_helmet").give("magic_beans")
+                .say("A real dwarven helmet! Here: magic beans. Plant them in the earth mound south-east of Taverley. Glod the giant lives at "
+                        + "the top, with his golden goblin.")
+                .reach("gt_bean_mound", 4).stay().need("seed_dibber", "watering_can").unlessFlag("gt_beans")
+                .reqSkill(Skill.FARMING, 45).take("magic_beans").flag("gt_beans")
+                .say("* You plant the magic beans and water them. A giant beanstalk shoots up into the clouds.")
+                .missing("* The earth mound has been magically prepared. You'll need the magic beans, a seed dibber and a watering can.")
+                .kill("glod").needFlag("gt_beans").reqSkill(Skill.AGILITY, 59).give("golden_goblin")
+                .say("* Glod topples. You pick up his golden goblin and climb back down the beanstalk.")
+                .missing("* Climbing the beanstalk takes 59 Agility.")
+                // ---- The end of the beanstalk ----
+                .stage("I should give Sylas the golden goblin, then shrink the beanstalk and chop it down.")
+                .talk("sylas").stay().unlessFlag("gt_goblin").take("golden_goblin").flag("gt_goblin")
+                .say("A golden goblin! Now, that beanstalk can't stay there. Shrink it with your potion and chop it down.")
+                .reach("gt_bean_mound", 4).stay().needFlag("gt_goblin").unlessFlag("gt_chopped").needTool("axe").reqSkill(Skill.WOODCUTTING, 71)
+                .take("shrink_me_quick").flag("gt_chopped")
+                .say("* You pour the shrink-me-quick on the beanstalk and chop it down (71 Woodcutting).")
+                .missing("* Shrink the beanstalk with your second shrink-me-quick, then chop it down with an axe (71 Woodcutting).")
+                .talk("sylas").needFlag("gt_chopped").say("Glod defeated and the beanstalk gone! You're a hero of fairy tales. Here's your reward.");
     }
+
+    /**
+     * Grimgnash's bedtime story (wiki: the most violent lines, in order: a graveyard filled with undead, a skeleton named Skullrot,
+     * Skullrot was insane, he hungrily grabbed the gnome's hair, started to strangle the poor gnome, and he saw a hole he could
+     * just fit through). // approx: the gentler lines Grimgnash turns down
+     */
+    static final QuestPuzzle GT_BEDTIME_STORY = QuestPuzzle.builder("gt_bedtime_story").room("story").variant("grimgnash")
+            .prompt("Human! The wolves howl and Grimgnash cannot sleep. Tell Grimgnash a bedtime story, with death and fire and destruction,"
+                            + " or Grimgnash eats Human.",
+                    "* Tell the story line by line.")
+            .options("I heard you were a great and mighty Griffin!", "There once was a graveyard filled with undead.",
+                    "There lived a skeleton named Skullrot.", "Skullrot was insane!", "Skullrot hungrily grabbed the gnome's hair.",
+                    "Started to strangle the poor gnome.", "He saw a hole he could just fit through.", "There once was a fluffy bunny.",
+                    "Everyone had a lovely cup of tea.")
+            .solution(0, 1, 2, 3, 4, 5, 6).shuffle()
+            .failLines("Stupid Human story! *Grimgnash cuffs you.*").build();
+
+    /** The witch's piano (wiki: upper E-F-E-D-C, then lower A-E-G-A, from the music sheet on the stand). */
+    static final QuestPuzzle GT_PIANO = QuestPuzzle.builder("gt_piano").room("piano").variant(null)
+            .prompt("* In the basement, behind the electrified gate, a music sheet on the stand: E F E D C on the upper keys, then A E G A on "
+                    + "the lower ones. Play it on the piano.")
+            .options("Lower C", "Lower D", "Lower E", "Lower F", "Lower G", "Lower A", "Lower B", "Upper C", "Upper D", "Upper E", "Upper F",
+                    "Upper G", "Upper A", "Upper B")
+            .solution(9, 10, 9, 8, 7, 5, 2, 4, 5)
+            .failLines("* A sour note. The piano's compartment stays shut.").build();
+
+    /**
+     * The mouse hole's nail walls (wiki quick guide: up the north-east nails, up the south-west, up the south, down the north-east,
+     * up the north-east, then the pendant; the north-east grate sends the player back out).
+     */
+    static final QuestPuzzle GT_NAILS = QuestPuzzle.builder("gt_nails").room("nails").variant(null)
+            .prompt("* Mouse-sized, you squeeze into the mouse hole. Nails stuck into the walls make ladders between the floorboards; a grate "
+                            + "glints in the north-east. Level 95 mice scurry about.",
+                    "* Climb your way up to the pendant.")
+            .options("Climb up the north-east nails", "Climb up the south-west nails", "Climb up the south nails",
+                    "Climb down the north-east nails", "Go through the north-east grate")
+            .solution(0, 1, 2, 3, 0)
+            .failLines("* You lose your way among the floorboards and drop back to the mouse hole.").build();
 
     private static void handInTheSand(QuestBook b) {
         b.npc("bert_sandman", "Bert", "yanille_beach", 0, 0, 0xE0B8B3, 0x8A6A40, 0x5A4A30, 0x6A4A22);

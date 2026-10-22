@@ -41,7 +41,8 @@ public final class QuestStrictWalk {
             "dragon_slayer_i", "the_fremennik_isles", "swan_song", "recipe_for_disaster", "making_friends_with_my_arm",
             "a_kingdom_divided", "the_path_of_glouphrie", "beneath_cursed_sands", "a_night_at_the_theatre",
             // round 44: puzzle quests given their real steps and puzzles
-            "the_golem", "hazeel_cult", "the_curse_of_arrav", "defender_of_varrock", "the_blood_moon_rises");
+            "the_golem", "hazeel_cult", "the_curse_of_arrav", "defender_of_varrock", "the_blood_moon_rises", "grim_tales",
+            "the_fremennik_exiles");
 
     private QuestStrictWalk() {
     }

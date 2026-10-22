@@ -12,6 +12,7 @@ import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.data.Drop;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -339,18 +340,74 @@ final class LateQuestsC {
                 .talk("quest_tranquility_harmony").take("quest_prayer_book_fintan").say("Our brothers' minds are restored. Keep the Barrelchest's anchor; it is too heavy for monks anyway.");
     }
 
+    /**
+     * The Fremennik Exiles after the wiki quick guide and quest-helper (TheFremennikExiles): the basilisk youngling in the sandpit
+     * and Freygerd's investigation, V's shield remade (a Fremennik shield, lunar glass from Baba Yaga and the Astral Altar, V's
+     * sigil smithed from lunar bars and enchanted by the Fossegrimen, the polishing rock from the geyser), the basilisks in the
+     * market, and the Island of Stone: the cave door's rune code, Typhor and the Jormungand. OSRS has no exile called Lady V:
+     * the exiles are the basilisks' masters, and V's shield is restored by the player.
+     */
     private static void fremennikExiles(QuestBook b) {
-        Cast.npc(b, "quest_lady_v", "Lady V", "quest_island_of_stone", 0, 3, Cast.PALE, 0x3A3A5A);
         b.items(s -> s.add("vs_shield", "V's shield", Kind.SHIELD, "kiteshield", 0x5A4A3A).value(1).stack(1)
                 .equipment(EquipmentDef.armour(EquipmentDef.Slot.SHIELD, new EquipmentStats(0, 0, 0, -8, -2, 50, 52, 48, 0, 50, 0, 0, 0, 0), 60))
                 .examine("The shield of V. Its special attack damages nearby enemies."));
-        b.boss(BossDef.of("quest_basilisk_boss", "Basilisk Youngling").level(158).stats(300, 150, 150, 160, 150, 150).speed(4)
-                .defenceBonus(100, 100, 100, 100, 100)
-                .attack(AttackDef.of("bite", AttackType.STAB, 24, 3, 6))
-                .attack(AttackDef.of("gaze", AttackType.MAGIC, 18, 9, 3).special(Special.DRAIN_STAT, 3).telegraph(2, "The basilisk's eyes glow!"))
-                .minion("basilisk_knight", 2)
-                .drops(Drop.always("big_bones")).skin(0x5A7A4A, 0x3A5A2A, 0x2A3A1A, 0xE0C040).size(1.6f, 1.6f, 1.2f)
+        // quest-helper tiles: Freygerd's house south of the sandpit (2668, 3703; the sandpit 2668, 3708), Brundt south-east of
+        // Rellekka (2705, 3634), the large geyser north of the Mountain Camp (2766, 3675), Rellekka's market (2644, 3677), the cave
+        // on the Island of Stone (2465, 4012), the Astral Altar (2158, 3864) and the Lunar Isle mine's ladder (2142, 3944)
+        b.npcAt("freygerd", "Freygerd", 2668, 3703, 0xF0C8A8, 0x8A6A4A, 0x5A4A3A, 0xE0B060);
+        b.npcAt("brundt_exiles", "Brundt the Chieftain", 2705, 3634, 0xF0C8A9, 0x8A5A2B, 0x5A3A1B, 0xE0A041);
+        b.spot("fe_sandpit", "Rellekka sandpit", 2668, 3708);
+        b.spot("fe_geyser", "Large geyser", 2766, 3675);
+        b.spot("fe_rellekka_market", "Rellekka market", 2644, 3677);
+        b.spot("fe_island_cave", "Cave, Island of Stone", 2465, 4012);
+        b.spot("fe_astral_altar", "Astral Altar", 2158, 3864);
+        b.spot("fe_lunar_mine", "Lunar Isle mine", 2142, 3944);
+        b.npcAt("baba_yaga", "Baba Yaga", 2085, 3931, 0xD8C0B0, 0x6A4A6A, 0x4A2A4A, 0x2A1A2A); // her house walks on chicken legs
+        b.item("fe_unsealed_letter", "Unsealed letter", "note", 0xE0D8B0, "A letter the basilisk youngling was guarding.");
+        b.item("fe_fang", "Fang", "bones", 0xE0E0D0, "A basilisk's fang, from the rockslide.");
+        b.item("fe_venom_gland", "Venom gland", "secondary", 0x6A8A3A, "A basilisk's venom gland.");
+        b.item("molten_glass_i", "Molten glass (i)", "glass", 0xC0A0E0, "Molten glass, infused by Baba Yaga.");
+        b.item("lunar_glass", "Lunar glass", "glass", 0xA0C0F0, "Glass infused with astral energy.");
+        b.item("lunar_ore", "Lunar ore", "ore", 0x8A9AC0, "Ore from the Lunar Isle mine.");
+        b.item("lunar_bar", "Lunar bar", "bar", 0xA0B0D0, "A bar of lunar metal.");
+        b.item("v_sigil", "V sigil", "amulet", 0x8A8AA0, "The sigil of V, smithed from lunar bars.");
+        b.item("v_sigil_e", "V sigil (e)", "amulet", 0x6AA0C0, "The sigil of V, enchanted by the Fossegrimen.");
+        b.item("polishing_rock", "Polishing rock", "ore", 0xC0C0C8, "A rock polished smooth by the geyser.");
+        b.item("keg_of_beer", "Keg of beer", "pot_item", 0x8A6A3A, "A keg of Fremennik beer from the longhall.");
+        // Thora the Barkeep in the longhall (quest-helper 2662, 3673) sells the kegs (wiki quick guide: 650 coins for two)
+        b.npcAt("thora_the_barkeep", "Thora the Barkeep", 2662, 3673, 0xF0C8A8, 0x8A4A3A, 0x5A3A2A, 0xE0B050);
+        // The quest's foes (osrs-dps-calc): the basilisk youngling (level 57, 60 HP, slash up to 5), the monstrous basilisks of the
+        // market (level 135), Typhor (218, 360 HP, up to 20, magic and melee) and the Jormungand (363, 600 HP, up to 22, magic and
+        // melee). All of them petrify without a mirror shield or V's shield.
+        b.boss(BossDef.of("quest_basilisk_boss", "Basilisk Youngling").level(57).stats(60, 25, 40, 70, 1, 1).speed(4)
+                .defenceBonus(20, 20, 0, 20, 0)
+                .attack(AttackDef.of("bite", AttackType.SLASH, 5, 2.5, 3))
+                .attack(AttackDef.of("gaze", AttackType.MAGIC, 5, 6, 1).special(Special.DRAIN_STAT, 1)) // drains stats without a mirror shield
+                .drops(Drop.always("bones")).skin(0x5A7A4A, 0x3A5A2A, 0x2A3A1A, 0xE0C040).size(1.0f, 0.9f, 0.9f));
+        b.boss(BossDef.of("fe_monstrous_basilisk", "Monstrous Basilisk").level(135).stats(170, 88, 98, 130, 1, 1).speed(4)
+                .defenceBonus(35, 35, 0, 35, 0)
+                .attack(AttackDef.of("bite", AttackType.SLASH, 11, 2.5, 4))
+                // its stare drains stats without the shield // approx: a telegraphed stare of up to 11
+                .attack(AttackDef.of("stare", AttackType.MAGIC, 11, 8, 1).special(Special.DRAIN_STAT, 1)
+                        .telegraph(2, "The basilisk's eyes glow: keep V's shield raised!"))
+                .drops(Drop.always("big_bones")).model("basilisk").skin(0x4A6A3A, 0x2A4A1A, 0x1A2A0A, 0xE0C040).size(1.4f, 1.3f, 1.4f));
+        b.boss(BossDef.of("typhor", "Typhor").level(218).stats(360, 186, 186, 186, 186, 1).speed(4)
+                .defenceBonus(30, 30, 0, 30, 0)
+                .attack(AttackDef.of("claws", AttackType.SLASH, 20, 2.5, 3))
+                .attack(AttackDef.of("stone_gaze", AttackType.MAGIC, 20, 9, 3).particle("minecraft:ash"))
+                .drops(Drop.always("big_bones")).model("basilisk_knight").skin(0x5A6A4A, 0x3A4A2A, 0x2A2A1A, 0xC0A040).size(1.0f, 2.6f, 1.2f)
                 .at("quest_island_of_stone").arena(12, "stone"));
+        b.boss(BossDef.of("the_jormungand", "The Jormungand").level(363).stats(600, 214, 214, 214, 214, 214).speed(5)
+                .defenceBonus(50, 50, 10, 50, 50)
+                .attack(AttackDef.of("bite", AttackType.STAB, 22, 3, 3))
+                .attack(AttackDef.of("venom_spit", AttackType.MAGIC, 22, 10, 3).particle("minecraft:item_slime"))
+                // wiki: when the screen turns red, face away (50+ and a stat drain); frozen in rock, attack the snake to break free
+                // (30+ when the rock explodes) // playability: a marked strike to step out of, and a freeze with a later blast
+                .attack(AttackDef.of("petrifying_stare", AttackType.MAGIC, 50, 10, 1).special(Special.SKY_STRIKE, 0)
+                        .telegraph(3, "The Jormungand's stare turns the cave red: turn away!").particle("minecraft:ash"))
+                .attack(AttackDef.of("rock_prison", AttackType.CRUSH, 30, 10, 1).special(Special.FREEZE, 4)
+                        .telegraph(2, "Rock creeps over your legs: hit the snake to break free!"))
+                .drops(Drop.always("big_bones")).skin(0x5A6A4A, 0x3A4A3A, 0x2A3A2A, 0xC0E040).size(2.0f, 2.4f, 2.0f));
         b.quest("the_fremennik_exiles", "The Fremennik Exiles", Difficulty.MASTER, 2)
                 .req(Skill.MINING, 60)
                 .xp(Skill.SLAYER, 50000).xp(Skill.CRAFTING, 50000).xp(Skill.RUNECRAFT, 30000) // OSRS (current quest XP rewards)
@@ -359,15 +416,179 @@ final class LateQuestsC {
                 .reward("vs_shield")
                 .unlock("Basilisk Knights in Jormungand's Prison; the Neitiznot faceguard")
                 .stage("I can start this quest by speaking to Brundt the Chieftain in Rellekka. (Requires The Fremennik Isles, Lunar Diplomacy, Mountain Daughter, Heroes' Quest, 65 Crafting, 60 Slayer, 60 Smithing, 60 Fishing, 60 Mining, 55 Runecraft.)")
-                .talk("brundt").say("Basilisks attack our fishermen! They come from the Island of Stone. Some say an exile commands them.")
-                .stage("I should sail to the Island of Stone and find the exile.")
-                .talk("quest_lady_v").say("I am V's descendant, exiled for... reasons. The basilisks guard Jormungand's prison, and their young one grows strong. Stop it.")
-                .stage("I must craft a mirror shield's worth of protection and kill the Basilisk Youngling in Jormungand's prison.")
-                .kill("quest_basilisk_boss").need("mirror_shield").flag("fe_youngling").say("* The Basilisk Youngling falls. Its gaze fades from the stone.")
-                .stage("I should report to Lady V.")
-                .talk("quest_lady_v").needFlag("fe_youngling").flag("fe_v").say("You did what my people could not. Take V's shield; it was always meant to protect the Fremennik.")
-                .stage("I should tell Brundt the basilisks are no longer a threat.")
-                .talk("brundt").needFlag("fe_v").say("Basilisks gone and an exile found! Rellekka will sing of this. Skol!");
+                .talk("brundt").say("Something's been taking our people's pets and livestock. Freygerd, north of the market, saw something by her house.")
+                // ---- A disturbance in Rellekka ----
+                .stage("I should talk to Freygerd in the house south of Rellekka's sandpit and find out what is going on.")
+                .talk("freygerd").stay().unlessFlag("fe_freygerd").flag("fe_freygerd")
+                .say("Something lives in the sandpit! I hear it at night. Be careful: they say looking at those things turns you to stone.")
+                .reach("fe_sandpit", 4).stay().needFlag("fe_freygerd").unlessFlag("fe_youngling").need("mirror_shield").spawn("quest_basilisk_boss")
+                .say("* You search the sandpit. A basilisk youngling bursts out of the sand!")
+                .missing("* Something stirs in the sandpit. Without a mirror shield its gaze could turn you to stone.")
+                .kill("quest_basilisk_boss").stay().needFlag("fe_freygerd").unlessFlag("fe_youngling").need("mirror_shield")
+                .flag("fe_youngling").give("fe_unsealed_letter")
+                .say("* The youngling dies. In the sand lies an unsealed letter about basilisks being smuggled into Rellekka.")
+                .reach("fe_sandpit", 8).stay().needFlag("fe_youngling").unless("fe_fang").unlessFlag("fe_clues").give("fe_fang", "fe_venom_gland")
+                .say("* In the rockslide west of the house you find a fang, and in the boxes to the south a venom gland.")
+                .talk("freygerd").stay().needFlag("fe_youngling").unlessFlag("fe_clues").take("fe_fang", "fe_venom_gland").flag("fe_clues")
+                .say("A basilisk's fang and venom... someone's been raising them here. Tell Brundt.")
+                .talk("brundt").needFlag("fe_clues").take("fe_unsealed_letter")
+                .say("Basilisks, in Rellekka! This letter names the exiles who serve them. Meet me south-east of the town.")
+                .missing("?!fe_youngling|Have you spoken to Freygerd? She lives south of the sandpit.")
+                // ---- Redeeming the exile: V's shield ----
+                .stage("I should restore V's shield: a Fremennik shield, lunar glass, V's sigil and a polishing rock, put together with a "
+                        + "glassblowing pipe.")
+                .talk("brundt_exiles").stay().unlessFlag("fe_plan").flag("fe_plan")
+                .say("> Where can I find a Fremennik shield?", "From the dagannoth of Waterbirth, Rellekka's guards, or Bardur, deep in "
+                                + "Waterbirth's dungeon.",
+                        "> Where can I get lunar glass?", "Baba Yaga on Lunar Isle infuses molten glass; the Astral Altar does the rest.",
+                        "> How do I make the polishing rock?", "The large geyser past the Mountain Camp polishes stone, if you can bear "
+                                + "the cold.",
+                        "> How do I make V's sigil?", "Smith it from lunar bars, and have the Fossegrimen enchant it.")
+                // the Fremennik shield (wiki: an uncommon drop from the dagannoth of Waterbirth Island; Bardur sells it, the ring of
+                // charos (a) for free) // approx: the drop rate
+                .drop("dagannoth", "fremennik_shield", 32).needFlag("fe_plan").unless("vs_shield")
+                .talk("baba_yaga").stay().needFlag("fe_plan").unless("molten_glass_i", "lunar_glass").take("molten_glass").give("molten_glass_i")
+                .say("* Baba Yaga infuses your molten glass with the Moon Clan's magic.")
+                .reach("fe_lunar_mine", 6).stay().needFlag("fe_plan").unless("lunar_ore:3", "lunar_bar", "v_sigil", "v_sigil_e")
+                .needTool("pickaxe").give("lunar_ore:3")
+                .say("* Down the Lunar Isle mine you mine the stalagmites for three lunar ore.")
+                .reach("fe_astral_altar", 4).stay().needFlag("fe_plan").take("molten_glass_i", "astral_rune:100").give("lunar_glass")
+                .say("* At the Astral Altar, 100 astral runes pour into the glass: lunar glass.")
+                .missing("* Lunar glass takes molten glass (i) and 100 astral runes.")
+                .reach("RELLEKKA", 12).stay().needFlag("fe_plan").take("lunar_ore:3").need("hammer").give("v_sigil").reqSkill(Skill.SMITHING, 60)
+                .say("* You smelt three lunar bars at Rellekka's furnace and smith V's sigil on the anvil.")
+                .talk("fossegrimen").stay().needFlag("fe_plan").take("v_sigil").give("v_sigil_e")
+                .say("> Ask about V's Sigil.", "V's sigil... I remember her. There: it is enchanted.")
+                .reach("fe_geyser", 4).stay().needFlag("fe_plan").unlessFlag("fe_geyser").take("pet_rock").flag("fe_geyser")
+                .say("* You drop your pet rock into the large geyser. It's for the good of the Province!")
+                .missing("* The large geyser could polish a stone. A pet rock, say.")
+                .talk("peer").stay().needFlag("fe_geyser").unlessFlag("fe_peer").flag("fe_peer")
+                .say("The geyser is bitterly cold below. Ice gloves will let you reach in.")
+                .reach("fe_geyser", 4).stay().needFlag("fe_peer").unless("polishing_rock", "vs_shield").need("ice_gloves").give("polishing_rock")
+                .say("* Wearing ice gloves you reach into the geyser and pull out your rock, polished smooth.")
+                .talk("brundt_exiles").need("glassblowing_pipe").take("fremennik_shield", "lunar_glass", "v_sigil_e", "polishing_rock")
+                .give("vs_shield").reqSkill(Skill.CRAFTING, 65)
+                .say("* With the glassblowing pipe you set the lunar glass and V's sigil into the Fremennik shield and polish it: V's shield.",
+                        "V's shield, whole again! Now we can face what's coming.")
+                .missing("Bring the Fremennik shield, lunar glass, V's sigil (e) and the polishing rock, and a glassblowing pipe.")
+                // ---- Basilisks in the Market ----
+                .stage("I should defend Rellekka's market from the basilisks with V's shield.")
+                .talk("thora_the_barkeep").stay().unless("keg_of_beer:2").unlessFlag("fe_market").take("coins:650").give("keg_of_beer:2")
+                .say("Two kegs of beer for the chieftain? That'll be 650 coins.")
+                .missing("Two kegs are 650 coins, friend.")
+                .talk("brundt").stay().unlessFlag("fe_market").take("keg_of_beer:2").flag("fe_market")
+                .say("Two kegs of beer for the longhall, and we're ready. They're coming through the market!")
+                .missing("Bring two kegs of beer: the men need courage.")
+                .reach("fe_rellekka_market", 8).stay().needFlag("fe_market").need("vs_shield").spawn("fe_monstrous_basilisk")
+                .say("* A monstrous basilisk crashes through the market stalls!")
+                // wiki: a monstrous basilisk counts for 10% of the defence, a basilisk for 3.33% // approx: the market's basilisks are
+                // all monstrous here
+                .kill("fe_monstrous_basilisk", 10).needFlag("fe_market").need("vs_shield")
+                .say("* The last basilisk falls. Brundt readies the boat to the Island of Stone.")
+                // ---- Island of Stone ----
+                .stage("I should sail to the Island of Stone with Brundt, open the cave's door and end the Jormungand's threat.")
+                .puzzle("fe_island_cave", FE_CAVE_DOOR).stay().unlessFlag("fe_door").flag("fe_door")
+                .say("* The fourth rune glows green. The door grinds open on a cave full of stone.")
+                .reach("fe_island_cave", 6).stay().needFlag("fe_door").unlessFlag("fe_typhor").need("vs_shield").spawn("typhor")
+                .say("* In the cave, Typhor, the basilisks' king, turns his gaze on you!")
+                .kill("typhor").stay().needFlag("fe_door").unlessFlag("fe_typhor").need("vs_shield").flag("fe_typhor")
+                .say("* Typhor falls. The cave shakes: something vast is waking.")
+                .reach("fe_island_cave", 6).stay().needFlag("fe_typhor").need("vs_shield").spawn("the_jormungand")
+                .say("* The Jormungand breaks free of its prison!")
+                .kill("the_jormungand").needFlag("fe_typhor").need("vs_shield")
+                .say("* The Jormungand crumbles back into stone. Brundt: The Fremennik will sing of this. Keep V's shield: it was always yours "
+                        + "to bear.");
+    }
+
+    /** The cave door's runes (wiki: air, water, earth, fire, astral and cosmic, a rune may repeat). */
+    static final String[] FE_RUNES = {"Air", "Water", "Earth", "Fire", "Astral", "Cosmic"};
+
+    /** One board of the cave door: the code and the guesses already on it, whose checks leave only that code. */
+    record FeBoard(int[] code, List<int[]> guesses) {
+    }
+
+    /** A guess's green checks (right rune, right place) and red checks (right rune, wrong place), as in Mastermind. */
+    static int[] feChecks(int[] code, int[] guess) {
+        int green = 0;
+        int[] codeLeft = new int[FE_RUNES.length];
+        int[] guessLeft = new int[FE_RUNES.length];
+        for (int i = 0; i < 4; i++) {
+            if (code[i] == guess[i]) {
+                green++;
+            } else {
+                codeLeft[code[i]]++;
+                guessLeft[guess[i]]++;
+            }
+        }
+        int red = 0;
+        for (int r = 0; r < FE_RUNES.length; r++) {
+            red += Math.min(codeLeft[r], guessLeft[r]);
+        }
+        return new int[]{green, red};
+    }
+
+    /** Every four-rune code the guesses' checks allow on a board for {@code code}. */
+    static List<int[]> feConsistent(int[] code, List<int[]> guesses) {
+        List<int[]> out = new java.util.ArrayList<>();
+        for (int n = 0; n < 1296; n++) {
+            int[] c = {n / 216, n / 36 % 6, n / 6 % 6, n % 6};
+            boolean ok = true;
+            for (int[] g : guesses) {
+                ok &= java.util.Arrays.equals(feChecks(code, g), feChecks(c, g));
+            }
+            if (ok) {
+                out.add(c);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Eight boards (wiki: in OSRS the code is random and the board fills as the player guesses): each shows guesses drawn from the
+     * codes still possible until their checks leave one code, at most eight guesses.
+     */
+    static final List<FeBoard> FE_BOARDS = feBoards();
+
+    private static List<FeBoard> feBoards() {
+        java.util.Random rng = new java.util.Random(0x5EEDF0EL);
+        List<FeBoard> boards = new java.util.ArrayList<>();
+        while (boards.size() < 8) {
+            int[] code = {rng.nextInt(6), rng.nextInt(6), rng.nextInt(6), rng.nextInt(6)};
+            List<int[]> guesses = new java.util.ArrayList<>();
+            List<int[]> left = feConsistent(code, guesses);
+            while (left.size() > 1 && guesses.size() < 8) {
+                int[] g = left.get(rng.nextInt(left.size()));
+                if (java.util.Arrays.equals(g, code)) {
+                    continue;
+                }
+                guesses.add(g);
+                left = feConsistent(code, guesses);
+            }
+            if (left.size() == 1) {
+                boards.add(new FeBoard(code, List.copyOf(guesses)));
+            }
+        }
+        return List.copyOf(boards);
+    }
+
+    /** The Island of Stone's cave door (wiki: Mastermind with six runes): deduce the four runes from the guesses on the board. */
+    static final QuestPuzzle FE_CAVE_DOOR = feCaveDoor();
+
+    private static QuestPuzzle feCaveDoor() {
+        QuestPuzzle.Builder b = QuestPuzzle.builder("fe_cave_door").room("door");
+        for (FeBoard board : FE_BOARDS) {
+            List<String> prompt = new java.util.ArrayList<>();
+            prompt.add("* The basilisks resealed the cave with a rune lock. Each green check is a right rune in the right place, each red "
+                    + "check a right rune in the wrong place; a rune may appear more than once. Earlier tries on the board:");
+            for (int[] g : board.guesses()) {
+                int[] checks = feChecks(board.code(), g);
+                prompt.add("* " + FE_RUNES[g[0]] + ", " + FE_RUNES[g[1]] + ", " + FE_RUNES[g[2]] + ", " + FE_RUNES[g[3]] + ": " + checks[0]
+                        + " green, " + checks[1] + " red");
+            }
+            prompt.add("* Set the four runes, left to right.");
+            b.variant(null).prompt(prompt.toArray(String[]::new)).options(FE_RUNES).solution(board.code());
+        }
+        return b.failLines("* The runes flash red and the board clears.").build();
     }
 
     private static void nightAtTheTheatre(QuestBook b) {

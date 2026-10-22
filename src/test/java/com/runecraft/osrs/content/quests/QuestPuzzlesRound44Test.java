@@ -152,4 +152,66 @@ class QuestPuzzlesRound44Test {
         assertTrue(q.stages.get(7).triggers.stream().anyMatch(t -> t.kind == QuestSpec.Trigger.Kind.KILL
                 && t.target.equals("quest_lowerniel_drakan") && t.completes()));
     }
+
+    /** Grim Tales (wiki): Grimgnash's story, the witch's piano and the mouse hole's nail walls. */
+    @Test
+    void grimTalesPuzzlesTakeTheWikiAnswers() {
+        QuestSpec q = BOOK.spec("grim_tales");
+        assertEquals(5, q.stages.size(), "the saved stage count");
+        for (QuestPuzzle p : List.of(LateQuestsA.GT_BEDTIME_STORY, LateQuestsA.GT_PIANO, LateQuestsA.GT_NAILS)) {
+            assertTrue(hasPuzzle("grim_tales", p), p.key);
+        }
+        Variant story = LateQuestsA.GT_BEDTIME_STORY.rooms.get(0).variants().get(0);
+        assertEquals(List.of("I heard you were a great and mighty Griffin!", "There once was a graveyard filled with undead.",
+                "There lived a skeleton named Skullrot.", "Skullrot was insane!", "Skullrot hungrily grabbed the gnome's hair.",
+                "Started to strangle the poor gnome.", "He saw a hole he could just fit through."),
+                story.solutions().get(0).stream().map(story.options()::get).toList());
+        // upper E-F-E-D-C, then lower A-E-G-A
+        Variant piano = LateQuestsA.GT_PIANO.rooms.get(0).variants().get(0);
+        assertEquals(List.of("Upper E", "Upper F", "Upper E", "Upper D", "Upper C", "Lower A", "Lower E", "Lower G", "Lower A"),
+                piano.solutions().get(0).stream().map(piano.options()::get).toList());
+        Variant nails = LateQuestsA.GT_NAILS.rooms.get(0).variants().get(0);
+        assertFalse(nails.solutions().get(0).stream().map(nails.options()::get).anyMatch(o -> o.contains("grate")), "the grate sends you out");
+        var glod = BOOK.bosses.stream().filter(b -> b.id.equals("glod")).findFirst().orElseThrow();
+        assertEquals(138, glod.combatLevel);
+        assertEquals(160, glod.hitpoints);
+        assertEquals(4, glod.attackSpeed);
+        assertTrue(q.triggers().stream().anyMatch(t -> t.kind == QuestSpec.Trigger.Kind.KILL && t.target.equals("glod")));
+    }
+
+    /**
+     * The Fremennik Exiles (wiki quick guide): the cave door is Mastermind with six runes, and every board's guesses leave exactly
+     * one code; Typhor and the Jormungand are its last fights, and no Lady V.
+     */
+    @Test
+    void fremennikExilesDoorAndFights() {
+        QuestSpec q = BOOK.spec("the_fremennik_exiles");
+        assertEquals(5, q.stages.size(), "the saved stage count");
+        assertTrue(hasPuzzle("the_fremennik_exiles", LateQuestsC.FE_CAVE_DOOR));
+        // Mastermind checks: a repeated rune is counted once per match
+        assertArrayEquals(new int[]{1, 1}, LateQuestsC.feChecks(new int[]{0, 0, 1, 2}, new int[]{0, 3, 0, 5}));
+        assertArrayEquals(new int[]{4, 0}, LateQuestsC.feChecks(new int[]{4, 4, 4, 4}, new int[]{4, 4, 4, 4}));
+        assertArrayEquals(new int[]{0, 2}, LateQuestsC.feChecks(new int[]{0, 1, 2, 3}, new int[]{1, 0, 4, 4}));
+        assertEquals(8, LateQuestsC.FE_BOARDS.size());
+        for (int i = 0; i < LateQuestsC.FE_BOARDS.size(); i++) {
+            LateQuestsC.FeBoard board = LateQuestsC.FE_BOARDS.get(i);
+            List<int[]> left = LateQuestsC.feConsistent(board.code(), board.guesses());
+            assertEquals(1, left.size(), "board " + i + " has one answer");
+            assertArrayEquals(board.code(), left.get(0));
+            assertTrue(board.guesses().size() <= 8);
+            Variant v = LateQuestsC.FE_CAVE_DOOR.rooms.get(0).variants().get(i);
+            assertEquals(1, v.check(java.util.Arrays.stream(board.code()).boxed().toList()));
+        }
+        List<String> kills = q.triggers().stream().filter(t -> t.kind == QuestSpec.Trigger.Kind.KILL).map(t -> t.target).toList();
+        assertEquals(List.of("quest_basilisk_boss", "fe_monstrous_basilisk", "typhor", "the_jormungand"), kills);
+        java.util.Map<String, int[]> stats = java.util.Map.of("typhor", new int[]{218, 360}, "the_jormungand", new int[]{363, 600},
+                "fe_monstrous_basilisk", new int[]{135, 170}, "quest_basilisk_boss", new int[]{57, 60});
+        stats.forEach((id, lh) -> {
+            var boss = BOOK.bosses.stream().filter(b -> b.id.equals(id)).findFirst().orElseThrow();
+            assertEquals(lh[0], boss.combatLevel, id);
+            assertEquals(lh[1], boss.hitpoints, id);
+        });
+        assertTrue(q.triggers().stream().noneMatch(t -> t.target.equals("quest_lady_v")));
+        assertTrue(q.triggers().stream().anyMatch(t -> t.give.containsKey("vs_shield")), "the player restores V's shield");
+    }
 }
