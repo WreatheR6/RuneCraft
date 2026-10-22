@@ -694,21 +694,41 @@ final class BossFightChecks {
      * 395 Defence with +200 slash, +250 magic and +270 ranged left the whip, Fire Surge and magic shortbow about a 7% hit
      * chance, so 28 misses in a row came up; his crush defence is -10, so the crush weapon must be one the player may wield:
      * {@link #CRUSH_WEAPON}), the rest cycling through the others in case that style can't hurt it (a form immune to it).
+     * Styles the boss is immune to by its definition ({@code CombatProfile.immuneTo}: Kree'arra can only be hurt by ranged and
+     * magic, OSRS Wiki) are left out of both: CI on 3623edf7 picked melee as Kree'arra's weakest style (+180 against +200) and
+     * spent 15 of 21 attempts on a refused style. {@link #usableStyles}
      */
     private static AttackType playerStyle(LivingEntity boss, AttackType[] styles, int n) {
         com.runecraft.combat.MonsterStats stats = com.runecraft.combat.MonsterStats.of(boss);
-        AttackType weakest = styles[0];
-        for (AttackType s : styles) {
+        List<AttackType> usable = usableStyles(boss, styles);
+        AttackType weakest = usable.get(0);
+        for (AttackType s : usable) {
             if (stats.defenceBonus(s) < stats.defenceBonus(weakest)) {
                 weakest = s;
             }
         }
-        if (n % 2 == 0) {
+        if (n % 2 == 0 || usable.size() == 1) {
             return weakest;
         }
-        List<AttackType> rest = new ArrayList<>(List.of(styles));
+        List<AttackType> rest = new ArrayList<>(usable);
         rest.remove(weakest);
         return rest.get((n / 2) % rest.size());
+    }
+
+    /**
+     * The player's styles the boss isn't immune to by its definition (all of them when its definition refuses every one, as
+     * an invulnerable form's may: its own rules then decide, as before).
+     */
+    static List<AttackType> usableStyles(LivingEntity boss, AttackType[] styles) {
+        com.runecraft.combat.MonsterStats stats = com.runecraft.combat.MonsterStats.of(boss);
+        java.util.Set<AttackType> immune = stats == null || stats.profile() == null ? java.util.Set.of() : stats.profile().immuneTo;
+        List<AttackType> usable = new ArrayList<>();
+        for (AttackType s : styles) {
+            if (!immune.contains(s)) {
+                usable.add(s);
+            }
+        }
+        return usable.isEmpty() ? new ArrayList<>(List.of(styles)) : usable;
     }
 
     /** One player attack through the real combat path of a style (the weapon for it is put in the main hand). */

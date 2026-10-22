@@ -538,16 +538,37 @@ final class NightmareMuspahWalks {
                 } else {
                     check(m.homing.size() >= MuspahRules.HOMING_MIN && m.homing.size() <= MuspahRules.HOMING_MAX,
                             m.homing.size() + " homing spikes");
-                    int[] h = m.homing.get(0);
-                    double d0 = Math.hypot(h[0] - p.getBlockX(), h[1] - p.getBlockZ());
-                    step(boss, p, 2 * MuspahRules.HOMING_STEP_TICKS);
-                    if (!m.homing.isEmpty()) {
-                        int[] h2 = m.homing.get(0);
-                        check(Math.hypot(h2[0] - p.getBlockX(), h2[1] - p.getBlockZ()) < d0 || h2 != h, "the homing spikes didn't move");
+                    // Every homing spike crawls a tile towards the player each HOMING_STEP_TICKS, unless hardened spikes wall
+                    // it in (OSRS Wiki, Phantom Muspah/Strategies: "players can stand behind hardened spikes to avoid the
+                    // homing spikes"). The swaps' random spikes sometimes do that by chance: CI on 3623edf7 read the first
+                    // spike, walled in, as not moving. Each spike is judged on its own: closer, gone (it reached the player),
+                    // or walled in now.
+                    List<int[]> crawling = new ArrayList<>(m.homing);
+                    double[] from = new double[crawling.size()];
+                    for (int i = 0; i < from.length; i++) {
+                        from[i] = Math.hypot(crawling.get(i)[0] - p.getBlockX(), crawling.get(i)[1] - p.getBlockZ());
                     }
+                    step(boss, p, 2 * MuspahRules.HOMING_STEP_TICKS);
+                    int moved = 0;
+                    int walled = 0;
+                    List<String> still = new ArrayList<>();
+                    for (int i = 0; i < from.length; i++) {
+                        int[] h = crawling.get(i);
+                        boolean gone = m.homing.stream().noneMatch(x -> x == h);
+                        if (gone || Math.hypot(h[0] - p.getBlockX(), h[1] - p.getBlockZ()) < from[i]) {
+                            moved++;
+                        } else if (java.util.Arrays.equals(MuspahRules.homingStep(h[0], h[1], p.getBlockX(), p.getBlockZ(), m.spikes), h)) {
+                            walled++;
+                        } else {
+                            still.add(h[0] + "," + h[1]);
+                        }
+                    }
+                    check(still.isEmpty(), "the homing spikes didn't move: " + still + " stood still in the open (player at "
+                            + p.getBlockX() + "," + p.getBlockZ() + ", " + moved + " moved, " + walled + " walled in)");
                     step(boss, p, MuspahRules.HOMING_TICKS);
                     check(m.homing.isEmpty(), "the homing spikes didn't harden");
-                    log.add("homing spikes @" + threshold);
+                    log.add("homing spikes @" + threshold + " (" + moved + " crawled" + (walled > 0 ? ", " + walled + " walled in" : "")
+                            + ")");
                 }
             }
             // Below 127: the shockwave, which a spike between it and the player stops.
