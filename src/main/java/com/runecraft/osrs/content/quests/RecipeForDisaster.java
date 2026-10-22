@@ -163,7 +163,7 @@ final class RecipeForDisaster {
         b.spot("rfd_crab_pen", "Mogre camp crab pen (under the sea)", 2992, 3114); // approx: the Mudskipper Point dive
         b.spot("rfd_evil_daves_basement", "Evil Dave's basement", 3080, 3493);
         b.spot("rfd_evil_chicken_lair", "The Evil Chicken's lair (Zanaris)", 3176, 3150); // approx: Zanaris (2453, 4476 in OSRS) is placed beside its swamp shed
-        b.spot("rfd_crash_island_pit", "Crash Island snake pit", 2896, 2722); // approx
+        b.spot("rfd_crash_island_pit", "Crash Island snake pit", 2922, 2722); // quest-helper: the hole on Crash Island
         Cast.npc(b, "rfd_traiborn", "Wizard Traiborn", "WIZARDS_TOWER", -5, 4, Cast.PALE, 0x5A3A8A);
         Cast.npc(b, "rfd_murphy", "Murphy", "port_khazard_rfd", 0, 0, Cast.FAIR, 0x3A5A7A);
         // OSRS Wiki "Evil Chicken (Recipe for Disaster)": a fixed level 159 (only the random-event chicken scales):
@@ -174,7 +174,7 @@ final class RecipeForDisaster {
                 .at("rfd_evil_chicken_lair").arena(7, "stone"));
         // Subquest creatures (OSRS Wiki infoboxes), each raised at its spot while its objective is active.
         b.spot("rfd_mogre_crab_pen", "Mogre Camp crab pen (sea bed)", 2962, 3152); // approx: the undersea pen, offshore west of Mudskipper Point
-        b.spot("rfd_jubbly_nest", "Jubbly bird nesting ground (Feldip Hills)", 2636, 2964); // approx: south-east of Rantz, by the coast
+        b.spot("rfd_jubbly_nest", "Jubbly bird nesting ground (Feldip Hills)", 2635, 2965); // quest-helper: south of Rantz's cave
         b.boss(BossDef.of("rfd_crab", "Crab").level(21).stats(18, 17, 17, 22, 1, 1).speed(4) // the Mogre Camp crab pen crab
                 .attack(AttackDef.of("pinch", AttackType.CRUSH, 3, 2, 1))
                 .drops(Drop.always("bones")).skin(0xC05A2A, 0xA04A1A, 0x6A2A0A, 0xE0A060).size(0.9f, 0.8f, 1.0f)

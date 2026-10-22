@@ -230,7 +230,7 @@ final class MahjarratQuests {
     private static void secretsOfTheNorth(QuestBook b) {
         // OSRS walkthrough: the Carnillean guard, Evelot (the hired killer) at the Fight Arena, Hazeel, Claus's cellar,
         // Weiss (Big Fish, Snowflake), the assassin, the ritual room puzzles and the Strange Creature (the Phantom Muspah).
-        b.spot("sotn_evelot_trail", "Evelot's trail", 2600, 3170); // approx: the boulders and bushes east of the Fight Arena bar
+        b.spot("sotn_evelot_trail", "Evelot's trail", 2643, 3202); // quest-helper: where the trail of boulders and bushes ends at Evelot
         b.spot("sotn_weiss_cave", "Weiss southern cave", 2860, 3930); // approx: beneath the main building
         b.spot("sotn_weiss_ritual_room", "Weiss ritual room", 2870, 3925); // approx
         Cast.npc(b, "sotn_carnillean_guard", "Guard", "carnillean_house", 2, 3, Cast.FAIR, 0x5A5A6A);
@@ -424,7 +424,7 @@ final class MahjarratQuests {
         b.item("leviathan_medallion_piece", "Perseriya's medallion", "amulet", 0x2A6A2A, "A piece of the ancient medallion, belonging to Perseriya.");
         b.items(s -> s.add("ring_of_shadows", "Ring of shadows", Kind.SIMPLE, "ring", 0x3A2A4A).value(1).stack(1)
                 .examine("A ring that reveals the shadow realm and teleports to the four strongholds of the old empire."));
-        b.spot("dt2_digsite_east_winch", "Digsite east winch", 3370, 3427); // approx: the easternmost winch
+        b.spot("dt2_digsite_east_winch", "Digsite east winch", 3384, 3418); // quest-helper: the winch
         // The Ancient Guardian under the Digsite: OSRS Wiki infobox.
         b.boss(BossDef.of("dt2_ancient_guardian", "Ancient Guardian").level(153).stats(100, 180, 110, 100, 100, 1).speed(5)
                 .attack(AttackDef.of("slam", AttackType.CRUSH, 12, 2.5, 10))

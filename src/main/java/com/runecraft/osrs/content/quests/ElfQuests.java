@@ -158,9 +158,9 @@ final class ElfQuests {
         b.spot("sote_ysgawyn_clearing", "Isafdar clearing", 2256, 3168);
         b.spot("sote_lletya_statue", "Lletya's empty plinth", 2340, 3165); // approx: the centre of the village
         b.spot("sote_dig_swamp", "South Isafdar swamp", 2225, 3133);
-        b.spot("sote_dig_zulandra", "North of Zul-Andra", 2197, 3058); // approx: two steps north of the STASH unit
-        b.spot("sote_dig_gates", "Outside Prifddinas' south gates", 2240, 3255); // approx
-        b.spot("sote_spin", "Western entry to the Underground Pass", 2312, 3213); // approx
+        b.spot("sote_dig_zulandra", "North of Zul-Andra", 2203, 3061); // quest-helper tile
+        b.spot("sote_dig_gates", "Outside Prifddinas' south gates", 2240, 3269); // quest-helper tile
+        b.spot("sote_spin", "Western entry to the Underground Pass", 2309, 3215); // quest-helper tile
         // OSRS Wiki "Iorwerth Warrior": level 108, 105 HP, 95 Attack/Strength, 80 Defence, stab max hit 10 every 4 ticks.
         b.spot("sote_iorwerth_cave", "Iorwerth Camp cave", 2202, 3263); // the cave on the north side of the Iorwerth Camp (quest-helper tile)
         b.boss(BossDef.of("iorwerth_warrior", "Iorwerth Warrior").level(108).stats(105, 95, 95, 80, 1, 1).speed(4)
