@@ -38,6 +38,15 @@ public final class OldBossScripts {
         if (!(boss.script() instanceof Bryophyta b)) {
             throw new IllegalStateException("Bryophyta has no growthling script");
         }
+        // she only rolls for growthlings while a player is attacking her (wiki)
+        b.lastAttacked = ActionManager.gameTick() - BossMechanics.BRYOPHYTA_ATTACKED_TICKS - 1;
+        b.nextBatch = 0;
+        for (int i = 0; i < 40; i++) {
+            b.afterAttack(boss, p, AttackType.CRUSH);
+        }
+        if (!b.growthlings.isEmpty()) {
+            throw new IllegalStateException("Bryophyta summoned growthlings while nobody attacked her");
+        }
         b.summon(boss, p);
         int n = b.growthlings.size();
         if (n != BossMechanics.GROWTHLINGS) {
@@ -67,10 +76,17 @@ public final class OldBossScripts {
     /** Self-test (boss:obor_knockback): the slam pushes a player standing in the open straight away from Obor. */
     public static String selfTestKnockback(BossEntity boss, ServerPlayer p) {
         double before = Math.hypot(p.getX() - boss.getX(), p.getZ() - boss.getZ());
+        // the player has just swung (a 4-tick weapon): the slam adds to the weapon delay still running
+        com.runecraft.combat.AttackTimer.accept(p, com.runecraft.osrs.AttackClock.Kind.MELEE, 4 * ActionManager.MC_TICKS_PER_GAME_TICK);
+        long wait = com.runecraft.combat.AttackTimer.remaining(p);
         int tiles = Obor.knockback(boss, p);
+        long delayed = com.runecraft.combat.AttackTimer.remaining(p) - wait;
         double after = Math.hypot(p.getX() - boss.getX(), p.getZ() - boss.getZ());
         if (tiles > 0 && after <= before) {
             throw new IllegalStateException("knockback reported " + tiles + " tiles but the player came no further away");
+        }
+        if (delayed < (long) BossMechanics.OBOR_SLAM_DELAY_TICKS * ActionManager.MC_TICKS_PER_GAME_TICK) {
+            throw new IllegalStateException("the slam delayed the player's next attack by " + delayed + " MC ticks");
         }
         if (boss.maxHitAgainst(p, AttackType.RANGED) != BossMechanics.OBOR_RANGED_MAX) {
             throw new IllegalStateException("Obor's ranged max hit is " + boss.maxHitAgainst(p, AttackType.RANGED));
@@ -88,7 +104,7 @@ public final class OldBossScripts {
                         + "walk to the player) and " + throwing + " once it was (expected RANGED)");
             }
         }
-        return "pushed " + tiles + " tiles (" + String.format(java.util.Locale.ROOT, "%.1f", before) + " -> "
+        return "pushed " + tiles + " tiles, next attack " + delayed + " MC later (" + String.format(java.util.Locale.ROOT, "%.1f", before) + " -> "
                 + String.format(java.util.Locale.ROOT, "%.1f", after) + " blocks)";
     }
 
@@ -109,6 +125,8 @@ public final class OldBossScripts {
         private long lastDeath = -1;
         private int dead;
         private boolean warned;
+        /** Game tick a player last attacked her: "She will only spawn growthlings if the player is attacking her" (wiki). */
+        private long lastAttacked = -1000;
 
         boolean protectedByGrowthlings() {
             return growthlings.stream().anyMatch(Mob::isAlive);
@@ -117,7 +135,8 @@ public final class OldBossScripts {
         @Override
         public void afterAttack(BossEntity boss, ServerPlayer target, AttackType type) {
             long now = ActionManager.gameTick();
-            if (!growthlings.isEmpty() || now < nextBatch || boss.getRandom().nextInt(BossMechanics.GROWTHLING_CHANCE) != 0) {
+            if (!growthlings.isEmpty() || now < nextBatch || !BossMechanics.bryophytaUnderAttack(now, lastAttacked)
+                    || boss.getRandom().nextInt(BossMechanics.GROWTHLING_CHANCE) != 0) {
                 return;
             }
             summon(boss, target);
@@ -172,6 +191,9 @@ public final class OldBossScripts {
 
         @Override
         public int modifyIncoming(BossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (attacker != null) {
+                lastAttacked = ActionManager.gameTick();
+            }
             if (!protectedByGrowthlings()) {
                 return damage;
             }
@@ -264,6 +286,8 @@ public final class OldBossScripts {
             }
             w.sendParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 1, target.getZ(), 1, 0, 0, 0, 0);
             Msg.action(target, "Obor's slam knocks you back!");
+            // OSRS Wiki: "your next attack will be slightly delayed whether you are standing next to a wall or not"
+            com.runecraft.combat.AttackTimer.addDelay(target, BossMechanics.OBOR_SLAM_DELAY_TICKS * ActionManager.MC_TICKS_PER_GAME_TICK);
             if (BossMechanics.oborPushedTooFar(tiles)) {
                 CombatAchievementService.flag(target, BossMechanics.FLAG_OBOR_PUSHED);
             }

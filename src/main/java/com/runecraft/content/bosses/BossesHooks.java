@@ -32,6 +32,7 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("ant_hespori", ClassicScripts.Hespori::new); // A Night at the Theatre's wild Hespori (quests module)
         BossScripts.register("scurrius", ClassicScripts.Scurrius::new);
         ScurriusGroupService.register(); // the public room's group version: stronger, MVP and non-MVP loot
+        ScurriusPiles.register(); // the lair's food piles: players eat there every ten minutes, unless under attack
         BossScripts.register("sarachnis", ClassicScripts.Sarachnis::new);
         BossScripts.register("zalcano", ClassicScripts.Zalcano::new);
         BossScripts.register("sol_heredit", SolHereditScript::new);

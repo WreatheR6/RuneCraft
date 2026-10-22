@@ -89,6 +89,7 @@ public final class BossPlaces {
                 BlockDef.scripted(DukeRules.ARDER_MUSHROOMS, "Arder mushrooms", 0x8A6A3A, "mushroom"),
                 BlockDef.scripted(DukeRules.MUSCA_MUSHROOMS, "Musca mushrooms", 0x6A8A4A, "mushroom"),
                 BlockDef.scripted(DukeRules.SALT_PILE, "Salt pile", 0xE0E0E8, "rock"),
-                BlockDef.scripted(DukeRules.VAT, "Fermentation vat", 0x6A5A4A, "vat"));
+                BlockDef.scripted(DukeRules.VAT, "Fermentation vat", 0x6A5A4A, "vat"),
+                BlockDef.scripted(ClassicBosses.SCURRIUS_FOOD_PILE, "Food Pile", 0x8A6A3A, "crate"));
     }
 }

@@ -99,7 +99,9 @@ class Round32BossesTest {
         assertEquals(4, YamaContract.SHARD_ACQUISITION.flares);
         for (YamaContract c : YamaContract.values()) {
             assertNotNull(ItemCatalog.get(c.item), c.item);
-            assertNotNull(ItemCatalog.get(c.reward()), c.reward());
+            if (c != YamaContract.FAMILIAR_ACQUISITION) { // its reward is a pet chance, not an item
+                assertNotNull(ItemCatalog.get(c.reward()), c.reward());
+            }
             assertEquals(c, YamaContract.byItem(c.item));
         }
         Recipe sigil = Recipes.get("make_purifying_sigil");

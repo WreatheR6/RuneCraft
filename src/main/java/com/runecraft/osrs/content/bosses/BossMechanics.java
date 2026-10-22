@@ -103,6 +103,18 @@ public final class BossMechanics {
     /** Knockback slam: one melee attack in 4 (approx) pushes the target up to 2 tiles (approx) straight away from him. */
     public static final int OBOR_KNOCKBACK_CHANCE = 4;
     public static final int OBOR_KNOCKBACK_TILES = 2;
+    /**
+     * The slam delays the player's next attack, wall or not (OSRS Wiki "Obor": "your next attack will be slightly delayed
+     * whether you are standing next to a wall or not"): game ticks added to a running weapon delay. // approx: "slightly"
+     */
+    public static final int OBOR_SLAM_DELAY_TICKS = 1;
+    /** Game ticks since a player's last attack on Bryophyta within which she still counts as being attacked. // approx */
+    public static final int BRYOPHYTA_ATTACKED_TICKS = 10;
+
+    /** Whether Bryophyta may roll for growthlings: "She will only spawn growthlings if the player is attacking her" (wiki). */
+    public static boolean bryophytaUnderAttack(long now, long lastAttacked) {
+        return now - lastAttacked <= BRYOPHYTA_ATTACKED_TICKS;
+    }
 
     /** Damage of Obor's ranged attack through Protect from Missiles (50% less). */
     public static int oborRangedThroughPrayer(int damage) {
@@ -164,7 +176,8 @@ public final class BossMechanics {
      * his stats (max hit 53, 7-tick attacks). The five sigil contracts are returned on a kill with their purifying sigil
      * piece; the acquisition contracts (from dossiers) are not, and guarantee their reward instead. approx: the acquisition
      * contracts share the sigil contracts' attack cycle; their halved hitpoint/prayer restoration and enhanced incantations
-     * aren't modelled.
+     * aren't modelled. The contract of familiar acquisition (appended last) is returned on a kill like the sigil contracts
+     * and keeps the standard table, with a 1/100 pet chance for both fighters.
      */
     public enum YamaContract {
         /** Drains run energy passively and on hits; reaching 0 loses the fight. */
@@ -187,7 +200,13 @@ public final class BossMechanics {
         /** One oathplate armour piece of the challenger's choice. */
         OATHPLATE_ACQUISITION("contract_of_oathplate_acquisition", 2500, 4, false, false, false, false),
         /** A soulflame horn. */
-        HARMONY_ACQUISITION("contract_of_harmony_acquisition", 2500, 4, false, false, false, false);
+        HARMONY_ACQUISITION("contract_of_harmony_acquisition", 2500, 4, false, false, false, false),
+        /**
+         * A 1/100 chance of Yami (OSRS Wiki "Contract of familiar acquisition"): more damage through prayers, 81-hitpoint void
+         * flares spawning all fight, no healing or prayer restoration from consumables, doubled special attack regeneration
+         * and specials that always hit. A partner may join; both benefit. Returned on a kill; the standard table is rolled.
+         */
+        FAMILIAR_ACQUISITION("contract_of_familiar_acquisition", 2500, 2, false, false, true, true);
 
         public final String item;
         public final int hitpoints;
@@ -222,9 +241,30 @@ public final class BossMechanics {
             return "Contract of " + name().toLowerCase(Locale.ROOT).replace('_', ' ');
         }
 
-        /** The five sigil contracts come back after a kill; acquisition contracts are used up (wiki "Returned on kill"). */
+        /**
+         * The five sigil contracts and the contract of familiar acquisition come back after a kill; the other acquisition
+         * contracts are used up (wiki "Returned on kill").
+         */
         public boolean returnedOnKill() {
+            return ordinal() <= BLOODIED_BLOWS.ordinal() || this == FAMILIAR_ACQUISITION;
+        }
+
+        /** The five sigil contracts (purifying sigil pieces; one challenger; Fire Streaks and Shadow Waves a phase ahead). */
+        public boolean sigil() {
             return ordinal() <= BLOODIED_BLOWS.ordinal();
+        }
+
+        /**
+         * Fire Streaks and Shadow Waves in phases 1 and 2 "behave as if they were one phase ahead" (OSRS Wiki, the contracts
+         * of forfeit breath and familiar acquisition).
+         */
+        public boolean hazardsAhead() {
+            return this == FORFEIT_BREATH || this == FAMILIAR_ACQUISITION;
+        }
+
+        /** No healing or prayer restoration from consumables (the contract of familiar acquisition). */
+        public boolean noConsumables() {
+            return this == FAMILIAR_ACQUISITION;
         }
 
         /** The guaranteed reward of a kill under this contract (oathplate acquisition: a piece the player picks). */
@@ -240,6 +280,7 @@ public final class BossMechanics {
                 case SHARD_ACQUISITION -> "oathplate_shards";
                 case OATHPLATE_ACQUISITION -> "oathplate_helm";
                 case HARMONY_ACQUISITION -> "soulflame_horn";
+                case FAMILIAR_ACQUISITION -> null; // its reward is the pet chance (YamaLoot.petRate)
             };
         }
 
@@ -261,12 +302,13 @@ public final class BossMechanics {
 
     /**
      * A dossier's contents (OSRS Wiki "Dossier", weights out of 1,740): {item, min, max, weight}. approx: the rite of vile
-     * transference (116) and the contract of familiar acquisition (65) don't exist here and give chasm teleport scrolls.
+     * transference (116) doesn't exist here and gives chasm teleport scrolls (as it does once owned).
      */
     public static final List<Object[]> DOSSIER_TABLE = List.of(
             new Object[]{"contract_of_bloodied_blows", 3, 3, 260}, new Object[]{"contract_of_divine_severance", 3, 3, 260},
             new Object[]{"contract_of_forfeit_breath", 3, 3, 260}, new Object[]{"contract_of_glyphic_attenuation", 3, 3, 260},
-            new Object[]{"contract_of_sensory_clouding", 3, 3, 260}, new Object[]{"chasm_teleport_scroll", 15, 18, 116 + 116 + 65},
+            new Object[]{"contract_of_sensory_clouding", 3, 3, 260}, new Object[]{"chasm_teleport_scroll", 15, 18, 116 + 116},
+            new Object[]{"contract_of_familiar_acquisition", 2, 2, 65},
             new Object[]{"contract_of_shard_acquisition", 1, 1, 39}, new Object[]{"contract_of_worm_acquisition", 1, 1, 39},
             new Object[]{"contract_of_catalyst_acquisition", 1, 1, 39}, new Object[]{"contract_of_harmony_acquisition", 1, 1, 13},
             new Object[]{"contract_of_oathplate_acquisition", 1, 1, 13});
@@ -282,6 +324,106 @@ public final class BossMechanics {
             }
         }
         return DOSSIER_TABLE.get(DOSSIER_TABLE.size() - 1);
+    }
+
+    // ---- contract rules (OSRS Wiki "Yama/Strategies", Contracts: "All contract fights have a base set of changes")
+
+    /** Standard attacks before each special: three, two under any contract. */
+    public static int yamaAutosBeforeSpecial(YamaContract c) {
+        return c == null ? 3 : 2;
+    }
+
+    /** Game ticks a phase 1 glyph special takes to land: 6, one tick faster (5) under a contract. */
+    public static int yamaGlyphSpecialTicks(YamaContract c) {
+        return c == null ? 6 : 5;
+    }
+
+    /** The Judge of Yama's fire bombs: every 5 ticks, one at a time; under a contract every 3 ticks, two per attack. */
+    public static int yamaJudgeTicks(YamaContract c) {
+        return c == null ? JUDGE_ATTACK_TICKS : 3;
+    }
+
+    public static int yamaJudgeBombs(YamaContract c) {
+        return c == null ? 1 : 2;
+    }
+
+    /**
+     * Shadow wave / fire streak sets per special: one in phase 1, two from phase 2; under the contracts of forfeit breath and
+     * familiar acquisition they behave "as if they were one phase ahead" (two in phase 1, three in phase 2).
+     */
+    public static int yamaHazardSets(int stage, YamaContract c) {
+        int base = stage >= 2 ? 2 : 1;
+        return c != null && c.hazardsAhead() && stage < 3 ? base + 1 : base;
+    }
+
+    /**
+     * The most his axe swing deals through Protect from Melee: 6, 22 in phase 3; none under the contract of divine severance
+     * ("Yama no longer penetrates prayers"); more under sensory clouding and familiar acquisition ("Yama's attacks will deal
+     * more damage through prayers"). // approx: 12 and 30 for the latter, the wiki gives no numbers
+     */
+    public static int yamaMeleeThroughPrayer(int stage, YamaContract c) {
+        if (c == YamaContract.DIVINE_SEVERANCE) {
+            return 0;
+        }
+        boolean more = c != null && c.extraPenetration;
+        return stage >= 3 ? (more ? 30 : YAMA_MELEE_THROUGH_PRAYER_P3) : (more ? 12 : YAMA_MELEE_THROUGH_PRAYER);
+    }
+
+    /**
+     * The most a prayed-against fire or shadow auto deals through the prayer: up to 3 in phase 3 only; none under divine
+     * severance; under sensory clouding ("All of Yama's standard attacks will pierce through protection prayers") and
+     * familiar acquisition in every phase. // approx: 5, 8 in phase 3
+     */
+    public static int yamaAutoPierce(int stage, YamaContract c) {
+        if (c == YamaContract.DIVINE_SEVERANCE) {
+            return 0;
+        }
+        if (c != null && c.extraPenetration) {
+            return stage >= 3 ? 8 : 5;
+        }
+        return stage >= 3 ? YAMA_PIERCE_P3 : 0;
+    }
+
+    /** Glyph of Fire damage / Glyph of Shadow prayer drain multiplier: x3 under glyphic attenuation (OSRS Wiki). */
+    public static int yamaGlyphCostScale(YamaContract c) {
+        return c == YamaContract.GLYPHIC_ATTENUATION ? 3 : 1;
+    }
+
+    /** Run energy in hundredths of a percent (SysState): full is 10,000. */
+    public static final int RUN_ENERGY_FULL = 10_000;
+    /** Forfeit breath: run energy drains 1% every 4 ticks and 1% per point of damage Yama deals; 0% loses the fight. */
+    public static final int FORFEIT_DRAIN_TICKS = 4;
+    public static final int FORFEIT_DRAIN = 100;
+    public static final int FORFEIT_DRAIN_PER_DAMAGE = 100;
+
+    /** Run energy left after a forfeit breath hit of {@code damage} (never below 0). */
+    public static int forfeitAfterHit(int energy, int damage) {
+        return Math.max(0, energy - Math.max(0, damage) * FORFEIT_DRAIN_PER_DAMAGE);
+    }
+
+    /** The void flares the contracts of divine severance and familiar acquisition spawn all fight: 81 hitpoints (of 140). */
+    public static final int CONTINUOUS_FLARE_HP = 81;
+    public static final int VOID_FLARE_HP = 140;
+    /** Yami under the contract of familiar acquisition: 1/100 for each fighter (1/2,500 otherwise). */
+    public static final int FAMILIAR_PET_RATE = 100;
+
+    /**
+     * Whether the contract of familiar acquisition stops a consumable: all food, and potions that heal or restore prayer
+     * (prayer potions, restores, brews, sanfew serums, ancient brews, Guthix rests). Stat-boosting, energy and antipoison
+     * potions still work.
+     */
+    public static boolean familiarBlocks(String itemId, boolean food) {
+        if (food) {
+            return true;
+        }
+        String id = itemId == null ? "" : itemId;
+        for (String marker : new String[]{"prayer_potion", "super_restore", "saradomin_brew", "sanfew_serum", "ancient_brew",
+                "guthix_rest", "prayer_regeneration", "blighted_super_restore"}) {
+            if (id.contains(marker)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Max-hit multiplier of Yama's attacks under a contract (53 instead of 46). */

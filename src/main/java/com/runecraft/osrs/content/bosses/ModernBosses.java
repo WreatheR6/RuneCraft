@@ -366,7 +366,7 @@ public final class ModernBosses {
                 st(0, 16, 0, -16, -18, 105, 128, 100, -5, 112, 4, 0, 0, 0), Skill.DEFENCE, 85).examine("A chestplate sworn to Yama, purified.");
         BossItems.wearItem(items, "radiant_oathplate_legs", "Radiant oathplate legs", Kind.ARMOUR, "platelegs", 0xD8D8E0, 25_000_000, Slot.LEGS,
                 st(0, 12, 0, -12, -14, 75, 100, 73, -3, 81, 2, 0, 0, 0), Skill.DEFENCE, 85).examine("Platelegs sworn to Yama, purified.");
-        for (String c : new String[]{"catalyst", "worm", "shard", "oathplate", "harmony"}) {
+        for (String c : new String[]{"catalyst", "worm", "shard", "oathplate", "harmony", "familiar"}) {
             items.add("contract_of_" + c + "_acquisition", "Contract of " + c + " acquisition", Kind.SIMPLE, "scroll", 0x6A2A5A)
                     .value(75000).weight(0.4).examine("A contract issued by Yama. Present it to him to discuss some new terms.");
         }

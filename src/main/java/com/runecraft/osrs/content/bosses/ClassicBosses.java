@@ -330,6 +330,47 @@ public final class ClassicBosses {
     public static final int SCURRIUS_EAT_AGAIN_TICKS = 25;
     /** At 30% he holds the centre of the arena, only magic and ranged, faster; healed above it he goes back to eat. */
     public static final int SCURRIUS_CENTRE_BELOW = 30;
+    /**
+     * His three food piles, as block offsets {dx, dz} from his arena's centre. OSRS Wiki "Food Pile": 2x2 piles at tiles
+     * 3298-3299,9876-9877 (north), 3298-3299,9858-9859 (south) and 3307-3308,9867-9868 (east) around his spawn at
+     * 3299,9867 ("Scurrius" location), 9-10 tiles out; here pulled in to fit his 11-block arena (approx: the directions and
+     * the near-equal distances are the wiki's), the north one a step west of the summoning stone.
+     */
+    public static final int[][] SCURRIUS_PILES = {{-2, -8}, {-1, 8}, {8, 0}};
+    /** The food pile block players eat from (and Scurrius eats beside). */
+    public static final String SCURRIUS_FOOD_PILE = "scurrius_food_pile";
+    /** Players may eat from a food pile once every ten minutes (game ticks), healing to full (OSRS Wiki "Food Pile"). */
+    public static final int FOOD_PILE_COOLDOWN_TICKS = 1000;
+    /**
+     * ... but not "for a couple of seconds after being attacked" (OSRS Wiki "Scurrius/Strategies"): game ticks since the
+     * last attack on the player (a miss counts), so his giant rats keep players from the piles. // approx
+     */
+    public static final int FOOD_PILE_COMBAT_TICKS = 4;
+    /**
+     * Each stint at a pile is ten eating animations of which five heal (OSRS Wiki "Scurrius/Strategies"): a heal every
+     * {@code SCURRIUS_BITE_TICKS} game ticks ("every few seconds"). // approx: two ticks an animation
+     */
+    public static final int SCURRIUS_BITE_TICKS = 4;
+
+    /** The index of the pile nearest an offset from the arena centre (he "usually" picks one close to him). */
+    public static int nearestPile(double dx, double dz) {
+        int best = 0;
+        double bestD = Double.MAX_VALUE;
+        for (int i = 0; i < SCURRIUS_PILES.length; i++) {
+            double d = Math.hypot(SCURRIUS_PILES[i][0] - dx, SCURRIUS_PILES[i][1] - dz);
+            if (d < bestD) {
+                bestD = d;
+                best = i;
+            }
+        }
+        return best;
+    }
+
+    /** Whether a player may eat from a food pile: ten minutes since their last meal there, unattacked for a moment. */
+    public static boolean canEatPile(long now, long lastMeal, long lastAttacked) {
+        return (lastMeal < 0 || now - lastMeal >= FOOD_PILE_COOLDOWN_TICKS)
+                && (lastAttacked < 0 || now - lastAttacked >= FOOD_PILE_COMBAT_TICKS);
+    }
     /** Six giant rats a wave, at most twelve waves. */
     public static final int SCURRIUS_RATS = 6;
     public static final int SCURRIUS_RAT_WAVES = 12;

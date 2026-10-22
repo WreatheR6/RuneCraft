@@ -134,12 +134,19 @@ public final class SpecialAttackService {
         SysNet.sendState(p);
     }
 
+    /** Players whose natural special energy regeneration is doubled (other modules add theirs: Yama's familiar contract). */
+    public static java.util.function.Predicate<ServerPlayer> doubleRegen = p -> false;
+
     /** Called every game tick: energy regeneration (10% every 30 seconds). */
     public static void gameTick(ServerPlayer p, long tick) {
         SysState.SysPlayer sp = SysState.of(p);
         if (sp.specEnergy < SpecialAttacks.MAX_ENERGY) {
             int before = sp.specEnergy;
-            sp.specEnergy = SpecialAttacks.regen(sp.specEnergy, sp.wearing("lightbearer") || sp.wearing("lms_lightbearer"), tick);
+            boolean lightbearer = sp.wearing("lightbearer") || sp.wearing("lms_lightbearer");
+            sp.specEnergy = SpecialAttacks.regen(sp.specEnergy, lightbearer, tick);
+            if (sp.specEnergy != before && doubleRegen.test(p)) {
+                sp.specEnergy = SpecialAttacks.regen(sp.specEnergy, lightbearer, tick); // the same tick: a second 10%
+            }
             if (sp.specEnergy != before) {
                 SysNet.sendState(p);
             }
