@@ -509,14 +509,14 @@ final class SlayerChecks {
     }
 
     /**
-     * A master who assigns {@code task}: Krystilia for a Wilderness area, else any other, Konar (sending the player to this
-     * very place) only when no one else does (hydras).
+     * A master who assigns {@code task}: Krystilia for a Wilderness area, else any other (Mortimer offers a choice instead
+     * of assigning, so he is left out), Konar (sending the player to this very place) only when no one else does (hydras).
      */
     private static SlayerMasters.Master masterFor(String task, boolean wilderness) {
         SlayerMasters.Master krystilia = null;
         SlayerMasters.Master konar = null;
         for (SlayerMasters.Master m : SlayerMasters.all()) {
-            if (m.assignment(task) == null) {
+            if (m.assignment(task) == null || m.id().equals(com.runecraft.osrs.content.slayer.Mortimer.ID)) {
                 continue;
             }
             if (m.locationRestricted()) {
@@ -531,10 +531,79 @@ final class SlayerChecks {
     }
 
     /**
-     * In a task-only area, as a player would be: off task the guardian stops every hit (no damage on any path); a task
-     * from a master who assigns it lets the player hurt the creature, and a kill there counts.
+     * Gets {@code task} from {@code master} by talking to him, as a player would: every other task of his is on the
+     * player's block list for the talk (and the unlock the task needs is bought), so the one he can give is this one;
+     * Konar is asked again until she names the location at {@code at}. The block list is put back afterwards.
+     */
+    private void taskFrom(SlayerMasters.Master master, String task, BlockPos at) {
+        SlayerState.Profile prof = profile();
+        SlayerMasters.Assignment line = master.assignment(task);
+        if (line.unlock() != null) {
+            prof.unlocks.add(line.unlock());
+        }
+        List<String> blockedBefore = new ArrayList<>(prof.blocked);
+        try {
+            prof.blocked.clear();
+            for (SlayerMasters.Assignment a : master.assignments()) {
+                if (!a.category().equals(task)) {
+                    prof.blocked.add(a.category());
+                }
+            }
+            String want = master.locationRestricted() ? konarPlaceAt(task, at) : null;
+            for (int tries = 0; tries < 60; tries++) {
+                prof.task = null;
+                prof.remaining = 0;
+                prof.region = null;
+                SlayerService.talk(p(), master);
+                if (task.equals(prof.task) && prof.hasTask() && (want == null || want.equals(prof.region))) {
+                    return;
+                }
+            }
+            throw failure(master.name() + " never gave a " + task + " task" + (master.locationRestricted() ? " in "
+                    + SlayerService.regionName(konarPlaceAt(task, at)) : "") + " (last: " + prof.task + " in " + prof.region + ")");
+        } finally {
+            prof.blocked.clear();
+            prof.blocked.addAll(blockedBefore);
+        }
+    }
+
+    /**
+     * One melee attack through the real combat path, the attack clock ready: an abyssal whip, or a leaf-bladed sword for
+     * the creatures only those hurt (turoths and kurasks).
+     */
+    private void realAttack(LivingEntity mob) {
+        String category = categoryOf(net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getPath());
+        String weapon = category != null && SlayerGear.LEAF_BLADED_CATEGORIES.contains(category) ? "leaf_bladed_sword"
+                : "abyssal_whip";
+        if (!Inv.idOf(p().getMainHandItem()).equals(weapon)) {
+            p().setItemSlot(EquipmentSlot.MAINHAND, Inv.stack(weapon, 1));
+        }
+        data().lastAttackTick = com.runecraft.action.ActionManager.mcTick() - 10_000;
+        mob.invulnerableTime = 0;
+        mob.hurt(CombatHandler.source(p()), 1f);
+    }
+
+    /** Real attacks until one lands (the hitpoints it took), or 0 after {@code tries} misses. */
+    private int realHit(LivingEntity mob, int tries) {
+        for (int i = 0; i < tries && mob.isAlive(); i++) {
+            float hp = mob.getHealth();
+            realAttack(mob);
+            int dealt = Math.round(hp - mob.getHealth());
+            if (dealt > 0 || !mob.isAlive()) {
+                return Math.max(1, dealt);
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * In a task-only area, as a player would be: off task the guardian stops every hit (melee clicks and any other damage
+     * path); a task from a master who assigns it (talked to for it) lets the player hurt the creature, but not while the
+     * task sits in Task Storage; unstored, the player wears the creature down and kills it with a real attack, and the
+     * kill counts with its Slayer experience.
      */
     private String taskOnlyArea(TaskOnlySpot spot) {
+        c.completeQuests(null);
         Dungeons.Camp cp = spot.camp();
         String creature = cp.creatures().get(0);
         EntityType<?> type = ModEntities.typeById(creature);
@@ -551,48 +620,81 @@ final class SlayerChecks {
         ChunkSettle.holdAndSettle(c.world, at, 16);
         SlayerState.Profile prof = profile();
         LivingEntity mob = spawnAt(type, at.offset(1, 0, 0), true);
+        String speaker = area.guardian() != null ? area.guardian() : "the cave";
         try {
+            // 1. Off task: the guardian stops the player's clicks and every other damage path.
             prof.task = null;
             prof.remaining = 0;
             float hp = mob.getHealth();
+            for (int i = 0; i < 3; i++) {
+                realAttack(mob);
+            }
             if (CombatHandler.applyDamage(p(), mob, 3) != 0 || mob.getHealth() < hp) {
-                throw failure("a player without a task hurt a " + creature + " in " + area.dungeon() + " (" + area.guardian() + ")");
+                throw failure("a player without a task hurt a " + creature + " in " + area.dungeon() + " (" + speaker + ")");
             }
             String said = com.runecraft.content.dungeons.DungeonsHooks.taskOnlyMessage(area);
             String own = Dungeons.TASK_ONLY_LINES.get(area.dungeon());
             if (area.guardian() == null ? own == null || !said.equals(own) : !said.startsWith(area.guardian())) {
                 throw failure("no Slayer guardian speaks for " + area.dungeon() + ": " + said);
             }
+            // 2. The task from a master who assigns it, talked to for it.
             boolean wild = com.runecraft.world.Gielinor.wildernessLevel(mob) > 0;
             SlayerMasters.Master master = masterFor(spot.task(), wild);
             if (master == null) {
                 throw failure("no Slayer master assigns " + spot.task());
             }
-            SlayerMasters.Assignment line = master.assignment(spot.task());
-            prof.task = spot.task();
-            prof.amount = line.min();
-            prof.remaining = line.min();
-            prof.master = master.id();
-            prof.region = master.locationRestricted() ? konarPlaceAt(spot.task(), at) : null;
-            int dealt = CombatHandler.applyDamage(p(), mob, 3);
-            if (dealt <= 0) {
-                throw failure("a " + spot.task() + " task from " + master.name() + " still couldn't hurt a " + creature);
+            taskFrom(master, spot.task(), at);
+            // 3. Task Storage: a stored task doesn't open the area; taken up again, it does.
+            prof.unlocks.add(com.runecraft.osrs.content.slayer.SlayerRewards.TASK_STORAGE);
+            if (!SlayerService.storeTask(p())) {
+                throw failure("Task Storage refused to store a " + spot.task() + " task");
+            }
+            float stored = mob.getHealth();
+            realAttack(mob);
+            if (mob.getHealth() < stored) {
+                throw failure("a stored " + spot.task() + " task still let the player hurt a " + creature);
+            }
+            if (!SlayerService.unstoreTask(p()) || !spot.task().equals(prof.task)) {
+                throw failure("unstoring the " + spot.task() + " task left " + prof.task);
             }
             double xp = slayerXp();
             int before = prof.remaining;
-            killAsPlayer(mob);
+            int dealt = realHit(mob, 200);
+            if (dealt <= 0) {
+                throw failure("a " + spot.task() + " task from " + master.name() + " still couldn't hurt a " + creature
+                        + " in 200 attacks");
+            }
+            // 4. Worn down to a few hitpoints, the creature dies to the player's next hits; the kill counts.
+            if (mob.isAlive()) {
+                mob.setHealth(Math.min(mob.getHealth(), 3f));
+            }
+            for (int i = 0; i < 300 && mob.isAlive(); i++) {
+                realAttack(mob);
+            }
+            if (mob.isAlive()) {
+                throw failure("300 attacks didn't finish a " + creature + " at 3 hitpoints");
+            }
             if (prof.remaining != before - 1 || slayerXp() <= xp) {
                 throw failure("a " + creature + " kill in the task-only area took the task from " + before + " to " + prof.remaining
                         + " (+" + (slayerXp() - xp) + " XP)");
             }
-            return area.guardian() + " refused the off-task hit; " + master.name() + "'s " + spot.task() + " task: hit " + dealt
-                    + ", kill " + before + " -> " + prof.remaining;
+            return speaker + " refused the off-task hits; " + master.name() + " gave " + prof.amount + " " + spot.task()
+                    + (prof.region != null ? " in " + SlayerService.regionName(prof.region) : "") + "; stored: no hit; hit "
+                    + dealt + ", kill " + before + " -> " + prof.remaining;
         } finally {
             if (mob.isAlive()) {
                 mob.discard();
             }
+            for (net.minecraft.world.entity.item.ItemEntity drop : c.world.getEntitiesOfClass(
+                    net.minecraft.world.entity.item.ItemEntity.class, new net.minecraft.world.phys.AABB(at).inflate(4))) {
+                drop.discard();
+            }
+            p().setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
             prof.task = null;
             prof.remaining = 0;
+            prof.region = null;
+            prof.storedTask = null;
+            prof.storedRemaining = 0;
             c.home();
         }
     }
@@ -650,7 +752,10 @@ final class SlayerChecks {
         return "stored 33 hellhounds, took " + secondLeft + " " + second + ", swapped and unstored";
     }
 
-    /** Duly Noted notes a mithril dragon's bars only on task; the rune pouch holds runes that spells then use. */
+    /**
+     * Duly Noted, bought with points, notes a mithril dragon's bars only on task; the rune pouch holds runes that spells
+     * then use.
+     */
     private String dulyNotedAndPouch() {
         SlayerState.Profile prof = profile();
         StringBuilder note = new StringBuilder();
@@ -658,7 +763,11 @@ final class SlayerChecks {
         if (dragonType != null) {
             LivingEntity dragon = spawnAt(dragonType, c.near(4, 0), true);
             try {
-                prof.unlocks.add(com.runecraft.osrs.content.slayer.SlayerRewards.DULY_NOTED);
+                prof.points = 200;
+                slayerCommand("unlock " + com.runecraft.osrs.content.slayer.SlayerRewards.DULY_NOTED);
+                if (!prof.unlocks.contains(com.runecraft.osrs.content.slayer.SlayerRewards.DULY_NOTED) || prof.points != 0) {
+                    throw failure("buying Duly Noted (200 points) left " + prof.points + " points, unlocks " + prof.unlocks);
+                }
                 prof.task = "metal_dragons";
                 prof.remaining = 30;
                 prof.master = "nieve";

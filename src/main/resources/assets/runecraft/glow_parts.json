@@ -853,6 +853,9 @@
     "hand_light_l",
     "hand_light_r"
   ],
+  "frost_dragon": [
+    "head"
+  ],
   "frost_nagua": [
     "head"
   ],
@@ -987,6 +990,9 @@
     "head",
     "jaw",
     "aura"
+  ],
+  "gryphon": [
+    "eyes"
   ],
   "guthan": [
     "head"
