@@ -25,8 +25,9 @@ final class VarlamoreQuests {
         b.place("quest_cam_torum", "Cam Torum", 1440, 3110, PlaceDef.Style.CAVE);
         b.spot("quest_villa_lucens", "Villa Lucens", 1450, 2968);
         b.place("quest_tal_teklan", "Tal Teklan", 1225, 3090, PlaceDef.Style.CAMP);
-        b.place("quest_ralos_rise", "Ralos' Rise", 1460, 3330, PlaceDef.Style.RUINS);
-        b.place("quest_tower_of_ascension", "Tower of Ascension", 1500, 3230, PlaceDef.Style.RUINS);
+        // the Tower of Ascension east of the Quetzacalli Gorge (quest-helper: Forebearer Janus inside at 1638, 3224; it stood over the
+        // Gorge's pub at 1500, 3230 before)
+        b.spot("quest_tower_of_ascension", "Tower of Ascension", 1638, 3228); // approx: 4 tiles north, clear of the lift platform hut
         b.spot("quest_civitas_lily_pond", "Civitas lily pond", 1712, 3098);
         b.spot("quest_custodia_pass", "Custodia Pass", 1255, 3335);
         b.spot("quest_sunrise_palace", "Sunrise Palace", 1680, 3160);
@@ -238,30 +239,217 @@ final class VarlamoreQuests {
                 .talk("quest_tal_teklan_chief").take("quest_feast_platter").say("The city sends food made by an outlander's hands? Hm. It is good food. Tal Teklan will talk.");
     }
 
+    /**
+     * The Heart of Darkness after the wiki quick guide and quest-helper (TheHeartOfDarkness): the Quetzacalli Gorge's pub and
+     * shopkeeper, the recruits at the Tower of Ascension, Forebearer Janus's four trials (the chests' keyword and directions and
+     * the scraps' passcode, the waves of emissaries, the traitor who speaks of Mictl, Prince Itzla himself), the Twilight Temple,
+     * the Ruins of Tapoyauik (the four levers and the elemental statues) and Amoxliatl. OSRS fights no "Twilight Emissary" boss
+     * here: the emissaries are the second trial's waves.
+     */
     private static void heartOfDarkness(QuestBook b) {
-        Cast.npc(b, "quest_ralos_priest", "Priest of Ralos", "quest_ralos_rise", 0, 3, Cast.TAN, 0xE0A040);
-        b.item("quest_sun_key", "Sun key", "key", 0xE0C040, "A key marked with the sun of Ralos.");
-        b.boss(BossDef.of("quest_twilight_emissary", "Twilight Emissary").level(210).stats(300, 160, 160, 150, 180, 150).speed(4)
-                .defenceBonus(90, 90, 90, 120, 90)
-                .attack(AttackDef.of("moon_blade", AttackType.SLASH, 24, 3, 5))
-                .attack(AttackDef.of("dusk_bolt", AttackType.MAGIC, 22, 9, 4).particle("minecraft:soul"))
-                .attack(AttackDef.of("eclipse", AttackType.MAGIC, 16, 9, 2).special(Special.AOE, 4).telegraph(2, "The Emissary blots out the light!"))
-                .drops(Drop.always("bones")).skin(0xC8946A, 0x2A1A4A, 0x1A0A2A, 0xC0C0E0)
-                .at("quest_tower_of_ascension").arena(11, "crypt"));
+        // quest-helper tiles: the Gorge's pub (bartender 1499, 3224; the rented room 1505, 3223), the general store (1517, 3223),
+        // the prince outside the Tower of Ascension (1656, 3219), Forebearer Janus inside it (1638, 3224; approx 1638, 3228 here,
+        // since the lift platform hut stands on his tile), the Twilight Temple
+        // (Forebearer Fides 1685, 3247) and the stairs down to the Ruins of Tapoyauik (1693, 3231)
+        b.npcAt("hod_bartender", "Bartender", 1499, 3224, 0xC8946C, 0x6A4A2A, 0x4A3A1A, 0x8A6A3A);
+        b.npcAt("itzla_gorge", "Prince Itzla Arkan", 1505, 3223, 0xC8946D, 0xE0B041, 0x9A7A2B, 0xE0C060);
+        b.npcAt("hod_shopkeeper", "Shopkeeper", 1517, 3223, 0xC8946E, 0x5A6A3A, 0x3A4A2A, 0x6A5A2A);
+        b.npcAt("itzla_tower", "Prince Itzla Arkan", 1656, 3219, 0xC8946F, 0xE0B042, 0x9A7A2C, 0xE0C061);
+        b.npcAt("forebearer_janus", "Forebearer Janus", 1638, 3228, 0xC8946A, 0x2A1A4A, 0x1A0A2A, 0xC0C0E0);
+        b.npcAt("forebearer_fides", "Forebearer Fides", 1685, 3247, 0xC8946B, 0x2A1A4B, 0x1A0A2B, 0xC0C0E1);
+        // Cast (one serial, as the priest of Ralos it replaces took) so later NPCs keep their colours
+        Cast.npcAt(b, "servius_teokan", "Servius, Teokan of Ralos", 1683, 3163, Cast.TAN, 0xE0D060);
+        b.spot("hod_tapoyauik", "Ruins of Tapoyauik", 1693, 3231);
+        b.item("hod_tower_key", "Tower key", "key", 0x8A8A9A, "A key to the Tower of Ascension's cells.");
+        b.item("hod_book", "Book", "book", 0x3A2A5A, "An emissary's book, some of its words marked.");
+        b.item("hod_scrap_of_paper", "Scrap of paper", "note", 0xE0D8C0, "Half of a torn note.");
+        b.item("hod_emissary_robes", "Twilight emissary robes", "robe_top", 0x2A1A4A, "Robes of the Twilight Emissaries.");
+        // The second trial's waves (osrs-dps-calc, Emissary Ascended: level 117, 80 HP, up to 12 every 4 ticks, melee and magic)
+        b.boss(BossDef.of("quest_twilight_emissary", "Emissary Ascended").level(117).stats(80, 120, 110, 90, 40, 1).speed(4)
+                .defenceBonus(30, 30, 50, 20, 30)
+                .attack(AttackDef.of("moon_blade", AttackType.SLASH, 12, 2.5, 3))
+                .attack(AttackDef.of("dusk_bolt", AttackType.MAGIC, 12, 9, 2).particle("minecraft:soul")) // approx: the casters' max hit
+                .attack(AttackDef.of("eclipse", AttackType.MAGIC, 12, 9, 1).special(Special.AOE, 3) // the dodgeable 3x3
+                        .telegraph(2, "The emissary blots out the light around you: step out!"))
+                .drops(Drop.always("bones")).skin(0xC8946A, 0x2A1A4A, 0x1A0A2A, 0xC0C0E0));
+        // Prince Itzla Arkan, the final trial (level 167, 250 HP, up to 12; a sword swipe that turns protection prayers off and a
+        // telegraphed area attack dodged behind him)
+        b.boss(BossDef.of("hod_prince_itzla", "Prince Itzla Arkan").level(167).stats(250, 150, 110, 75, 55, 1).speed(4)
+                .defenceBonus(30, 30, 20, 10, 30)
+                .attack(AttackDef.of("sword", AttackType.SLASH, 12, 2.5, 6))
+                .attack(AttackDef.of("sword_swipe", AttackType.SLASH, 12, 3, 1).special(Special.PRAYER_PIERCING, 0)
+                        .telegraph(2, "Prince Itzla: Your prayers won't save you!"))
+                .attack(AttackDef.of("sunburst", AttackType.MAGIC, 12, 3, 1).special(Special.AOE, 3) // approx: its damage
+                        .telegraph(3, "Prince Itzla raises his blade to the sun: get behind him!"))
+                .drops(Drop.always("bones")).skin(0xC8946A, 0xE0B040, 0x9A7A2A, 0xE0C060).size(0.6f, 1.95f, 1.0f));
+        // Amoxliatl, quest version (osrs-dps-calc: level 226, 400 HP, magic 140, defence 60, +200 ranged defence, up to 16)
+        b.boss(BossDef.of("hod_amoxliatl", "Amoxliatl").level(226).stats(400, 1, 1, 60, 140, 1).speed(8)
+                .defenceBonus(100, 100, 40, 100, 200)
+                .attack(AttackDef.of("frost_bolt", AttackType.MAGIC, 16, 10, 5).particle("minecraft:snowflake"))
+                .attack(AttackDef.of("icicle_crash", AttackType.MAGIC, 16, 10, 2).special(Special.SKY_STRIKE, 0) // approx: wiki gives no max
+                        .telegraph(3, "Icicles hang above you: step away from the spikes!"))
+                .attack(AttackDef.of("ice_pool", AttackType.MAGIC, 6, 10, 1).special(Special.HAZARD, 3)
+                        .telegraph(2, "Ice pools spread across the floor!"))
+                .drops(Drop.always("bones")).model("amoxliatl").size(1.2f, 1.4f, 1.8f));
         b.quest("the_heart_of_darkness", "The Heart of Darkness", Difficulty.EXPERIENCED, 2)
                 .reqQuest("twilights_promise").req(Skill.MINING, 55).req(Skill.THIEVING, 48).req(Skill.SLAYER, 48).req(Skill.AGILITY, 46)
                 .xp(Skill.MINING, 8000).xp(Skill.THIEVING, 8000).xp(Skill.SLAYER, 8000).xp(Skill.AGILITY, 8000) // approximate
                 .unlock("Access to the Tower of Ascension")
                 .stage("I can start this quest by speaking to Prince Itzla Arkan at the Sunrise Palace. (Requires Twilight's Promise, 55 Mining, 48 Thieving, 48 Slayer, 46 Agility.)")
-                .talk("prince_itzla_arkan").say("The Emissaries have retreated to the Tower of Ascension. To enter, we need the blessing of the priests of Ralos.")
-                .stage("I should seek the Priest of Ralos at Ralos' Rise.")
-                .talk("quest_ralos_priest").give("quest_sun_key").say("The Tower was sealed long ago. This key, blessed by the sun, opens it. Do not let the darkness take you.")
-                .stage("I should climb the Tower of Ascension and confront the Twilight Emissary at its heart.")
-                .reach("quest_tower_of_ascension", 8).need("quest_sun_key").say("* The key turns. Trials of agility and strength lead up the tower, and at the top waits the Emissary.")
-                .stage("I must defeat the Twilight Emissary.")
-                .kill("quest_twilight_emissary").say("* The Emissary falls. The darkness at the tower's heart fades.")
-                .stage("I should return to Prince Itzla Arkan.")
-                .talk("prince_itzla_arkan").take("quest_sun_key").say("The tower is ours again. Varlamore will remember your courage.");
+                .talk("prince_itzla_arkan").say("The Emissaries are recruiting in the Tower of Ascension. I mean to join them, in disguise, and "
+                        + "learn what they plan. Meet me at the pub in the Quetzacalli Gorge.")
+                // ---- Starting out ----
+                .stage("I should meet the prince at the pub in the Quetzacalli Gorge, then join the recruits at the Tower of Ascension.")
+                .talk("hod_bartender").stay().unlessFlag("hod_room").take("coins:30").flag("hod_room")
+                .say("> I'd like to rent the basement room.", "Thirty coins. There's no basement, mind: it's the room on the south-east.")
+                .missing("The room's thirty coins.")
+                .talk("itzla_gorge").stay().needFlag("hod_room").unlessFlag("hod_rested").flag("hod_rested")
+                .say("* You rest on the bed. The prince slips in.", "We need someone who knows the Emissaries. Try the shopkeeper east of here.")
+                .talk("hod_shopkeeper").stay().needFlag("hod_rested").unlessFlag("hod_shop").flag("hod_shop")
+                .say("> I hear you can offer help to those in need.", "Recruits gather outside the Tower of Ascension, east past the proudspire.")
+                .talk("itzla_tower").stay().needFlag("hod_shop").unlessFlag("hod_recruits").flag("hod_recruits")
+                .say("> Alright, I'll get mingling.", "* You talk to the recruits Nova, Sergius, Felius and Caritta outside the tower.",
+                        "Ximoua, the darkness they worship... Inside, Forebearer Janus will test us.")
+                .talk("forebearer_janus").needFlag("hod_recruits")
+                .say("Recruits. Four trials stand between you and the Emissaries' trust. Climb the stairs.")
+                .missing("Only recruits may enter.")
+                // ---- The four trials ----
+                .stage("I must pass Forebearer Janus's four trials in the Tower of Ascension.")
+                .reach("quest_tower_of_ascension", 8).stay().unlessFlag("hod_trial1").unless("hod_tower_key", "hod_book")
+                .reqSkill(Skill.THIEVING, 48).give("hod_tower_key")
+                .say("* On the first floor you pickpocket an emissary ascended in the cage for a tower key.")
+                .missing("* Pickpocketing the emissary ascended takes 48 Thieving.")
+                .reach("quest_tower_of_ascension", 8).stay().unlessFlag("hod_trial1").take("hod_tower_key").give("hod_book", "hod_scrap_of_paper")
+                .say("* The key opens the south-east gate. In the chest: a book with marked words, and a scrap of paper.")
+                .puzzle("quest_tower_of_ascension", HOD_KEYWORD_CHEST).stay().need("hod_book").unlessFlag("hod_keyword").unlessFlag("hod_trial1")
+                .flag("hod_keyword")
+                .say("* The south-western chest clicks open: inside lies a poem.")
+                .talk("itzla_tower").stay().needFlag("hod_keyword").unlessFlag("hod_poem").unlessFlag("hod_trial1").flag("hod_poem")
+                .say("Those are old Varlamorian words: takam is east, makt north, silam west and uitt south.")
+                .puzzle("quest_tower_of_ascension", HOD_DIRECTION_CHEST).stay().needFlag("hod_poem").unlessFlag("hod_trial1")
+                .take("hod_book", "hod_scrap_of_paper").flag("hod_trial1")
+                .say("* In the north-western chest lies the other half of the scrap. Together they read a passcode, and you speak it to Janus.")
+                .reach("quest_tower_of_ascension", 8).stay().needFlag("hod_trial1").unlessFlag("hod_trial2").spawn("quest_twilight_emissary")
+                .say("* Janus: The second trial. Defend your prince! Emissaries pour into the room.")
+                // wiki: melee and magic emissaries two at a time, then four at a time // approx: six in all
+                .kill("quest_twilight_emissary", 6).stay().needFlag("hod_trial1").unlessFlag("hod_trial2").flag("hod_trial2")
+                .say("* The last emissary falls. You bind the prince's wounds with bandages from the medical boxes.")
+                .puzzle("quest_tower_of_ascension", HOD_TRAITOR).stay().needFlag("hod_trial2").unlessFlag("hod_trial3").flag("hod_trial3")
+                .say("Janus: Well spotted. The Emissaries have no use for Mictl's faithful. One trial remains.")
+                .reach("quest_tower_of_ascension", 8).stay().needFlag("hod_trial3").spawn("hod_prince_itzla")
+                .say("* Janus: For the last trial, fight one of your own. Prince Itzla draws his blade!")
+                .kill("hod_prince_itzla").needFlag("hod_trial3")
+                .say("* The prince yields. Janus is satisfied: you are Emissaries now.")
+                // ---- The Twilight Temple and the Ruins of Tapoyauik ----
+                .stage("I should enter the Twilight Temple in emissary robes, then follow the Emissaries into the Ruins of Tapoyauik.")
+                .talk("forebearer_janus").stay().unless("hod_emissary_robes").unlessFlag("hod_temple").give("hod_emissary_robes")
+                .say("Take robes from the chest. The temple lies to the east.")
+                .talk("forebearer_fides").stay().unlessFlag("hod_temple").need("hod_emissary_robes").flag("hod_temple")
+                .say("* In the temple the Emissaries gather. The prince stays close.", "The heart of darkness waits below the ruins to "
+                        + "the south. Go, and wake her.")
+                .missing("Only Emissaries enter here.")
+                .reach("hod_tapoyauik", 6).stay().needFlag("hod_temple").unlessFlag("hod_levers").needTool("pickaxe").reqSkill(Skill.MINING, 55)
+                .reqSkill(Skill.AGILITY, 46).flag("hod_levers")
+                .say("* Down in the ruins you mine through the rocks, slip past frost nagua, frost crabs and traps over icy ledges and "
+                        + "frozen platforms, and pull the four levers. The braziers light and the great gate opens.")
+                .missing("* Rocks block the ruins: you'll need a pickaxe (there's one in a barrel) and 55 Mining.")
+                .puzzle("hod_tapoyauik", HOD_STATUES).stay().needFlag("hod_levers").unlessFlag("hod_statues").flag("hod_statues")
+                .say("* The fourth statue glows and the frozen door cracks open.")
+                .reach("hod_tapoyauik", 6).stay().needFlag("hod_statues").spawn("hod_amoxliatl")
+                .say("* Beyond the frozen door, Amoxliatl stirs!")
+                .kill("hod_amoxliatl").needFlag("hod_statues")
+                .say("* Amoxliatl shatters into shards of ice. The Emissaries' plan lies in pieces.")
+                .stage("I should report to Servius, Teokan of Ralos, at the Sunrise Palace.")
+                .talk("servius_teokan").say("Amoxliatl, slain? The Emissaries will not recover from this. Varlamore thanks you.");
+    }
+
+    /**
+     * The south-western chest's keyword (wiki: the first letters of the book's marked words; it differs per player). // approx:
+     * the keywords and the book's marked words
+     */
+    static final QuestPuzzle HOD_KEYWORD_CHEST = hodKeywordChest();
+
+    private static QuestPuzzle hodKeywordChest() {
+        String[][] books = {{"DUSK", "Darkness", "Upon", "Sunset", "Knows"}, {"NIGHT", "Never", "Is", "Glory", "Hidden", "Too"},
+                {"SHADE", "Silence", "Holds", "All", "Dawn's", "Ending"}, {"MOONS", "Many", "Offer", "Only", "Night's", "Sorrow"}};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("hod_keyword_chest").room("chest");
+        for (String[] book : books) {
+            StringBuilder words = new StringBuilder();
+            for (int i = 1; i < book.length; i++) {
+                words.append(i > 1 ? ", " : "").append('\'').append(book[i]).append('\'');
+            }
+            b.variant(null).prompt("* The south-western chest has a lock of letters. In the book, these words are marked in order: " + words + ".")
+                    .options(QuestPuzzle.letters()).solution(QuestPuzzle.word(book[0]));
+        }
+        return b.failLines("* The chest stays locked.").build();
+    }
+
+    /** The north-western chest (wiki: the poem's marked words as directions: takam east, makt north, silam west, uitt south). */
+    static final QuestPuzzle HOD_DIRECTION_CHEST = hodDirectionChest();
+
+    private static QuestPuzzle hodDirectionChest() {
+        String[] words = {"makt", "takam", "uitt", "silam"};
+        int[][] codes = {{1, 0, 3, 2}, {3, 1, 1, 0}, {0, 2, 1, 3}, {2, 3, 0, 1}, {1, 1, 2, 0}};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("hod_direction_chest").room("chest");
+        for (int[] code : codes) {
+            StringBuilder marked = new StringBuilder();
+            for (int i = 0; i < code.length; i++) {
+                marked.append(i > 0 ? ", " : "").append(words[code[i]]);
+            }
+            b.variant(null).prompt("* The north-western chest's lock turns north, east, south or west. In the poem these words are marked, in "
+                            + "order: " + marked + ".")
+                    .options("North", "East", "South", "West").solution(code);
+        }
+        return b.failLines("* The lock spins back.").build();
+    }
+
+    /** The third trial (wiki: the traitor is the cultist who speaks of Mictl, whom the Emissaries don't follow). // approx: their words */
+    static final QuestPuzzle HOD_TRAITOR = hodTraitor();
+
+    private static QuestPuzzle hodTraitor() {
+        String[] names = {"Tenoch", "Silia", "Adrius", "Eleuia"};
+        String[] loyal = {"The twilight will cover Varlamore, and Ximoua will rise.", "I gave up my name at the tower's door, as we all did.",
+                "The sun has blinded this land too long.", "When the moons are ours, the Emissaries will rule the dusk."};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("hod_traitor").room("trial");
+        for (int traitor : new int[]{0, 1, 3}) {
+            java.util.List<String> prompt = new java.util.ArrayList<>();
+            prompt.add("Janus: One of these four is no Emissary. Question them, then accuse the traitor.");
+            for (int i = 0; i < 4; i++) {
+                prompt.add("@" + names[i] + ": " + (i == traitor ? "Mictl watches over us, even here in the dark." : loyal[i]));
+            }
+            b.variant(null).prompt(prompt.toArray(String[]::new))
+                    .options("Accuse Tenoch", "Accuse Silia", "Accuse Adrius", "Accuse Eleuia").solution(traitor);
+        }
+        return b.failLines("Janus: Wrong. A loyal Emissary, accused. Try again, recruit.").build();
+    }
+
+    /**
+     * The Ruins of Tapoyauik's statues (wiki: each corner's marking begins with Zema, Oma, Yeya or Naui, one to four, the order to
+     * touch the statues; it differs per player).
+     */
+    static final QuestPuzzle HOD_STATUES = hodStatues();
+
+    private static QuestPuzzle hodStatues() {
+        String[] elements = {"air", "water", "earth", "fire"};
+        String[] numbers = {"Zema", "Oma", "Yeya", "Naui"};
+        int[][] orders = {{2, 0, 3, 1}, {1, 3, 0, 2}, {3, 2, 1, 0}, {0, 2, 1, 3}, {2, 3, 1, 0}, {1, 0, 2, 3}};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("hod_statues").room("statues");
+        for (int[] order : orders) {
+            // order[e] is the number marked by element e's statue
+            int[] touch = new int[4];
+            StringBuilder marks = new StringBuilder();
+            for (int e = 0; e < 4; e++) {
+                touch[order[e]] = e;
+                marks.append(e > 0 ? "; " : "").append("by the ").append(elements[e]).append(" statue, '").append(numbers[order[e]])
+                        .append(" ...'");
+            }
+            b.variant(null).prompt("* With the coloured icons the four statues are whole again. The murals count in the old tongue: one is "
+                                    + "Zema, two Oma, three Yeya and four Naui.",
+                            "* The markings in the corners: " + marks + ". Touch the statues in order.")
+                    .options("Touch the air statue", "Touch the water statue", "Touch the earth statue", "Touch the fire statue")
+                    .solution(touch);
+        }
+        return b.failLines("* The statues dim. The frozen door stays shut.").build();
     }
 
     private static void ethicallyAcquiredAntiquities(QuestBook b) {

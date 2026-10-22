@@ -214,4 +214,59 @@ class QuestPuzzlesRound44Test {
         assertTrue(q.triggers().stream().noneMatch(t -> t.target.equals("quest_lady_v")));
         assertTrue(q.triggers().stream().anyMatch(t -> t.give.containsKey("vs_shield")), "the player restores V's shield");
     }
+
+    /**
+     * The Heart of Darkness (wiki quick guide, quest-helper): Janus's trials, the chests' keyword and directions, the traitor who
+     * speaks of Mictl, the statues' number words, and the fights the wiki names (the emissaries, Prince Itzla, Amoxliatl).
+     */
+    @Test
+    void heartOfDarknessTrialsAndPuzzles() {
+        QuestSpec q = BOOK.spec("the_heart_of_darkness");
+        assertEquals(5, q.stages.size(), "the saved stage count");
+        for (QuestPuzzle p : List.of(VarlamoreQuests.HOD_KEYWORD_CHEST, VarlamoreQuests.HOD_DIRECTION_CHEST, VarlamoreQuests.HOD_TRAITOR,
+                VarlamoreQuests.HOD_STATUES)) {
+            assertTrue(hasPuzzle("the_heart_of_darkness", p), p.key);
+        }
+        // the keyword is the marked words' first letters
+        for (Variant v : VarlamoreQuests.HOD_KEYWORD_CHEST.rooms.get(0).variants()) {
+            List<String> marked = java.util.Arrays.stream(v.prompt().get(0).replaceAll(".*in order: (.*)\\.$", "$1").split(", "))
+                    .map(w -> w.replace("'", "")).toList();
+            StringBuilder word = new StringBuilder();
+            marked.forEach(w -> word.append(w.charAt(0)));
+            assertEquals(word.toString(), v.solutions().get(0).stream().map(v.options()::get).reduce("", String::concat));
+        }
+        // takam east, makt north, silam west, uitt south
+        java.util.Map<String, String> words = java.util.Map.of("takam", "East", "makt", "North", "silam", "West", "uitt", "South");
+        for (Variant v : VarlamoreQuests.HOD_DIRECTION_CHEST.rooms.get(0).variants()) {
+            List<String> marked = List.of(v.prompt().get(0).replaceAll(".*in order: (.*)\\.$", "$1").split(", "));
+            assertEquals(marked.stream().map(words::get).toList(), v.solutions().get(0).stream().map(v.options()::get).toList());
+        }
+        // the traitor is the one who speaks of Mictl
+        for (Variant v : VarlamoreQuests.HOD_TRAITOR.rooms.get(0).variants()) {
+            int accused = v.solutions().get(0).get(0);
+            assertTrue(v.prompt().get(accused + 1).contains("Mictl"), v.prompt().toString());
+            assertEquals(1, v.prompt().stream().filter(l -> l.contains("Mictl")).count());
+        }
+        // Zema 1, Oma 2, Yeya 3, Naui 4
+        List<String> numbers = List.of("Zema", "Oma", "Yeya", "Naui");
+        String[] elements = {"air", "water", "earth", "fire"};
+        for (Variant v : VarlamoreQuests.HOD_STATUES.rooms.get(0).variants()) {
+            String marks = v.prompt().get(1);
+            List<Integer> touch = v.solutions().get(0);
+            for (int i = 0; i < 4; i++) {
+                String element = elements[touch.get(i)];
+                int at = marks.indexOf("by the " + element + " statue, '");
+                String number = marks.substring(at + ("by the " + element + " statue, '").length()).split(" ")[0];
+                assertEquals(i, numbers.indexOf(number), marks);
+            }
+        }
+        List<String> kills = q.triggers().stream().filter(t -> t.kind == QuestSpec.Trigger.Kind.KILL).map(t -> t.target).toList();
+        assertEquals(List.of("quest_twilight_emissary", "hod_prince_itzla", "hod_amoxliatl"), kills);
+        var amox = BOOK.bosses.stream().filter(b -> b.id.equals("hod_amoxliatl")).findFirst().orElseThrow();
+        assertEquals(226, amox.combatLevel);
+        assertEquals(400, amox.hitpoints);
+        var itzla = BOOK.bosses.stream().filter(b -> b.id.equals("hod_prince_itzla")).findFirst().orElseThrow();
+        assertEquals(167, itzla.combatLevel);
+        assertEquals(250, itzla.hitpoints);
+    }
 }
