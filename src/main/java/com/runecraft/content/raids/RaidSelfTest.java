@@ -229,6 +229,11 @@ public final class RaidSelfTest {
             for (int m = 0; m < com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK; m++) {
                 com.runecraft.action.ActionManager.advanceForSelfTest();
                 com.runecraft.boss.Mechanics.tickForSelfTest();
+                // round 44: a player played like a real one (the no-heal pass) moves, prays and eats every Minecraft tick
+                com.runecraft.selftest.RealPlayer real = com.runecraft.selftest.RealPlayer.of(player);
+                if (real != null) {
+                    real.tick();
+                }
             }
             RaidEffects.gameTick();
             if (!raid.closed()) {
@@ -241,6 +246,10 @@ public final class RaidSelfTest {
 
     /** Keeps the player topped up (the real-player self-test player is invulnerable, but drains still apply). */
     void heal() {
+        com.runecraft.selftest.RealPlayer real = com.runecraft.selftest.RealPlayer.of(player);
+        if (real != null && real.mortal()) {
+            return; // the no-heal pass: the player lives on its own food and potions
+        }
         if (player.getHealth() < player.getMaxHealth()) {
             player.setHealth(player.getMaxHealth());
         }
@@ -337,6 +346,74 @@ public final class RaidSelfTest {
                 RaidManager.selfTestClose(raid);
             }
         }
+    }
+
+    /**
+     * The no-heal pass (round 44 playability, {@code raid:noheal:toa}): the Path of Apmeken's boss, Ba-Ba (after its puzzle
+     * room, at the Normal preset), fought by a mortal player who is never topped up, on a fixed food and prayer potion budget,
+     * reacting to the cues alone ({@link RaidNoHealWalk}). Returns a summary or throws {@link AssertionError}.
+     */
+    public static String toaNoHeal(ServerPlayer p, BlockPos entrance) {
+        RaidManager.enter(p, RaidType.TOA, entrance);
+        RaidInstance raid = RaidManager.of(p);
+        expect(raid != null, "RaidManager.enter did not start a raid");
+        RaidSelfTest t = new RaidSelfTest(raid, p);
+        t.recordStrikes();
+        try {
+            expect(ToaInvocationMenu.preset(p, 1) == 1, "the Normal preset did not apply");
+            t.use(raid.center(0).offset(RaidBuilder.HALF + 1, 1, 0));
+            expect(raid.begun(), "the start barrier did not begin the raid");
+            int nexusIndex = raid.roomIndex("toa_nexus");
+            t.moveTo(raid.spawn(nexusIndex));
+            t.tick(2);
+            ToaNexus nexus = raid.nexus();
+            expect(nexus != null, "no Nexus logic");
+            int path = 2; // the Path of Apmeken
+            List<String> ids = RaidLayouts.TOA_PATHS.get(path);
+            int puzzle = raid.roomIndex(ids.get(0));
+            int boss = puzzle + 1;
+            t.moveTo(raid.spawn(nexusIndex));
+            t.use(nexus.entrance(path));
+            expect(raid.currentRoom() == puzzle && raid.logic(puzzle).started, ids.get(0) + ": the path entrance did not start the puzzle room");
+            t.tick(1);
+            t.note(raid.logic(puzzle).selfTestSolve(t));
+            expect(raid.logic(puzzle).done, ids.get(0) + ": the puzzle is not solved");
+            t.moveTo(raid.spawn(boss));
+            t.tick(2);
+            expect(raid.currentRoom() == boss && raid.logic(boss).started, ids.get(1) + ": walking in did not start the boss room");
+            String out = RaidNoHealWalk.fight(t.noHealRoom(), boss, "raid:noheal:toa (" + ids.get(1) + ")");
+            return ids.get(1) + ": " + out + ", " + t.recorder.summary();
+        } finally {
+            t.stopRecording();
+            if (RaidManager.of(p) == raid) {
+                RaidManager.selfTestClose(raid);
+            }
+        }
+    }
+
+    private RaidNoHealWalk.Room noHealRoom() {
+        RaidSelfTest t = this;
+        return new RaidNoHealWalk.Room() {
+            @Override
+            public RaidInstance raid() {
+                return raid;
+            }
+
+            @Override
+            public ServerPlayer player() {
+                return player;
+            }
+
+            @Override
+            public void tick(int n) {
+                t.tick(n);
+            }
+
+            @Override
+            public int hit(LivingEntity target, int damage, AttackType type) {
+                return t.hit(target, damage, type);
+            }
+        };
     }
 
     private String walkToa() {

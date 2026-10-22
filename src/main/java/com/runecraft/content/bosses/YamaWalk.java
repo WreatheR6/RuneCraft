@@ -176,6 +176,7 @@ public final class YamaWalk {
         ServerPlayer p = d.player();
         String name = null;
         for (int i = 0; i < 4 && name == null; i++) {
+            BossWalks.alignToGameTick(boss, d); // started as his own game tick would start it (its lead counts from there)
             y.walkStartSpecial(boss, p); // every second shadow special brings void flares instead
             name = y.walkPendingName();
             for (Mob f : y.walkFlareMobs()) {
@@ -188,22 +189,33 @@ public final class YamaWalk {
         boolean fire = y.walkPendingFire();
         d.clearDamage();
         String attack;
+        // Round 44: answered on foot a reaction time after the special begins (the walk starts it now); it lands 5 game ticks
+        // (the meteor) or 4 (a glyph special) after it began, on the boss's game ticks.
+        int landsIn = (name.equals("METEOR") ? 5 : 4) * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK
+                - BossWalks.sinceGameTick(boss);
         if (name.equals("METEOR")) {
-            // run five tiles from the meteor's centre, towards the middle of the arena
+            // run four tiles (and a quarter) from the meteor's centre, towards the middle of the arena: it hurts nothing four
+            // tiles out (BossMechanics.meteorDamage)
             Vec3 at = y.walkPendingAt();
             Vec3 c = y.homeVec();
             Vec3 in = c.subtract(at);
             double len = Math.hypot(in.x, in.z);
             Vec3 dir = len < 0.5 ? new Vec3(1, 0, 0) : new Vec3(in.x / len, 0, in.z / len);
-            Vec3 spot = at.add(dir.scale(10));
-            d.moveTo(BossFx.ground(BossFx.world(boss), spot.x, spot.z, at.y), boss);
+            Vec3 spot = at.add(dir.scale(8.5));
+            d.walkOut("meteor_strike", BossFx.ground(BossFx.world(boss), spot.x, spot.z, at.y), 0, landsIn, boss);
             attack = "meteor_strike";
         } else {
             List<Vec3> glyphs = y.walkGlyphs(fire);
             if (glyphs.isEmpty()) {
                 throw fail("phase " + phase + ": no lit glyph of " + (fire ? "fire" : "shadow") + " for the " + name);
             }
-            d.moveTo(glyphs.get(0), boss);
+            Vec3 nearest = glyphs.get(0);
+            for (Vec3 g : glyphs) {
+                if (g.distanceToSqr(p.position()) < nearest.distanceToSqr(p.position())) {
+                    nearest = g;
+                }
+            }
+            d.walkOut(name.toLowerCase(java.util.Locale.ROOT), nearest, 0, landsIn, boss);
             attack = switch (name) {
                 case "GLYPH_FIRE" -> "glyph_flames";
                 case "GLYPH_SHADOW" -> "shadow_engulf";
@@ -216,7 +228,7 @@ public final class YamaWalk {
         if (d.damage(attack) > 0) {
             throw fail("phase " + phase + ": the " + name + " hit the player for " + d.damage(attack));
         }
-        d.moveTo(y.homeVec().add(0, 0, 8), boss);
+        d.walkTo(y.homeVec().add(0, 0, 8), boss);
         return "phase " + phase + ": " + name.toLowerCase(java.util.Locale.ROOT) + " answered";
     }
 

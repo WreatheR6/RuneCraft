@@ -29,6 +29,8 @@ import net.minecraft.world.phys.Vec3;
 final class BossWalkChecks {
     private static final int MC = ActionManager.MC_TICKS_PER_GAME_TICK;
     private static final ResourceLocation HP_BUFFER = RuneCraft.id("selftest_walk_hp");
+    /** The longest real walk one step of a walk may take (MC): 10 s, more than across any arena. */
+    private static final int WALK_MC = 200;
 
     /** A walk key ending in this fights the awakened variant. */
     private static final String AWAKENED = ":awakened";
@@ -117,21 +119,29 @@ final class BossWalkChecks {
             health.removeModifier(HP_BUFFER);
             health.addTransientModifier(new AttributeModifier(HP_BUFFER, 2000, AttributeModifier.Operation.ADD_VALUE));
         }
+        // Round 44: the player is played like a real one (RealPlayer): mechanics are answered by walking at a human's pace
+        // through the arena and by switching prayers a reaction time after their cue, and every strike the walk leaves is
+        // judged against the walk-out budget.
+        RealPlayer real = RealPlayer.start(p);
+        java.util.function.Consumer<DataBossEntity> mc = b -> {
+            ActionManager.advanceForSelfTest();
+            if (b.isAlive()) {
+                if (b.getTarget() != p) {
+                    b.setTarget(p);
+                }
+                b.tickCount++; // as ServerLevel.tickNonPassenger does (see BossFightChecks)
+                b.tick();
+            }
+            Mechanics.tickForSelfTest();
+            real.tick();
+            p.setHealth(p.getMaxHealth());
+        };
         BossWalks.Driver driver = new BossWalks.Driver() {
             @Override
             public void ticks(DataBossEntity b, int n) {
                 for (int t = 0; t < n; t++) {
                     for (int m = 0; m < MC; m++) {
-                        ActionManager.advanceForSelfTest();
-                        if (b.isAlive()) {
-                            if (b.getTarget() != p) {
-                                b.setTarget(p);
-                            }
-                            b.tickCount++; // as ServerLevel.tickNonPassenger does (see BossFightChecks)
-                            b.tick();
-                        }
-                        Mechanics.tickForSelfTest();
-                        p.setHealth(p.getMaxHealth());
+                        mc.accept(b);
                     }
                 }
             }
@@ -159,19 +169,69 @@ final class BossWalkChecks {
 
             @Override
             public void moveTo(Vec3 at, DataBossEntity b) {
+                // setting the scene (where a fight or a phase starts): a teleport, facing the boss
                 double dx = b.getX() - at.x;
                 double dz = b.getZ() - at.z;
                 float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0);
                 p.teleportTo(c.world, at.x, at.y, at.z, yaw, p.getXRot());
             }
+
+            @Override
+            public void walkTo(Vec3 at, DataBossEntity b) {
+                real.walkTo(at, WALK_MC, () -> mc.accept(b));
+                real.faceTowards(b.position());
+            }
+
+            @Override
+            public void react(com.runecraft.osrs.Prayer prayer) {
+                real.react(prayer);
+            }
+
+            @Override
+            public void avoid(List<Vec3> spots, double radius) {
+                real.avoid(spots, radius);
+            }
+
+            @Override
+            public void clearAvoid() {
+                real.clearAvoid();
+            }
+
+            @Override
+            public void mcTicks(DataBossEntity b, int n) {
+                for (int i = 0; i < n; i++) {
+                    mc.accept(b);
+                }
+            }
+
+            @Override
+            public void keep(com.runecraft.osrs.Prayer prayer) {
+                real.keep(prayer);
+            }
+
+            @Override
+            public int prayerRestores() {
+                return real.restores();
+            }
+
+            @Override
+            public void walkOut(String name, Vec3 safe, int sinceCueMc, int landsInMc, DataBossEntity b) {
+                int since = Math.max(0, sinceCueMc);
+                real.dodgeBudget(name, Math.hypot(safe.x - p.getX(), safe.z - p.getZ()), since + Math.max(0, landsInMc));
+                mcTicks(b, Math.max(0, com.runecraft.osrs.RealReaction.REACTION_MC - since));
+                walkTo(safe, b);
+            }
         };
         try {
             // one game tick first: the scripts take their home (the arena centre their mechanics are laid out around) on it
             driver.ticks(boss, 1);
-            return walk.apply(boss, driver);
+            String result = walk.apply(boss, driver);
+            real.assertFair("boss:walk:" + key);
+            return result + "; real player: " + real.summary();
         } catch (IllegalStateException e) {
-            throw new AssertionError(e.getMessage(), e);
+            throw new AssertionError(e.getMessage() + " (real player: " + real.summary() + ")", e);
         } finally {
+            real.close();
             walking = null;
             if (boss.isAlive()) {
                 boss.discard();

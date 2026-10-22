@@ -806,14 +806,23 @@ final class WhispererScript extends ScriptedBoss {
         }
     }
 
-    private void tickSeeds(DataBossEntity boss, ServerPlayer target) {
-        ServerLevel w = BossFx.world(boss);
-        for (Seed s : seeds) {
-            Vec3 at = s.pos().add(0, 0.15, 0);
-            // light and dark seeds look alike from outside the realm
-            realmParticle(boss, target, true, s.light() ? LIGHT_SEED : DARK_SEED, at, 2, 0.2);
-            realmParticle(boss, target, false, HIDDEN_SEED, at, 2, 0.2);
+    /**
+     * Every Minecraft tick of the Corrupted Seeds (round 44): a seed is stepped on the moment a player stands on it. // playability:
+     * OSRS checks the tile at the end of each game tick; read on game ticks here, a player walking straight over a seed (2.6 blocks
+     * a game tick at a walk) was on it at a game tick only about half the time, so the self-test's real-time walk had to stop on
+     * every seed and ran out of time. The seeds' timer, layout and damage are unchanged.
+     */
+    @Override
+    public void tick(DataBossEntity boss) {
+        super.tick(boss);
+        if (special == Special.SEEDS && !seeds.isEmpty()) {
+            stepSeeds(boss, target(boss));
         }
+    }
+
+    /** Seeds under a player burst: a light one withers, a dark one hurts (15-25, 30-40 awakened) and costs the sanity back. */
+    private void stepSeeds(DataBossEntity boss, ServerPlayer target) {
+        ServerLevel w = BossFx.world(boss);
         int[] dark = boss.awakened() ? BossMechanics.WHISPERER_DARK_SEED_AWAKENED : BossMechanics.WHISPERER_DARK_SEED;
         for (ServerPlayer p : fighters(boss, target)) {
             seeds.removeIf(s -> {
@@ -829,6 +838,17 @@ final class WhispererScript extends ScriptedBoss {
                 return true;
             });
         }
+    }
+
+    private void tickSeeds(DataBossEntity boss, ServerPlayer target) {
+        ServerLevel w = BossFx.world(boss);
+        for (Seed s : seeds) {
+            Vec3 at = s.pos().add(0, 0.15, 0);
+            // light and dark seeds look alike from outside the realm
+            realmParticle(boss, target, true, s.light() ? LIGHT_SEED : DARK_SEED, at, 2, 0.2);
+            realmParticle(boss, target, false, HIDDEN_SEED, at, 2, 0.2);
+        }
+        stepSeeds(boss, target);
         boolean lightLeft = seeds.stream().anyMatch(Seed::light);
         int due = boss.awakened() ? BossMechanics.WHISPERER_SEED_TICKS_AWAKENED : BossMechanics.WHISPERER_SEED_TICKS;
         if (!lightLeft) {
@@ -995,15 +1015,32 @@ final class WhispererScript extends ScriptedBoss {
         return out;
     }
 
+    /** The dark seeds left (the real-player walk keeps clear of them, as the realm showed them). */
+    List<Vec3> selfTestDarkSeeds() {
+        List<Vec3> out = new ArrayList<>();
+        for (Seed s : seeds) {
+            if (!s.light()) {
+                out.add(s.pos());
+            }
+        }
+        return out;
+    }
+
     /**
      * Where to stand behind the weakest column still standing (the side away from her), or null. Each screech breaks the
      * column hidden behind and takes 20 from the rest, so the strong ones are saved for the last screeches (wiki: "you must
      * save the 60-health pillar for the final screech"); the awakened five need the 20, 40, 60, 80 and 100 in that order.
      */
     Vec3 selfTestHidingSpot(DataBossEntity boss) {
+        return selfTestHidingSpot(boss, null);
+    }
+
+    /** {@link #selfTestHidingSpot(DataBossEntity)} choosing, among the weakest columns, the one nearest {@code from} (nullable). */
+    Vec3 selfTestHidingSpot(DataBossEntity boss, Vec3 from) {
         Column best = null;
         for (Column col : columns) {
-            if (best == null || col.health < best.health) {
+            if (best == null || col.health < best.health
+                    || col.health == best.health && from != null && col.pos.distanceToSqr(from) < best.pos.distanceToSqr(from)) {
                 best = col;
             }
         }

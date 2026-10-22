@@ -423,6 +423,10 @@ final class SlayerScripts {
             for (int i = soulStep; i < 3; i++) {
                 if (soulTicks == BossRealtime.soulCueTick(i)) {
                     Msg.telegraph(target, "Soul " + (i + 1) + "/3: " + SOUL_NAMES[soulStyle[i]] + "!", null);
+                    // round 44: on the cast bar too, counting down to the soul's attack (its style's protection key)
+                    com.runecraft.network.HudNet.cast(target, soulMobs[i], com.runecraft.osrs.CastBar.styleOf(SOUL_STYLES[soulStyle[i]]), 0,
+                            (BossRealtime.soulAttackTick(i) - BossRealtime.soulCueTick(i)) * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK,
+                            "Soul " + (i + 1));
                     glowSoul(i);
                     if (soulListener != null) {
                         soulListener.soul(i, soulStyle[i], false, com.runecraft.action.ActionManager.mcTick());
@@ -1105,6 +1109,15 @@ final class SlayerScripts {
         @Override
         protected com.runecraft.boss.HazardKind strikeFloor(String name, ParticleOptions particle) {
             return "poison_pool".equals(name) ? com.runecraft.boss.HazardKind.POISON : super.strikeFloor(name, particle);
+        }
+
+        /** Self-test (round 44 no-heal pass): where the lightning currents and the tracking flame are now (as drawn). */
+        List<Vec3> selfTestChasers() {
+            List<Vec3> out = new ArrayList<>();
+            for (Chaser ch : chasers) {
+                out.add(ch.pos);
+            }
+            return out;
         }
 
         /** "A subsequent burn of 5 damage for 5 hits": five stacks of a five-hit burn. */

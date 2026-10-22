@@ -305,7 +305,7 @@ public final class DoomWalk {
         int waited = BossWalks.until(boss, d, 40, () -> {
             Vec3 shield = s.walkEarthenShield();
             if (shield != null) {
-                d.moveTo(shield, boss);
+                d.walkTo(shield, boss); // round 44: after the walking shield on foot
             }
             return !s.walkShockwavePending();
         });
@@ -329,25 +329,21 @@ public final class DoomWalk {
         if (Players.data(p).isActive(Prayer.PROTECT_FROM_MAGIC)) {
             throw fail("delve 2: the exploding rock left the player's protection prayer on");
         }
+        // Round 44: the nearest spot clear of every shadow (the debris hits within 1.2 of one), walked to a reaction time after
+        // the shadows appear; the debris lands two game ticks after them.
         Vec3 c = s.homeVec();
-        Vec3 clear = null;
-        for (int i = 0; i < 16 && clear == null; i++) {
-            double ang = i * Math.PI / 8;
-            Vec3 spot = BossFx.ground(BossFx.world(boss), c.x + Math.cos(ang) * 11, c.z + Math.sin(ang) * 11, c.y);
-            boolean safe = true;
-            for (Vec3 sh : s.walkShadows()) {
-                if (Math.hypot(sh.x - spot.x, sh.z - spot.z) < 3) {
-                    safe = false;
-                }
-            }
-            if (safe) {
-                clear = spot;
-            }
+        List<com.runecraft.osrs.RealReaction.Disc> discs = new ArrayList<>();
+        for (Vec3 sh : s.walkShadows()) {
+            discs.add(new com.runecraft.osrs.RealReaction.Disc(sh.x, sh.z, 1.2, 0, "debris"));
         }
-        if (clear == null) {
+        double[] spot = com.runecraft.osrs.RealReaction.safeSpot(p.getX(), p.getZ(), discs, 0, 12,
+                (x, z) -> Math.hypot(x - c.x, z - c.z) <= 11);
+        if (spot == null) {
             throw fail("delve 2: no spot clear of the debris shadows");
         }
-        d.moveTo(clear, boss);
+        Vec3 clear = BossFx.ground(BossFx.world(boss), spot[0], spot[1], p.getY());
+        int since = BossWalks.sinceGameTick(boss);
+        d.walkOut("debris", clear, since, 2 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK - since, boss);
         d.clearDamage();
         d.ticks(boss, 4);
         if (d.damage("debris") > 0) {
@@ -410,17 +406,23 @@ public final class DoomWalk {
         for (int t = 0; t < 120 && s.walkBurrowed(); t++) {
             Vec3 eye = s.walkEye();
             if (eye != null) {
-                d.moveTo(dodge(boss, s, eye), boss); // step off the line from the Doom to its eye
+                // step off the line from the Doom to its eye (round 44: on foot, the nearest spot clear of its trample; the
+                // first trampling step comes the game tick after its three-tick wind-up)
+                int since = BossWalks.sinceGameTick(boss);
+                d.walkOut("trample", dodge(boss, s, eye, p.position()), since,
+                        (DoomDelves.ZOOM_WINDUP + 1) * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK - since, boss);
                 zooms++;
                 d.ticks(boss, DoomDelves.ZOOM_WINDUP + 1);
                 continue;
             }
             if (s.walkSlamming()) {
                 slams++;
-                Vec3 shelter = shelterSpot(boss, s);
+                Vec3 shelter = shelterSpot(boss, s, p.position());
                 int before = d.damage("slam");
                 if (shelter != null) {
-                    d.moveTo(shelter, boss);
+                    // round 44: behind the nearest rock on foot; the slam lands three game ticks after the Doom rises
+                    int since = BossWalks.sinceGameTick(boss);
+                    d.walkOut("slam", shelter, since, 3 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK - since, boss);
                 } else if (slams == 1) {
                     throw fail("delve " + level + ": no rock left to hide behind for the first car slam");
                 }
@@ -461,36 +463,42 @@ public final class DoomWalk {
     }
 
     /** A spot inside the arena well off the line from the Doom to its eye. */
-    private static Vec3 dodge(DataBossEntity boss, DoomDelveService.DoomScript s, Vec3 eye) {
+    /**
+     * Where to stand off the Doom's zoom from where it is to its eye: the spot nearest {@code at} that is clear of its trample
+     * (half its width plus a block either side of its path, and a margin), inside the arena. Round 44: the nearest such spot, as
+     * a player steps aside, not the farthest.
+     */
+    private static Vec3 dodge(DataBossEntity boss, DoomDelveService.DoomScript s, Vec3 eye, Vec3 at) {
         Vec3 from = boss.position();
         Vec3 dir = eye.subtract(from);
         double len = Math.max(0.1, Math.hypot(dir.x, dir.z));
         Vec3 unit = new Vec3(dir.x / len, 0, dir.z / len);
         Vec3 side = new Vec3(-unit.z, 0, unit.x);
         Vec3 c = s.homeVec();
+        double clear = boss.getBbWidth() / 2 + 1.0 + com.runecraft.osrs.RealReaction.EDGE_CLEARANCE + 0.3;
+        double off = (at.x - from.x) * side.x + (at.z - from.z) * side.z;
         Vec3 best = null;
-        double bestOff = -1;
-        for (double along : new double[]{0.5, 0.25, 0.75, 0.0}) {
-            for (double off : new double[]{7, -7, 5, -5}) {
-                Vec3 spot = from.add(dir.scale(along)).add(side.scale(off));
-                if (Math.hypot(spot.x - c.x, spot.z - c.z) > 9) {
-                    continue;
-                }
-                double fromLine = Math.abs((spot.x - from.x) * side.x + (spot.z - from.z) * side.z);
-                if (fromLine > bestOff) {
-                    bestOff = fromLine;
-                    best = spot;
-                }
+        for (double sign : new double[]{Math.signum(off) == 0 ? 1 : Math.signum(off), -(Math.signum(off) == 0 ? 1 : Math.signum(off))}) {
+            double move = sign * clear - off; // sideways to the clear edge on that side
+            Vec3 spot = at.add(side.scale(move));
+            if (Math.hypot(spot.x - c.x, spot.z - c.z) > 11) {
+                continue;
+            }
+            if (best == null || spot.distanceToSqr(at) < best.distanceToSqr(at)) {
+                best = spot;
             }
         }
+        if (Math.abs(off) >= clear) {
+            best = at; // already clear of its path
+        }
         if (best == null) {
-            best = c.add(side.scale(4));
+            best = c.add(side.scale(clear + 1));
         }
         return BossFx.ground(BossFx.world(boss), best.x, best.z, from.y);
     }
 
-    /** A spot with a rock between it and the Doom. */
-    private static Vec3 shelterSpot(DataBossEntity boss, DoomDelveService.DoomScript s) {
+    /** A spot with a rock between it and the Doom, nearest {@code at} (round 44: the nearest cover, as a player takes it). */
+    private static Vec3 shelterSpot(DataBossEntity boss, DoomDelveService.DoomScript s, Vec3 at) {
         Vec3 best = null;
         for (Vec3 r : s.walkRocks()) {
             Vec3 away = r.subtract(boss.position());
@@ -499,7 +507,7 @@ public final class DoomWalk {
                 continue;
             }
             Vec3 spot = r.add(away.x / len * 1.2, 0, away.z / len * 1.2);
-            if (best == null || spot.distanceToSqr(boss.position()) > best.distanceToSqr(boss.position())) {
+            if (best == null || spot.distanceToSqr(at) < best.distanceToSqr(at)) {
                 best = spot;
             }
         }

@@ -172,6 +172,12 @@ final class GameplayChecks {
         checks.add(new SelfTest.Check("raid:tob_entry_wipe", () -> g.walk(com.runecraft.content.raids.CoxTobWalk::tobEntryWipe)));
         checks.add(new SelfTest.Check("raid:cox_supplies", g::coxSupplies));
         checks.add(new SelfTest.Check("raid:toa_full_run", g::toaFullRun));
+        // round 44: the no-heal pass, one combat room of each raid fought by a mortal player on a fixed food budget
+        checks.add(new SelfTest.Check("raid:noheal:toa", () -> g.walk(com.runecraft.content.raids.RaidSelfTest::toaNoHeal)));
+        checks.add(new SelfTest.Check("raid:noheal:cox", () -> g.walk((p, at) -> com.runecraft.content.raids.CoxTobWalk.noHeal(p, at,
+                com.runecraft.osrs.content.raids.RaidType.COX))));
+        checks.add(new SelfTest.Check("raid:noheal:tob", () -> g.walk((p, at) -> com.runecraft.content.raids.CoxTobWalk.noHeal(p, at,
+                com.runecraft.osrs.content.raids.RaidType.TOB))));
         checks.add(new SelfTest.Check("raid:toa_deaths", g::toaDeaths));
         checks.add(new SelfTest.Check("raid:realtime_cues", () -> com.runecraft.content.raids.RaidSelfTest.realtimeCheck(context.world,
                 net.minecraft.world.phys.Vec3.atBottomCenterOf(context.near(0, 0)).add(0, 40, 0), context.player)));
@@ -227,6 +233,7 @@ final class GameplayChecks {
         checks.add(new SelfTest.Check("minigame:mage_arena_i", () -> g.walk(com.runecraft.content.quests.MageArenaWalk::ma1)));
         checks.add(new SelfTest.Check("minigame:mage_arena_ii", () -> g.walk(com.runecraft.content.quests.MageArenaWalk::ma2)));
         checks.addAll(BossWalkChecks.all(context));
+        checks.addAll(NoHealChecks.all(context)); // round 44: the no-heal pass (boss:noheal:*, real player only)
         checks.addAll(ArenaCueChecks.all(context));
         checks.addAll(BossRealtimeChecks.all(context));
         checks.addAll(FloorMarkerChecks.all(context)); // round 43: floor markers (boss:playability_floor_*)

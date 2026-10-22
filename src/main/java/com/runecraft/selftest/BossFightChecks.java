@@ -11,7 +11,6 @@ import com.runecraft.combat.MagicService;
 import com.runecraft.entity.BossEntity;
 import com.runecraft.entity.BossService;
 import com.runecraft.entity.OsrsMonsterEntity;
-import com.runecraft.item.OsrsEquipmentItems;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Spell;
 import com.runecraft.osrs.content.AttackDef;
@@ -34,13 +33,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -51,7 +46,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -736,16 +730,7 @@ final class BossFightChecks {
                 MagicService.setAutocast(p, Spell.FIRE_SURGE);
                 MagicService.autocastAttack(p, boss);
             }
-            case RANGED -> {
-                p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("magic_shortbow", 1));
-                if (Inv.item("rune_arrow") instanceof OsrsEquipmentItems.Arrow arrowItem) {
-                    ItemStack ammo = Inv.stack("rune_arrow", 1);
-                    AbstractArrow arrow = arrowItem.createArrow(c.world, ammo, p, null);
-                    Holder<DamageType> hit = c.world.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE)
-                            .getHolderOrThrow(CombatHandler.OSRS_HIT);
-                    boss.hurt(new DamageSource(hit, arrow, p), 1f);
-                }
-            }
+            case RANGED -> shoot(p, boss);
             case CRUSH -> {
                 p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack(CRUSH_WEAPON, 1));
                 boss.hurt(CombatHandler.source(p), 1f);
@@ -754,6 +739,41 @@ final class BossFightChecks {
                 p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("abyssal_whip", 1));
                 boss.hurt(CombatHandler.source(p), 1f);
             }
+        }
+    }
+
+    /** Arrow flight the shot gets to reach the boss (Minecraft ticks of the arrow; it flies 3 blocks a tick). */
+    private static final int ARROW_FLIGHT_MC = 40;
+
+    /**
+     * One shot of the magic shortbow through the real bow resolver (round 44): the attack clock's ranged click fires the held bow
+     * at the boss ({@code AttackTimer.fireHeldBow}: a full-velocity arrow aimed at it, its ammo drawn from the pack), and the
+     * arrow entity flies until it strikes (the hit rolls in {@code CombatHandler.playerRanged} as it lands) or falls short. The
+     * round 41 check built an arrow in place and called {@code hurt} with it, skipping the bow, its ammo and the flight.
+     */
+    private void shoot(ServerPlayer p, LivingEntity boss) {
+        p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("magic_shortbow", 1));
+        if (Inv.count(p, "rune_arrow") < 1) {
+            Inv.give(p, "rune_arrow", 1); // this shot's arrow (the pack never fills up with arrows)
+        }
+        AABB box = boss.getBoundingBox().inflate(64);
+        Set<UUID> before = new HashSet<>();
+        for (AbstractArrow a : c.world.getEntitiesOfClass(AbstractArrow.class, box, a -> a.getOwner() == p)) {
+            before.add(a.getUUID());
+        }
+        com.runecraft.combat.AttackTimer.click(p, boss, com.runecraft.osrs.AttackClock.Kind.RANGED);
+        List<AbstractArrow> flying = c.world.getEntitiesOfClass(AbstractArrow.class, box,
+                a -> a.getOwner() == p && !before.contains(a.getUUID()));
+        for (int t = 0; t < ARROW_FLIGHT_MC && !flying.isEmpty(); t++) {
+            for (AbstractArrow a : flying) {
+                if (a.isAlive()) {
+                    a.tick(); // nothing else in the world ticks during a fight check
+                }
+            }
+            flying.removeIf(a -> !a.isAlive() || a.isRemoved()); // it struck the boss or the ground (its ammo landed)
+        }
+        for (AbstractArrow a : flying) {
+            a.discard(); // fell short or flew past: gone with the shot
         }
     }
 

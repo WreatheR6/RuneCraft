@@ -40,7 +40,8 @@ final class ZulrahScript extends ScriptedBoss {
     static final AttackDef JAD_RANGED = ZulrahVorkath.ZULRAH_RANGED.telegraph(BossRealtime.ZULRAH_JAD_LEAD_TICKS, "Zulrah: ranged!");
     static final AttackDef JAD_MAGIC = ZulrahVorkath.ZULRAH_MAGIC.telegraph(BossRealtime.ZULRAH_JAD_LEAD_TICKS, "Zulrah: magic!");
 
-    private record Cloud(Vec3 pos, long until) {
+    /** A venom cloud: where it lies, when it fades and the game tick it starts to hurt (round 44, see spitClouds). */
+    private record Cloud(Vec3 pos, long until, long armAt) {
     }
 
     private record Snakeling(Mob mob, long until) {
@@ -290,9 +291,12 @@ final class ZulrahScript extends ScriptedBoss {
         boolean fill = s == ZulrahVorkath.OPENING || s == ZulrahVorkath.LOOP_START || s.cloudBarrages() >= 4;
         for (int i = 0; i < 2; i++) {
             Vec3 at = fill ? around(boss, homeVec(), 5) : around(boss, target.position(), 6);
-            clouds.add(new Cloud(at, now + 30));
-            // drawn where it lands at once; it hurts from the next game tick (12 MC on, as hazards arm). // playability: OSRS
-            // the cloud projectile's landing spot, read on the tick
+            // Drawn where it lands at once (a cast-bar row for a player under it), it hurts from the strike floor's third game tick
+            // on (round 44): from the middle of its 3x3 tiles a player has 3.3 blocks to walk, 1.0 s with the reaction margin,
+            // more than the 12 MC a hazard's arming gave. // playability: OSRS shows the cloud projectile's flight to the spot
+            clouds.add(new Cloud(at, now + 30, now + com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS));
+            com.runecraft.network.HudNet.groundCast(BossFx.world(boss), at, ZulrahVorkath.CLOUD_HALF_WIDTH * Math.sqrt(2), boss, null,
+                    com.runecraft.osrs.ArenaTiming.MIN_LEAD_MC, "Toxic cloud");
             BossFx.world(boss).sendParticles(ParticleTypes.SNEEZE, at.x, at.y + 0.4, at.z, 24, 1.4, 0.3, 1.4, 0.0);
         }
         trace("cloud");
@@ -392,6 +396,9 @@ final class ZulrahScript extends ScriptedBoss {
                 continue;
             }
             BossFx.world(boss).sendParticles(ParticleTypes.SNEEZE, c.pos().x, c.pos().y + 0.4, c.pos().z, 16, 1.4, 0.3, 1.4, 0.0);
+            if (now < c.armAt()) {
+                continue; // still settling: shown, not yet hurting
+            }
             // A cloud covers a 3x3-tile area (OSRS Wiki): three blocks either way of its centre.
             for (ServerPlayer p : BossFx.world(boss).getPlayers(pl -> pl.isAlive() && ZulrahVorkath.inCloud(
                     pl.getX() - c.pos().x, pl.getY() - c.pos().y, pl.getZ() - c.pos().z))) {
