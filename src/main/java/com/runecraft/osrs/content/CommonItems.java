@@ -26,6 +26,20 @@ public final class CommonItems {
         return metal + "_shade_key" + (colour.equals("red") ? "" : "_" + colour);
     }
 
+    /**
+     * The Varrock Museum's antique lamps (wiki, Antique lamp (Varrock Museum)): id and examine. XP and levels are in
+     * QuestLamps; the museum's sources pick one with VarrockMuseum.lampItem. Their ids avoid the diary lamps' prefix.
+     */
+    public static final String MUSEUM_LAMP_FINDS = "museum_lamp_finds";
+    public static final String MUSEUM_LAMP_TIMELINE = "museum_lamp_timeline";
+    public static final String MUSEUM_LAMP_DEFENDER = "museum_lamp_defender";
+    public static final String MUSEUM_LAMP_EMPTY_LORD = "museum_lamp_empty_lord";
+    private static final String[][] MUSEUM_LAMPS = {
+            {MUSEUM_LAMP_FINDS, "I wonder what happens if I rub it... (500 XP in any skill of level 10 or above)"},
+            {MUSEUM_LAMP_TIMELINE, "I wonder what happens if I rub it... (1,000 XP in any skill of level 20 or above)"},
+            {MUSEUM_LAMP_DEFENDER, "I wonder what happens if I rub it... (5,000 XP in any skill of level 30 or above)"},
+            {MUSEUM_LAMP_EMPTY_LORD, "I wonder what happens if I rub it... (10,000 XP in any skill of level 50 or above)"}};
+
     public static void add(ItemSink items) {
         // Aether runes (skilling: Cosmic Altar; minigames: Guardians of the Rift) and their catalyst (Doom of Mokhaiotl drop).
         items.add("aether_rune", "Aether rune", Kind.RUNE, "rune", 0xB070E0).value(300).examine("A combined cosmic and soul rune.");
@@ -51,6 +65,11 @@ public final class CommonItems {
         // Book of the dead (zeah: the Kourend graveyard teleports; quests: A Kingdom Divided's reward).
         items.add("book_of_the_dead", "Book of the dead", Kind.SIMPLE, "book", 0x3A1A4A).value(1).stack(1)
                 .examine("A tome of Arceuus necromancy. Its pages allow teleports to the Kourend graveyards.");
+        // The Varrock Museum's antique lamps (minigames: Historian Minas and the specimen crates hand them out; quests: rubbing
+        // opens the skill choice, QuestLamps). Wiki, Antique lamp (Varrock Museum): one item per source, none replaceable.
+        for (String[] l : MUSEUM_LAMPS) {
+            items.add(l[0], "Antique lamp", Kind.SIMPLE, "lamp", 0xE8C030).value(1).stack(1).weight(0.1).examine(l[1]);
+        }
         items.add("green_dragonhide", "Green dragonhide", Kind.SIMPLE, "hide", 0x3A8A3A).value(1800);
         items.add("blue_dragonhide", "Blue dragonhide", Kind.SIMPLE, "hide", 0x3A5AB0).value(2000);
         items.add("red_dragonhide", "Red dragonhide", Kind.SIMPLE, "hide", 0xB03A3A).value(2400);

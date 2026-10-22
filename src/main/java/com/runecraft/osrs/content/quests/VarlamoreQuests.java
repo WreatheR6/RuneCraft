@@ -14,7 +14,7 @@ import com.runecraft.osrs.data.Drop;
  * Varlamore and its neighbours (2024-2025): Children of the Sun, Twilight's Promise, Perilous Moons,
  * At First Light, The Ribbiting Tale of a Lily Pad Labour Dispute, Death on the Isle, Meat and Greet,
  * The Heart of Darkness, Ethically Acquired Antiquities, Scrambled!, Shadows of Custodia and The Final
- * Dawn. Quest points and requirements follow OSRS; XP-lamp rewards are given as fixed XP and the
+ * Dawn. Quest points and requirements follow OSRS; XP-lamp rewards are real lamps ({@link QuestLamps}) and the
  * later quests' details are approximate.
  */
 final class VarlamoreQuests {
@@ -25,8 +25,9 @@ final class VarlamoreQuests {
         b.place("quest_cam_torum", "Cam Torum", 1440, 3110, PlaceDef.Style.CAVE);
         b.spot("quest_villa_lucens", "Villa Lucens", 1450, 2968);
         b.place("quest_tal_teklan", "Tal Teklan", 1225, 3090, PlaceDef.Style.CAMP);
-        b.place("quest_ralos_rise", "Ralos' Rise", 1460, 3330, PlaceDef.Style.RUINS);
-        b.place("quest_tower_of_ascension", "Tower of Ascension", 1500, 3230, PlaceDef.Style.RUINS);
+        // the Tower of Ascension east of the Quetzacalli Gorge (quest-helper: Forebearer Janus inside at 1638, 3224; it stood over the
+        // Gorge's pub at 1500, 3230 before)
+        b.spot("quest_tower_of_ascension", "Tower of Ascension", 1638, 3228); // approx: 4 tiles north, clear of the lift platform hut
         b.spot("quest_civitas_lily_pond", "Civitas lily pond", 1712, 3098);
         b.spot("quest_custodia_pass", "Custodia Pass", 1255, 3335);
         b.spot("quest_sunrise_palace", "Sunrise Palace", 1680, 3160);
@@ -238,30 +239,217 @@ final class VarlamoreQuests {
                 .talk("quest_tal_teklan_chief").take("quest_feast_platter").say("The city sends food made by an outlander's hands? Hm. It is good food. Tal Teklan will talk.");
     }
 
+    /**
+     * The Heart of Darkness after the wiki quick guide and quest-helper (TheHeartOfDarkness): the Quetzacalli Gorge's pub and
+     * shopkeeper, the recruits at the Tower of Ascension, Forebearer Janus's four trials (the chests' keyword and directions and
+     * the scraps' passcode, the waves of emissaries, the traitor who speaks of Mictl, Prince Itzla himself), the Twilight Temple,
+     * the Ruins of Tapoyauik (the four levers and the elemental statues) and Amoxliatl. OSRS fights no "Twilight Emissary" boss
+     * here: the emissaries are the second trial's waves.
+     */
     private static void heartOfDarkness(QuestBook b) {
-        Cast.npc(b, "quest_ralos_priest", "Priest of Ralos", "quest_ralos_rise", 0, 3, Cast.TAN, 0xE0A040);
-        b.item("quest_sun_key", "Sun key", "key", 0xE0C040, "A key marked with the sun of Ralos.");
-        b.boss(BossDef.of("quest_twilight_emissary", "Twilight Emissary").level(210).stats(300, 160, 160, 150, 180, 150).speed(4)
-                .defenceBonus(90, 90, 90, 120, 90)
-                .attack(AttackDef.of("moon_blade", AttackType.SLASH, 24, 3, 5))
-                .attack(AttackDef.of("dusk_bolt", AttackType.MAGIC, 22, 9, 4).particle("minecraft:soul"))
-                .attack(AttackDef.of("eclipse", AttackType.MAGIC, 16, 9, 2).special(Special.AOE, 4).telegraph(2, "The Emissary blots out the light!"))
-                .drops(Drop.always("bones")).skin(0xC8946A, 0x2A1A4A, 0x1A0A2A, 0xC0C0E0)
-                .at("quest_tower_of_ascension").arena(11, "crypt"));
+        // quest-helper tiles: the Gorge's pub (bartender 1499, 3224; the rented room 1505, 3223), the general store (1517, 3223),
+        // the prince outside the Tower of Ascension (1656, 3219), Forebearer Janus inside it (1638, 3224; approx 1638, 3228 here,
+        // since the lift platform hut stands on his tile), the Twilight Temple
+        // (Forebearer Fides 1685, 3247) and the stairs down to the Ruins of Tapoyauik (1693, 3231)
+        b.npcAt("hod_bartender", "Bartender", 1499, 3224, 0xC8946C, 0x6A4A2A, 0x4A3A1A, 0x8A6A3A);
+        b.npcAt("itzla_gorge", "Prince Itzla Arkan", 1505, 3223, 0xC8946D, 0xE0B041, 0x9A7A2B, 0xE0C060);
+        b.npcAt("hod_shopkeeper", "Shopkeeper", 1517, 3223, 0xC8946E, 0x5A6A3A, 0x3A4A2A, 0x6A5A2A);
+        b.npcAt("itzla_tower", "Prince Itzla Arkan", 1656, 3219, 0xC8946F, 0xE0B042, 0x9A7A2C, 0xE0C061);
+        b.npcAt("forebearer_janus", "Forebearer Janus", 1638, 3228, 0xC8946A, 0x2A1A4A, 0x1A0A2A, 0xC0C0E0);
+        b.npcAt("forebearer_fides", "Forebearer Fides", 1685, 3247, 0xC8946B, 0x2A1A4B, 0x1A0A2B, 0xC0C0E1);
+        // Cast (one serial, as the priest of Ralos it replaces took) so later NPCs keep their colours
+        Cast.npcAt(b, "servius_teokan", "Servius, Teokan of Ralos", 1683, 3163, Cast.TAN, 0xE0D060);
+        b.spot("hod_tapoyauik", "Ruins of Tapoyauik", 1693, 3231);
+        b.item("hod_tower_key", "Tower key", "key", 0x8A8A9A, "A key to the Tower of Ascension's cells.");
+        b.item("hod_book", "Book", "book", 0x3A2A5A, "An emissary's book, some of its words marked.");
+        b.item("hod_scrap_of_paper", "Scrap of paper", "note", 0xE0D8C0, "Half of a torn note.");
+        b.item("hod_emissary_robes", "Twilight emissary robes", "robe_top", 0x2A1A4A, "Robes of the Twilight Emissaries.");
+        // The second trial's waves (osrs-dps-calc, Emissary Ascended: level 117, 80 HP, up to 12 every 4 ticks, melee and magic)
+        b.boss(BossDef.of("quest_twilight_emissary", "Emissary Ascended").level(117).stats(80, 120, 110, 90, 40, 1).speed(4)
+                .defenceBonus(30, 30, 50, 20, 30)
+                .attack(AttackDef.of("moon_blade", AttackType.SLASH, 12, 2.5, 3))
+                .attack(AttackDef.of("dusk_bolt", AttackType.MAGIC, 12, 9, 2).particle("minecraft:soul")) // approx: the casters' max hit
+                .attack(AttackDef.of("eclipse", AttackType.MAGIC, 12, 9, 1).special(Special.AOE, 3) // the dodgeable 3x3
+                        .telegraph(2, "The emissary blots out the light around you: step out!"))
+                .drops(Drop.always("bones")).skin(0xC8946A, 0x2A1A4A, 0x1A0A2A, 0xC0C0E0));
+        // Prince Itzla Arkan, the final trial (level 167, 250 HP, up to 12; a sword swipe that turns protection prayers off and a
+        // telegraphed area attack dodged behind him)
+        b.boss(BossDef.of("hod_prince_itzla", "Prince Itzla Arkan").level(167).stats(250, 150, 110, 75, 55, 1).speed(4)
+                .defenceBonus(30, 30, 20, 10, 30)
+                .attack(AttackDef.of("sword", AttackType.SLASH, 12, 2.5, 6))
+                .attack(AttackDef.of("sword_swipe", AttackType.SLASH, 12, 3, 1).special(Special.PRAYER_PIERCING, 0)
+                        .telegraph(2, "Prince Itzla: Your prayers won't save you!"))
+                .attack(AttackDef.of("sunburst", AttackType.MAGIC, 12, 3, 1).special(Special.AOE, 3) // approx: its damage
+                        .telegraph(3, "Prince Itzla raises his blade to the sun: get behind him!"))
+                .drops(Drop.always("bones")).skin(0xC8946A, 0xE0B040, 0x9A7A2A, 0xE0C060).size(0.6f, 1.95f, 1.0f));
+        // Amoxliatl, quest version (osrs-dps-calc: level 226, 400 HP, magic 140, defence 60, +200 ranged defence, up to 16)
+        b.boss(BossDef.of("hod_amoxliatl", "Amoxliatl").level(226).stats(400, 1, 1, 60, 140, 1).speed(8)
+                .defenceBonus(100, 100, 40, 100, 200)
+                .attack(AttackDef.of("frost_bolt", AttackType.MAGIC, 16, 10, 5).particle("minecraft:snowflake"))
+                .attack(AttackDef.of("icicle_crash", AttackType.MAGIC, 16, 10, 2).special(Special.SKY_STRIKE, 0) // approx: wiki gives no max
+                        .telegraph(3, "Icicles hang above you: step away from the spikes!"))
+                .attack(AttackDef.of("ice_pool", AttackType.MAGIC, 6, 10, 1).special(Special.HAZARD, 3)
+                        .telegraph(2, "Ice pools spread across the floor!"))
+                .drops(Drop.always("bones")).model("amoxliatl").size(1.2f, 1.4f, 1.8f));
         b.quest("the_heart_of_darkness", "The Heart of Darkness", Difficulty.EXPERIENCED, 2)
                 .reqQuest("twilights_promise").req(Skill.MINING, 55).req(Skill.THIEVING, 48).req(Skill.SLAYER, 48).req(Skill.AGILITY, 46)
                 .xp(Skill.MINING, 8000).xp(Skill.THIEVING, 8000).xp(Skill.SLAYER, 8000).xp(Skill.AGILITY, 8000) // approximate
                 .unlock("Access to the Tower of Ascension")
                 .stage("I can start this quest by speaking to Prince Itzla Arkan at the Sunrise Palace. (Requires Twilight's Promise, 55 Mining, 48 Thieving, 48 Slayer, 46 Agility.)")
-                .talk("prince_itzla_arkan").say("The Emissaries have retreated to the Tower of Ascension. To enter, we need the blessing of the priests of Ralos.")
-                .stage("I should seek the Priest of Ralos at Ralos' Rise.")
-                .talk("quest_ralos_priest").give("quest_sun_key").say("The Tower was sealed long ago. This key, blessed by the sun, opens it. Do not let the darkness take you.")
-                .stage("I should climb the Tower of Ascension and confront the Twilight Emissary at its heart.")
-                .reach("quest_tower_of_ascension", 8).need("quest_sun_key").say("* The key turns. Trials of agility and strength lead up the tower, and at the top waits the Emissary.")
-                .stage("I must defeat the Twilight Emissary.")
-                .kill("quest_twilight_emissary").say("* The Emissary falls. The darkness at the tower's heart fades.")
-                .stage("I should return to Prince Itzla Arkan.")
-                .talk("prince_itzla_arkan").take("quest_sun_key").say("The tower is ours again. Varlamore will remember your courage.");
+                .talk("prince_itzla_arkan").say("The Emissaries are recruiting in the Tower of Ascension. I mean to join them, in disguise, and "
+                        + "learn what they plan. Meet me at the pub in the Quetzacalli Gorge.")
+                // ---- Starting out ----
+                .stage("I should meet the prince at the pub in the Quetzacalli Gorge, then join the recruits at the Tower of Ascension.")
+                .talk("hod_bartender").stay().unlessFlag("hod_room").take("coins:30").flag("hod_room")
+                .say("> I'd like to rent the basement room.", "Thirty coins. There's no basement, mind: it's the room on the south-east.")
+                .missing("The room's thirty coins.")
+                .talk("itzla_gorge").stay().needFlag("hod_room").unlessFlag("hod_rested").flag("hod_rested")
+                .say("* You rest on the bed. The prince slips in.", "We need someone who knows the Emissaries. Try the shopkeeper east of here.")
+                .talk("hod_shopkeeper").stay().needFlag("hod_rested").unlessFlag("hod_shop").flag("hod_shop")
+                .say("> I hear you can offer help to those in need.", "Recruits gather outside the Tower of Ascension, east past the proudspire.")
+                .talk("itzla_tower").stay().needFlag("hod_shop").unlessFlag("hod_recruits").flag("hod_recruits")
+                .say("> Alright, I'll get mingling.", "* You talk to the recruits Nova, Sergius, Felius and Caritta outside the tower.",
+                        "Ximoua, the darkness they worship... Inside, Forebearer Janus will test us.")
+                .talk("forebearer_janus").needFlag("hod_recruits")
+                .say("Recruits. Four trials stand between you and the Emissaries' trust. Climb the stairs.")
+                .missing("Only recruits may enter.")
+                // ---- The four trials ----
+                .stage("I must pass Forebearer Janus's four trials in the Tower of Ascension.")
+                .reach("quest_tower_of_ascension", 8).stay().unlessFlag("hod_trial1").unless("hod_tower_key", "hod_book")
+                .reqSkill(Skill.THIEVING, 48).give("hod_tower_key")
+                .say("* On the first floor you pickpocket an emissary ascended in the cage for a tower key.")
+                .missing("* Pickpocketing the emissary ascended takes 48 Thieving.")
+                .reach("quest_tower_of_ascension", 8).stay().unlessFlag("hod_trial1").take("hod_tower_key").give("hod_book", "hod_scrap_of_paper")
+                .say("* The key opens the south-east gate. In the chest: a book with marked words, and a scrap of paper.")
+                .puzzle("quest_tower_of_ascension", HOD_KEYWORD_CHEST).stay().need("hod_book").unlessFlag("hod_keyword").unlessFlag("hod_trial1")
+                .flag("hod_keyword")
+                .say("* The south-western chest clicks open: inside lies a poem.")
+                .talk("itzla_tower").stay().needFlag("hod_keyword").unlessFlag("hod_poem").unlessFlag("hod_trial1").flag("hod_poem")
+                .say("Those are old Varlamorian words: takam is east, makt north, silam west and uitt south.")
+                .puzzle("quest_tower_of_ascension", HOD_DIRECTION_CHEST).stay().needFlag("hod_poem").unlessFlag("hod_trial1")
+                .take("hod_book", "hod_scrap_of_paper").flag("hod_trial1")
+                .say("* In the north-western chest lies the other half of the scrap. Together they read a passcode, and you speak it to Janus.")
+                .reach("quest_tower_of_ascension", 8).stay().needFlag("hod_trial1").unlessFlag("hod_trial2").spawn("quest_twilight_emissary")
+                .say("* Janus: The second trial. Defend your prince! Emissaries pour into the room.")
+                // wiki: melee and magic emissaries two at a time, then four at a time // approx: six in all
+                .kill("quest_twilight_emissary", 6).stay().needFlag("hod_trial1").unlessFlag("hod_trial2").flag("hod_trial2")
+                .say("* The last emissary falls. You bind the prince's wounds with bandages from the medical boxes.")
+                .puzzle("quest_tower_of_ascension", HOD_TRAITOR).stay().needFlag("hod_trial2").unlessFlag("hod_trial3").flag("hod_trial3")
+                .say("Janus: Well spotted. The Emissaries have no use for Mictl's faithful. One trial remains.")
+                .reach("quest_tower_of_ascension", 8).stay().needFlag("hod_trial3").spawn("hod_prince_itzla")
+                .say("* Janus: For the last trial, fight one of your own. Prince Itzla draws his blade!")
+                .kill("hod_prince_itzla").needFlag("hod_trial3")
+                .say("* The prince yields. Janus is satisfied: you are Emissaries now.")
+                // ---- The Twilight Temple and the Ruins of Tapoyauik ----
+                .stage("I should enter the Twilight Temple in emissary robes, then follow the Emissaries into the Ruins of Tapoyauik.")
+                .talk("forebearer_janus").stay().unless("hod_emissary_robes").unlessFlag("hod_temple").give("hod_emissary_robes")
+                .say("Take robes from the chest. The temple lies to the east.")
+                .talk("forebearer_fides").stay().unlessFlag("hod_temple").need("hod_emissary_robes").flag("hod_temple")
+                .say("* In the temple the Emissaries gather. The prince stays close.", "The heart of darkness waits below the ruins to "
+                        + "the south. Go, and wake her.")
+                .missing("Only Emissaries enter here.")
+                .reach("hod_tapoyauik", 6).stay().needFlag("hod_temple").unlessFlag("hod_levers").needTool("pickaxe").reqSkill(Skill.MINING, 55)
+                .reqSkill(Skill.AGILITY, 46).flag("hod_levers")
+                .say("* Down in the ruins you mine through the rocks, slip past frost nagua, frost crabs and traps over icy ledges and "
+                        + "frozen platforms, and pull the four levers. The braziers light and the great gate opens.")
+                .missing("* Rocks block the ruins: you'll need a pickaxe (there's one in a barrel) and 55 Mining.")
+                .puzzle("hod_tapoyauik", HOD_STATUES).stay().needFlag("hod_levers").unlessFlag("hod_statues").flag("hod_statues")
+                .say("* The fourth statue glows and the frozen door cracks open.")
+                .reach("hod_tapoyauik", 6).stay().needFlag("hod_statues").spawn("hod_amoxliatl")
+                .say("* Beyond the frozen door, Amoxliatl stirs!")
+                .kill("hod_amoxliatl").needFlag("hod_statues")
+                .say("* Amoxliatl shatters into shards of ice. The Emissaries' plan lies in pieces.")
+                .stage("I should report to Servius, Teokan of Ralos, at the Sunrise Palace.")
+                .talk("servius_teokan").say("Amoxliatl, slain? The Emissaries will not recover from this. Varlamore thanks you.");
+    }
+
+    /**
+     * The south-western chest's keyword (wiki: the first letters of the book's marked words; it differs per player). // approx:
+     * the keywords and the book's marked words
+     */
+    static final QuestPuzzle HOD_KEYWORD_CHEST = hodKeywordChest();
+
+    private static QuestPuzzle hodKeywordChest() {
+        String[][] books = {{"DUSK", "Darkness", "Upon", "Sunset", "Knows"}, {"NIGHT", "Never", "Is", "Glory", "Hidden", "Too"},
+                {"SHADE", "Silence", "Holds", "All", "Dawn's", "Ending"}, {"MOONS", "Many", "Offer", "Only", "Night's", "Sorrow"}};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("hod_keyword_chest").room("chest");
+        for (String[] book : books) {
+            StringBuilder words = new StringBuilder();
+            for (int i = 1; i < book.length; i++) {
+                words.append(i > 1 ? ", " : "").append('\'').append(book[i]).append('\'');
+            }
+            b.variant(null).prompt("* The south-western chest has a lock of letters. In the book, these words are marked in order: " + words + ".")
+                    .options(QuestPuzzle.letters()).solution(QuestPuzzle.word(book[0]));
+        }
+        return b.failLines("* The chest stays locked.").build();
+    }
+
+    /** The north-western chest (wiki: the poem's marked words as directions: takam east, makt north, silam west, uitt south). */
+    static final QuestPuzzle HOD_DIRECTION_CHEST = hodDirectionChest();
+
+    private static QuestPuzzle hodDirectionChest() {
+        String[] words = {"makt", "takam", "uitt", "silam"};
+        int[][] codes = {{1, 0, 3, 2}, {3, 1, 1, 0}, {0, 2, 1, 3}, {2, 3, 0, 1}, {1, 1, 2, 0}};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("hod_direction_chest").room("chest");
+        for (int[] code : codes) {
+            StringBuilder marked = new StringBuilder();
+            for (int i = 0; i < code.length; i++) {
+                marked.append(i > 0 ? ", " : "").append(words[code[i]]);
+            }
+            b.variant(null).prompt("* The north-western chest's lock turns north, east, south or west. In the poem these words are marked, in "
+                            + "order: " + marked + ".")
+                    .options("North", "East", "South", "West").solution(code);
+        }
+        return b.failLines("* The lock spins back.").build();
+    }
+
+    /** The third trial (wiki: the traitor is the cultist who speaks of Mictl, whom the Emissaries don't follow). // approx: their words */
+    static final QuestPuzzle HOD_TRAITOR = hodTraitor();
+
+    private static QuestPuzzle hodTraitor() {
+        String[] names = {"Tenoch", "Silia", "Adrius", "Eleuia"};
+        String[] loyal = {"The twilight will cover Varlamore, and Ximoua will rise.", "I gave up my name at the tower's door, as we all did.",
+                "The sun has blinded this land too long.", "When the moons are ours, the Emissaries will rule the dusk."};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("hod_traitor").room("trial");
+        for (int traitor : new int[]{0, 1, 3}) {
+            java.util.List<String> prompt = new java.util.ArrayList<>();
+            prompt.add("Janus: One of these four is no Emissary. Question them, then accuse the traitor.");
+            for (int i = 0; i < 4; i++) {
+                prompt.add("@" + names[i] + ": " + (i == traitor ? "Mictl watches over us, even here in the dark." : loyal[i]));
+            }
+            b.variant(null).prompt(prompt.toArray(String[]::new))
+                    .options("Accuse Tenoch", "Accuse Silia", "Accuse Adrius", "Accuse Eleuia").solution(traitor);
+        }
+        return b.failLines("Janus: Wrong. A loyal Emissary, accused. Try again, recruit.").build();
+    }
+
+    /**
+     * The Ruins of Tapoyauik's statues (wiki: each corner's marking begins with Zema, Oma, Yeya or Naui, one to four, the order to
+     * touch the statues; it differs per player).
+     */
+    static final QuestPuzzle HOD_STATUES = hodStatues();
+
+    private static QuestPuzzle hodStatues() {
+        String[] elements = {"air", "water", "earth", "fire"};
+        String[] numbers = {"Zema", "Oma", "Yeya", "Naui"};
+        int[][] orders = {{2, 0, 3, 1}, {1, 3, 0, 2}, {3, 2, 1, 0}, {0, 2, 1, 3}, {2, 3, 1, 0}, {1, 0, 2, 3}};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("hod_statues").room("statues");
+        for (int[] order : orders) {
+            // order[e] is the number marked by element e's statue
+            int[] touch = new int[4];
+            StringBuilder marks = new StringBuilder();
+            for (int e = 0; e < 4; e++) {
+                touch[order[e]] = e;
+                marks.append(e > 0 ? "; " : "").append("by the ").append(elements[e]).append(" statue, '").append(numbers[order[e]])
+                        .append(" ...'");
+            }
+            b.variant(null).prompt("* With the coloured icons the four statues are whole again. The murals count in the old tongue: one is "
+                                    + "Zema, two Oma, three Yeya and four Naui.",
+                            "* The markings in the corners: " + marks + ". Touch the statues in order.")
+                    .options("Touch the air statue", "Touch the water statue", "Touch the earth statue", "Touch the fire statue")
+                    .solution(touch);
+        }
+        return b.failLines("* The statues dim. The frozen door stays shut.").build();
     }
 
     private static void ethicallyAcquiredAntiquities(QuestBook b) {
@@ -315,22 +503,369 @@ final class VarlamoreQuests {
                 .say("The shadows are gone. The pass is open to travellers again, thanks to you.");
     }
 
+    /**
+     * The Final Dawn (wiki quick guide, quest-helper): Servius starts it; Infiltration II (the temple's passcode, the blue
+     * chest's tumblers, the Emissary Enforcer), Home Invasion (Janus's safe house: the dog's GUS code, the makeshift blackjack),
+     * Dwarven Traitor (Teumo's barrels), Interlopers in Neypotzli (Lucius and Chimalli), Crypt Assault (six waves, Ennius
+     * Tullus), the Tonali Cavern's sun and moon puzzles, and Augur Metzli before Mokhaiotl.
+     */
     private static void finalDawn(QuestBook b) {
+        // quest-helper tiles: Queen Zyanyi on the palace's top floor (1673, 3156), Captain Vibia behind Janus's safe house
+        // (1652, 3088; the house 1643-1652, 3091-3096), Servius at Tal Teklan (1236, 3105), the Crypt of Tonali's entrance
+        // (1305, 3034: the spot stands south of its hut) and the Twilight Temple (1687, 3247)
+        b.npcAt("queen_zyanyi", "Queen Zyanyi Arkan", 1673, 3156, 0xC8946A, 0xE0B043, 0x9A7A2D, 0xF0D070);
+        b.npcAt("captain_vibia", "Captain Vibia", 1652, 3088, 0xC8946B, 0x8A2A2B, 0x5A1A1B, 0xC0C0C1);
+        b.npcAt("servius_tal_teklan", "Servius, Teokan of Ralos", 1236, 3105, 0xC8947A, 0xE0D061, 0xA08A3B, 0xF0E081);
+        b.npcAt("itzla_crypt", "Prince Itzla Arkan", 1307, 3024, 0xC8946F, 0xE0B044, 0x9A7A2E, 0xE0C062);
+        b.npc("galna", "Galna", "quest_cam_torum", -3, 3, 0xB07A5A, 0x6A4A6A, 0x4A3A4A, 0xA08060);
+        b.npc("eyatlalli", "Eyatlalli", "neypotzli", -3, 3, 0xD8C8B0, 0x3A6A9A, 0x2A4A6A, 0xE0E0FF);
+        b.spot("tfd_twilight_temple", "Twilight Temple", 1687, 3250);
+        b.spot("tfd_safehouse", "Janus's safe house", 1648, 3094);
+        b.spot("tfd_crypt_of_tonali", "Crypt of Tonali", 1305, 3024);
+        b.item("tfd_emissary_scroll", "Emissary scroll", "scroll", 0x3A2A5A, "The Emissaries' plans, in Metzli's hand.");
+        b.item("tfd_empty_sack", "Empty sack", "cloth", 0xA08A5A, "It held potatoes. Now it holds nothing.");
+        b.item("tfd_makeshift_blackjack", "Makeshift blackjack", "tool", 0x6A4A2A, "A branch and a coin purse full of sand. Crude.");
+        b.item("tfd_keystone_fragment", "Keystone fragment", "gem", 0x8A6ACA, "It hums near the keystone it came from.");
+        // osrs-dps-calc / wiki infoboxes: Emissary Enforcer 196 (126 HP, up to 18; the charge 30+ and a 3x3 sweep); the two
+        // cultists 160 (180 HP, up to 24; Lucius's triple projectile 34 every third attack); Emissary brawler 86 (55 HP, up to 8);
+        // Ennius Tullus 306 (380 HP, up to 22, melee only: he prays magic and missiles); Metzli 396 (600 HP, up to 28)
+        b.boss(BossDef.of("tfd_emissary_enforcer", "Emissary Enforcer").level(196).stats(126, 220, 170, 100, 80, 1).speed(4)
+                .defenceBonus(70, 80, 50, 180, 100)
+                .attack(AttackDef.of("sweep", AttackType.SLASH, 18, 2.5, 4).special(Special.AOE, 2))
+                .attack(AttackDef.of("charge", AttackType.SLASH, 30, 4, 1).special(Special.SKY_STRIKE, 0) // approx: "30+"
+                        .telegraph(2, "Emissary Enforcer: Thief! (step aside!)"))
+                .drops(Drop.always("bones")).skin(0xC8946A, 0x1A1A2A, 0x0A0A1A, 0x8A2A2A));
+        b.boss(BossDef.of("tfd_lucius", "Lucius").level(160).stats(180, 70, 70, 70, 200, 60).speed(4)
+                .defenceBonus(90, 120, 120, 200, 80)
+                .attack(AttackDef.of("sun_bolt", AttackType.MAGIC, 24, 10, 6).particle("minecraft:flame"))
+                .attack(AttackDef.of("triple_projectile", AttackType.MAGIC, 34, 10, 0).special(Special.SKY_STRIKE, 0)
+                        .telegraph(3, "Golden circles flare on the floor: step into the sun!"))
+                .drops(Drop.always("bones")).skin(0xC8946B, 0xE0B045, 0x2A1A4A, 0xE0C063));
+        b.boss(BossDef.of("tfd_chimalli", "Chimalli").level(160).stats(180, 70, 70, 70, 60, 200).speed(4)
+                .defenceBonus(70, 80, 80, 120, 120)
+                .attack(AttackDef.of("arrow", AttackType.RANGED, 24, 10, 6))
+                .attack(AttackDef.of("fire_arrows", AttackType.RANGED, 24, 10, 1).special(Special.SKY_STRIKE, 0) // approx: their hit
+                        .telegraph(3, "Shadows of falling arrows darken the ground: move!"))
+                .drops(Drop.always("bones")).skin(0xC8946C, 0x6A2A1A, 0x2A1A4A, 0xE07030));
+        b.boss(BossDef.of("tfd_emissary_brawler", "Emissary brawler").level(86).stats(55, 90, 70, 70, 15, 1).speed(5)
+                .defenceBonus(30, 30, 20, 5, 30)
+                .attack(AttackDef.of("club", AttackType.CRUSH, 8, 2.5, 1))
+                .drops(Drop.always("bones")).skin(0xC8946D, 0x2A1A4A, 0x1A0A2A, 0x6A5A8A));
+        b.boss(BossDef.of("tfd_ennius_tullus", "Ennius Tullus").level(306).stats(380, 280, 210, 75, 75, 1).speed(3)
+                .defenceBonus(70, 60, 50, 100, 80).immune(AttackType.RANGED, AttackType.MAGIC)
+                .attack(AttackDef.of("sword", AttackType.SLASH, 22, 2.5, 6))
+                .attack(AttackDef.of("sunfire_blast", AttackType.MAGIC, 22, 12, 1).special(Special.SKY_STRIKE, 0) // approx: its hit
+                        .telegraph(3, "Circles glow around the platform: stand in one!"))
+                .attack(AttackDef.of("sunfire_smite", AttackType.SLASH, 22, 2.5, 1).special(Special.PRAYER_PIERCING, 0)
+                        .telegraph(2, "Ennius Tullus: The sun sees through your prayers!"))
+                // wiki: at 0 HP he heals 120 and attacks faster, his Sunfire Strike three rows wide // approx: a phase at 25%
+                .phase(25, "Ennius Tullus: The sun burns within me!", 1.2, false,
+                        AttackDef.of("sunfire_strike", AttackType.MAGIC, 22, 12, 2).special(Special.SKY_STRIKE, 0)
+                                .telegraph(2, "Sunfire races out from Ennius in three rows: step off them!"))
+                .drops(Drop.always("bones")).skin(0xC8946E, 0xE0B046, 0x8A2A2C, 0xE0C064));
+        b.boss(BossDef.of("tfd_augur_metzli", "Augur Metzli").level(396).stats(600, 1, 1, 160, 180, 180).speed(3)
+                .defenceBonus(60, 80, 70, 100, 20)
+                .attack(AttackDef.of("sun_arrow", AttackType.RANGED, 28, 10, 5))
+                .attack(AttackDef.of("moon_bolt", AttackType.MAGIC, 28, 10, 5).particle("minecraft:soul"))
+                .attack(AttackDef.of("sunfire_waves", AttackType.MAGIC, 28, 12, 0).special(Special.SKY_STRIKE, 0) // approx: its hit
+                        .telegraph(3, "Waves of sunfire sweep the chamber: find the row without fire!"))
+                .phase(10, "Metzli conjures walls of fire in every direction! Take the white portal to the next quadrant!", 1.0, false,
+                        AttackDef.of("quadrant_fire", AttackType.MAGIC, 28, 16, 1).special(Special.AOE, 6) // approx: its hit
+                                .telegraph(3, "The flames turn on your quadrant: take the portal!"))
+                .drops(Drop.always("bones")).skin(0xC8946F, 0x2A1A4A, 0x1A0A2A, 0xE0C065));
         b.quest("the_final_dawn", "The Final Dawn", Difficulty.MASTER, 3)
                 .req(Skill.THIEVING, 66).req(Skill.FLETCHING, 52).req(Skill.RUNECRAFT, 52)
                 .xp(Skill.THIEVING, 55000).xp(Skill.FLETCHING, 25000).xp(Skill.RUNECRAFT, 25000) // OSRS (current quest XP rewards)
                 .reqQuest("the_heart_of_darkness", "perilous_moons")
-                .unlock("The conclusion of the Varlamore storyline")
-                .stage("I can start this quest by speaking to Prince Itzla Arkan at the Sunrise Palace. (Requires The Heart of Darkness, Perilous Moons, 66 Thieving, 52 Fletching, 52 Runecraft.)")
-                .talk("prince_itzla_arkan").say("The Emissaries mean to plunge Varlamore into eternal twilight. This is the final battle. Will you stand with us?")
-                .stage("I should rally the guard of Civitas illa Fortis.")
-                .reach("quest_tower_of_ascension", 10).stay().unlessFlag("tfd_temple").reqSkill(Skill.THIEVING, 66).flag("tfd_temple")
-                .say("* In emissary robes from the chest at the Tower of Ascension you enter the Twilight Temple (passcode: Final Dawn).",
-                        "* Behind the painting you picklock the blue chest and take an emissary scroll: the plan of attack.")
-                .talk("quest_civitas_guard_captain").needFlag("tfd_temple").missing("Rally the guard on a rumour? Bring me proof of the Emissaries' plans.").say("The guard is ready. To the Fortis Colosseum: the Emissaries gather there.")
-                .stage("I must break the Emissaries' assault at the Fortis Colosseum.")
-                .reach("fortis_colosseum", 10).flag("tfd_battle").say("* The battle rages until dawn breaks over the colosseum. The Emissaries are routed.")
-                .stage("I should return to Prince Itzla Arkan.")
-                .talk("prince_itzla_arkan").needFlag("tfd_battle").say("The sun rises on a free Varlamore. You will always have a home here, friend.");
+                .unlock("The Doom of Mokhaiotl; the conclusion of the Twilight Emissaries")
+                .stage("I can start this quest by speaking to Servius, Teokan of Ralos, in the Sunrise Palace. (Requires The Heart of Darkness, Perilous Moons, 66 Thieving, 52 Fletching, 52 Runecraft.)")
+                .talk("servius_teokan").say("Queen Zyanyi seeks an audience with you. The Emissaries hold Prince Itzla in the Twilight Temple, "
+                        + "and Metzli means to parade him before her cult.", "> Yes.")
+                // ---- Infiltration II and Home Invasion ----
+                .stage("I must slip into the Twilight Temple in emissary robes and learn the Emissaries' plans, then help Captain Vibia take Janus at his safe house in Civitas illa Fortis.")
+                .reach("quest_tower_of_ascension", 8).stay().unless("hod_emissary_robes").unlessFlag("tfd_stairs").give("hod_emissary_robes")
+                .say("* You take a set of emissary robes from the chest at the Tower of Ascension.")
+                .puzzle("tfd_twilight_temple", TFD_PASSCODE).stay().need("hod_emissary_robes").unlessFlag("tfd_stairs").flag("tfd_stairs")
+                .say("* The Emissary Ascended steps aside. In the basement you creep past the Emissary Enforcer into the back rooms.")
+                .missing("* Only Emissaries enter the temple: there are robes in the chest at the Tower of Ascension.")
+                .reach("tfd_twilight_temple", 6).stay().needFlag("tfd_stairs").unlessFlag("tfd_painting").flag("tfd_painting")
+                .say("* Metzli and Furia leave a room, arguing about the prince.",
+                        "* Under the large bed in the south room lies a key; in a drawer, a canvas piece. It fits the painting at the eastern "
+                                + "end, and behind the painting a hidden passage leads to a blue chest.")
+                .puzzle("tfd_twilight_temple", TFD_TUMBLER_CHEST).stay().needFlag("tfd_painting").unlessFlag("tfd_chest")
+                .reqSkill(Skill.THIEVING, 66).flag("tfd_chest")
+                .say("* The last tumbler turns green and the chest opens: an emissary scroll. As you turn to leave, the Emissary Enforcer "
+                        + "fills the passage.")
+                .missing("* Picking the blue chest takes 66 Thieving.")
+                .reach("tfd_twilight_temple", 6).stay().needFlag("tfd_chest").unlessFlag("tfd_enforcer").spawn("tfd_emissary_enforcer")
+                .say("* Emissary Enforcer: Traitor! He snatches the scroll and swings!")
+                .kill("tfd_emissary_enforcer").stay().needFlag("tfd_chest").unlessFlag("tfd_enforcer").flag("tfd_enforcer")
+                .give("tfd_emissary_scroll")
+                .say("* The enforcer falls. You pick up the emissary scroll and read it: the Emissaries are going for the Crypt of Tonali.")
+                .talk("queen_zyanyi").stay().needFlag("tfd_enforcer").unlessFlag("tfd_queen").take("tfd_emissary_scroll").flag("tfd_queen")
+                .say("The crypt... And Janus, their Forebearer, hides in a safe house south of the west bank. Captain Vibia is watching "
+                        + "it. Help her bring him in.")
+                .missing("Have you word of my son?")
+                .talk("captain_vibia").stay().needFlag("tfd_queen").unlessFlag("tfd_vibia").flag("tfd_vibia")
+                .say("Janus is inside. The door has a code lock, but the southernmost window on the east side isn't latched.")
+                .reach("tfd_safehouse", 4).stay().needFlag("tfd_vibia").unlessFlag("tfd_dog").take("bones").flag("tfd_dog")
+                .say("* You climb in through the window. A guard dog growls, until you give it the bones.",
+                        "* You pet the dog. The tag on its collar reads 'GUS'.")
+                .missing("* A guard dog snarls behind the window. It might calm down for some bones.") // wiki: or raw or cooked meat
+                .puzzle("tfd_safehouse", TFD_DOOR_CODE).stay().needFlag("tfd_dog").unlessFlag("tfd_door").flag("tfd_door")
+                .say("* The door's lock clicks open.")
+                .reach("tfd_safehouse", 4).stay().needFlag("tfd_door").unlessFlag("tfd_blackjack")
+                .give("tfd_empty_sack", "tfd_makeshift_blackjack").flag("tfd_blackjack")
+                .say("* You empty the sack of potatoes and take the knife beside it. On the middle floor you empty a coin purse.",
+                        "* On the top floor you cut a branch from the diseased off-green plant and fill the purse from the pot of sand.",
+                        "* Branch and sandy purse make a makeshift blackjack.")
+                .talk("captain_vibia").needFlag("tfd_blackjack").take("tfd_empty_sack", "tfd_makeshift_blackjack")
+                .say("A sack over the head and a knock with this: Janus never saw it coming.",
+                        "* You search the unconscious Janus for a key. In the basement Queen Zyanyi decides: the cult's helper is in Cam Torum.",
+                        "> Yes, let's go.")
+                // ---- Dwarven Traitor and Interlopers in Neypotzli ----
+                .stage("I should help Attala unmask the traitor in Cam Torum, then stop the Emissaries' interlopers in Neypotzli.")
+                .talk("attala").stay().unlessFlag("tfd_attala").flag("tfd_attala")
+                .say("Only four may let humans into Cam Torum: the Highlord, Highseer Vandra, Teumo and I. Teumo, then. His house is east "
+                        + "of the bank.")
+                .talk("galna").stay().needFlag("tfd_attala").unlessFlag("tfd_galna").flag("tfd_galna")
+                .say("* You fetch a beer from upstairs and hand it to Galna.", "Teumo? Down in the basement all day, him and his barrels.")
+                .puzzle("quest_cam_torum", TFD_BARRELS).stay().needFlag("tfd_galna").unlessFlag("tfd_barrels").flag("tfd_barrels")
+                .say("* A click: the fireplace goes out, revealing a lever. You pull it and climb through the hole in the south-east room.",
+                        "* You overhear the Tullus twins with Teumo: he will open the doors in the Crypt of Tonali once they bring him an "
+                                + "Old One keystone from Neypotzli.")
+                .talk("attala").stay().needFlag("tfd_barrels").unlessFlag("tfd_twins").flag("tfd_twins")
+                .say("A keystone from Neypotzli? Then that's where they'll be. Go!")
+                .talk("eyatlalli").stay().needFlag("tfd_twins").unlessFlag("tfd_eyatlalli").give("tfd_keystone_fragment").flag("tfd_eyatlalli")
+                .say("Interlopers tamper with the keystone behind me. An older one remains from when the prison was built. Take this "
+                        + "fragment: it will lead you to it.")
+                .reach("neypotzli", 8).stay().needFlag("tfd_eyatlalli").unlessFlag("tfd_symbol").take("tfd_keystone_fragment").flag("tfd_symbol")
+                .say("* The fragment resonates on a tile in the Streambound Cavern, then in the Earthbound Cavern, and last in the south-east "
+                        + "room of the Ancient Prison. A glowing symbol appears.",
+                        "* You touch it. The Tullus twins already hold the keystone: Metzli teleports them away and leaves Lucius and "
+                                + "Chimalli to deal with you.")
+                // wiki: the two fight together, the survivor enraged // approx: one after the other
+                .reach("neypotzli", 8).stay().needFlag("tfd_symbol").unlessFlag("tfd_lucius").spawn("tfd_lucius")
+                .say("* Lucius raises his staff!")
+                .kill("tfd_lucius").stay().needFlag("tfd_symbol").unlessFlag("tfd_lucius").flag("tfd_lucius")
+                .say("* Lucius falls. Chimalli nocks her fire arrows.")
+                .reach("neypotzli", 8).stay().needFlag("tfd_lucius").unlessFlag("tfd_chimalli").spawn("tfd_chimalli")
+                .say("* Chimalli: You'll pay for him!")
+                .kill("tfd_chimalli").stay().needFlag("tfd_lucius").unlessFlag("tfd_chimalli").flag("tfd_chimalli")
+                .say("* Chimalli falls. Attala and her guards arrive.")
+                .talk("attala").needFlag("tfd_chimalli")
+                .say("The twins got away with the keystone, and Teumo's gone. This is a human matter: Cam Torum won't march. Survive, friend.")
+                // ---- Crypt Assault, the Tonali Cavern and the truth of Mokhaiotl ----
+                .stage("I must hold the Crypt of Tonali with Queen Zyanyi, then follow Metzli through the Tonali Cavern to Mokhaiotl.")
+                .talk("servius_tal_teklan").stay().unlessFlag("tfd_tal_teklan").flag("tfd_tal_teklan")
+                .say("The Queen holds the Crypt of Tonali, south-east of here. The cult comes tonight.")
+                .reach("tfd_crypt_of_tonali", 8).stay().needFlag("tfd_tal_teklan").unlessFlag("tfd_waves").spawn("tfd_emissary_brawler")
+                .say("* Emissary cultists pour into the crypt! Queen Zyanyi, Captain Vibia and the Tonali hold the line.")
+                // wiki: six waves, 23 brawlers, archers and conjurers // approx: a brawler leads each wave
+                .kill("tfd_emissary_brawler", 6).stay().needFlag("tfd_tal_teklan").unlessFlag("tfd_waves").flag("tfd_waves")
+                .say("* The sixth wave breaks. A conjurer teleports in Metzli, the Tullus twins, Teumo and the prince; Teumo opens the "
+                        + "doors and the leaders rush inside.")
+                .reach("tfd_crypt_of_tonali", 8).stay().needFlag("tfd_waves").unlessFlag("tfd_ennius").spawn("tfd_ennius_tullus")
+                .say("* On a platform below, Ennius Tullus refuses to surrender and draws his sword!")
+                .kill("tfd_ennius_tullus").stay().needFlag("tfd_waves").unlessFlag("tfd_ennius").flag("tfd_ennius")
+                .say("* Ennius falls for good; Furia flees, wounded. Prince Itzla insists on coming with you after Metzli.")
+                .puzzle("tfd_crypt_of_tonali", TFD_SUN_ALTARS, 0).stay().needFlag("tfd_ennius").unlessFlag("tfd_sun1")
+                .reqSkill(Skill.RUNECRAFT, 52).flag("tfd_sun1")
+                .say("* The altar drinks the Kuhu essence and the statue's engraving shifts.")
+                .missing("* Imbuing the altars with Kuhu essence takes 52 Runecraft.")
+                .puzzle("tfd_crypt_of_tonali", TFD_SUN_ALTARS, 1).stay().needFlag("tfd_sun1").unlessFlag("tfd_sun2").flag("tfd_sun2")
+                .say("* The altar drinks the Kuhu essence and the statue's engraving shifts again.")
+                .puzzle("tfd_crypt_of_tonali", TFD_SUN_ALTARS, 2).stay().needFlag("tfd_sun2").unlessFlag("tfd_sun3").flag("tfd_sun3")
+                .say("* The third imbuing lights the sun chamber. On to the moon chamber.")
+                .puzzle("tfd_crypt_of_tonali", TFD_MOON_KINDLING, 0).stay().needFlag("tfd_sun3").unlessFlag("tfd_moon1")
+                .reqSkill(Skill.FLETCHING, 52).flag("tfd_moon1")
+                .say("* The moon statue takes the kindling, and the braziers change.")
+                .missing("* Carving the ancient roots into root kindling takes 52 Fletching.")
+                .puzzle("tfd_crypt_of_tonali", TFD_MOON_KINDLING, 1).stay().needFlag("tfd_moon1").unlessFlag("tfd_moon2").flag("tfd_moon2")
+                .say("* The moon statue takes the kindling, and the braziers change again.")
+                .puzzle("tfd_crypt_of_tonali", TFD_MOON_KINDLING, 2).stay().needFlag("tfd_moon2").unlessFlag("tfd_moon3").flag("tfd_moon3")
+                .say("* The moon chamber is solved. Prince Itzla opens the northern doors: the way to Mokhaiotl lies open.")
+                .reach("mokhaiotl_lair", 8).stay().needFlag("tfd_moon3").unlessFlag("tfd_metzli").spawn("tfd_augur_metzli")
+                .say("* Metzli waits before the archive's doors: The Old Ones' gift will be mine!")
+                .kill("tfd_augur_metzli").stay().needFlag("tfd_moon3").unlessFlag("tfd_metzli").flag("tfd_metzli")
+                .say("* Metzli flees deeper. On a skeleton you find a stone tablet: refugees helped the Kuhu build the archive's defences.",
+                        "* In the final chamber there is no archive at all. Furia steps from the shadows and throws a rune knife: Metzli is "
+                                + "finished. You take Furia back to the crypt.")
+                .talk("itzla_crypt").needFlag("tfd_metzli")
+                .say("Spare Furia, Mother: with Metzli and Ennius martyred, the cult's last supporters hide in the shadows. Let her be "
+                        + "our way to them.", "* Something stirs deep below, in Mokhaiotl. The sun rises on Varlamore.");
+    }
+
+    /** The temple stairs (wiki: the passcode is "Final Dawn"). */
+    static final QuestPuzzle TFD_PASSCODE = QuestPuzzle.builder("tfd_passcode").room("stairs").variant(null)
+            .prompt("* Metzli's sermon still rings in your ears: 'At the final dawn the twilight takes Varlamore.'",
+                    "@Emissary Ascended: Halt. The passcode?")
+            .options("Eternal twilight", "Final Dawn", "Ximoua rises", "Moonfall").solution(1)
+            .shuffle().failLines("@Emissary Ascended: Wrong. Off with you.").build();
+
+    /** One try's feedback per tumbler: 2 green (right number, right tumbler), 1 blue (used on another tumbler), 0 neither. */
+    static int[] tfdTumblers(int[] code, int[] guess) {
+        int[] res = new int[code.length];
+        java.util.List<Integer> left = new java.util.ArrayList<>();
+        for (int i = 0; i < code.length; i++) {
+            if (guess[i] == code[i]) {
+                res[i] = 2;
+            } else {
+                left.add(code[i]);
+            }
+        }
+        for (int i = 0; i < code.length; i++) {
+            if (res[i] == 0 && left.remove(Integer.valueOf(guess[i]))) {
+                res[i] = 1;
+            }
+        }
+        return res;
+    }
+
+    /** Every combination (four tumblers of 1-8) that would have given these tries the code's feedback. */
+    static java.util.List<int[]> tfdConsistent(int[] code, java.util.List<int[]> tries) {
+        java.util.List<int[]> out = new java.util.ArrayList<>();
+        for (int n = 0; n < 4096; n++) {
+            int[] c = {n / 512 + 1, n / 64 % 8 + 1, n / 8 % 8 + 1, n % 8 + 1};
+            boolean ok = true;
+            for (int[] t : tries) {
+                ok &= java.util.Arrays.equals(tfdTumblers(c, t), tfdTumblers(code, t));
+            }
+            if (ok) {
+                out.add(c);
+            }
+        }
+        return out;
+    }
+
+    /** A blue chest: its combination and the tries already made on it. */
+    record TfdBoard(int[] code, java.util.List<int[]> tries) {
+    }
+
+    /** The boards (generated so the tries leave one combination; tfdConsistent checks it). // approx: four tumblers of 1-8 */
+    static final java.util.List<TfdBoard> TFD_BOARDS = java.util.List.of(
+            new TfdBoard(new int[]{3, 7, 1, 6}, java.util.List.of(new int[]{1, 2, 3, 4}, new int[]{5, 6, 7, 8}, new int[]{7, 7, 2, 6})),
+            new TfdBoard(new int[]{8, 2, 5, 4}, java.util.List.of(new int[]{1, 2, 3, 4}, new int[]{5, 6, 7, 8})),
+            new TfdBoard(new int[]{6, 6, 1, 3}, java.util.List.of(new int[]{1, 2, 3, 4}, new int[]{5, 6, 7, 8}, new int[]{3, 3, 1, 1})),
+            new TfdBoard(new int[]{2, 8, 7, 1}, java.util.List.of(new int[]{1, 2, 3, 4}, new int[]{5, 6, 7, 8}, new int[]{5, 3, 2, 2})),
+            new TfdBoard(new int[]{5, 3, 8, 2}, java.util.List.of(new int[]{1, 2, 3, 4}, new int[]{5, 6, 7, 8}, new int[]{4, 6, 8, 3})),
+            new TfdBoard(new int[]{4, 1, 6, 7}, java.util.List.of(new int[]{1, 2, 3, 4}, new int[]{5, 6, 7, 8}, new int[]{6, 7, 1, 1},
+                    new int[]{4, 4, 4, 3})),
+            new TfdBoard(new int[]{7, 5, 2, 8}, java.util.List.of(new int[]{1, 2, 3, 4}, new int[]{5, 6, 7, 8}, new int[]{7, 8, 6, 1})),
+            new TfdBoard(new int[]{1, 4, 4, 5}, java.util.List.of(new int[]{1, 2, 3, 4}, new int[]{5, 6, 7, 8}, new int[]{5, 5, 1, 1})));
+
+    /**
+     * The blue chest behind Metzli's painting (wiki: move the tumblers and confirm; a green light is the right number on the right
+     * tumbler, a blue one a number used on another tumbler).
+     */
+    static final QuestPuzzle TFD_TUMBLER_CHEST = tfdTumblerChest();
+
+    private static QuestPuzzle tfdTumblerChest() {
+        String[] light = {"dark", "blue", "green"};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("tfd_tumbler_chest").room("chest");
+        for (TfdBoard board : TFD_BOARDS) {
+            java.util.List<String> prompt = new java.util.ArrayList<>();
+            prompt.add("* The blue chest's lock has four tumblers, each set from 1 to 8. On confirming, a light beside each tumbler "
+                    + "shows green for the right number, blue for a number used on another tumbler, dark otherwise.");
+            for (int[] t : board.tries()) {
+                int[] fb = tfdTumblers(board.code(), t);
+                prompt.add("* Tried " + t[0] + "-" + t[1] + "-" + t[2] + "-" + t[3] + ": " + light[fb[0]] + ", " + light[fb[1]] + ", "
+                        + light[fb[2]] + ", " + light[fb[3]] + ".");
+            }
+            prompt.add("* Set the four tumblers, first to last.");
+            int[] code = board.code();
+            b.variant(null).prompt(prompt.toArray(String[]::new)).options("1", "2", "3", "4", "5", "6", "7", "8")
+                    .solution(code[0] - 1, code[1] - 1, code[2] - 1, code[3] - 1);
+        }
+        return b.failLines("* The lights stay dark. The lock resets.").build();
+    }
+
+    /** The safe house door (wiki: the dog's tag gives the passcode, GUS). */
+    static final QuestPuzzle TFD_DOOR_CODE = QuestPuzzle.builder("tfd_door_code").room("door").variant(null)
+            .prompt("* The door between the safe house's rooms has a lock of three letter dials. The dog's tag read 'GUS'.")
+            .options(QuestPuzzle.letters()).solution(QuestPuzzle.word("GUS"))
+            .failLines("* The lock doesn't budge.").build();
+
+    /**
+     * Teumo's basement barrels (wiki: steamforge brew on the steaming barrel, dwarven stout on the black liquid, beer on the one
+     * that smells like a pub, the mind bomb on the bubbling one, and the drunk beer's glass on the empty one).
+     */
+    static final QuestPuzzle TFD_BARRELS = QuestPuzzle.builder("tfd_barrels").room("barrels").variant(null)
+            .prompt("* Teumo's basement: five barrels, each with a place for a drink. The cabinet holds steamforge brew, dwarven stout, "
+                            + "beer and wizard's mind bomb; you drink one beer and keep the glass.",
+                    "* South-west of the cabinet, a barrel trails steam. East of it, one holds a black liquid. The northern barrel smells "
+                            + "like a standard Gielinorian pub; the south-eastern one is bubbling; the one by the stairs seems to be empty.",
+                    "* Place a drink on each: the south-west barrel, the east one beside it, the north, the south-east, then the stairs.")
+            .options("Steamforge brew", "Dwarven stout", "Beer", "Wizard's mind bomb", "Beer glass").solution(0, 1, 2, 3, 4)
+            .shuffle().failLines("* Nothing happens. You take the drinks back.").build();
+
+    /** The old numbers on the sun statue (wiki: Oma 2, Naui 4, Kuli 5, Chaki 6, Koma 7, Ueai 8, Makti 10). */
+    static final java.util.Map<String, Integer> TFD_NUMBERS = java.util.Map.of("Oma", 2, "Naui", 4, "Kuli", 5, "Chaki", 6, "Koma", 7,
+            "Ueai", 8, "Makti", 10);
+
+    /**
+     * The sun chamber (wiki: the altars count 1 at the north-east, clockwise to 8 at the north; the statue's first word puts the
+     * prince at an altar and the second you, the third unused; three imbuings). // approx: the engravings
+     */
+    static final QuestPuzzle TFD_SUN_ALTARS = tfdSunAltars();
+
+    private static QuestPuzzle tfdSunAltars() {
+        String[][][] rooms = {
+                {{"Oma", "Ueai", "Koma"}, {"Naui", "Koma", "Makti"}, {"Kuli", "Oma", "Chaki"}, {"Chaki", "Naui", "Oma"}},
+                {{"Ueai", "Oma", "Kuli"}, {"Koma", "Kuli", "Makti"}, {"Oma", "Chaki", "Naui"}, {"Naui", "Ueai", "Koma"}},
+                {{"Koma", "Oma", "Ueai"}, {"Chaki", "Ueai", "Makti"}, {"Kuli", "Naui", "Koma"}, {"Ueai", "Chaki", "Oma"}}};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("tfd_sun_altars");
+        for (int r = 0; r < rooms.length; r++) {
+            b.room("sun" + (r + 1));
+            for (String[] words : rooms[r]) {
+                int prince = TFD_NUMBERS.get(words[0]) - 1;
+                int you = TFD_NUMBERS.get(words[1]) - 1;
+                b.variant(null).prompt("* Eight altars ring the sun chamber; the first is the north-east one, and they count on clockwise "
+                                        + "to the north altar, the eighth. You fill your hands with Kuhu essence from the urns.",
+                                "* The sun statue reads: '" + words[0] + " " + words[1] + "-" + words[2] + "'. Prince Itzla knows the old "
+                                        + "numbers: oma two, naui four, kuli five, chaki six, koma seven, ueai eight, makti ten.",
+                                "* Send the prince to the first word's altar, then take the second word's altar yourself.")
+                        .options("North-east altar", "East altar", "South-east altar", "South altar", "South-west altar", "West altar",
+                                "North-west altar", "North altar")
+                        .solution(prince, you).solution(you, prince); // wiki: either of you may take either altar
+            }
+        }
+        return b.failLines("* The essence sputters and burns your hands.").build();
+    }
+
+    /**
+     * The moon chamber (wiki: count the braziers lit with the prince on one pressure plate, then on the other, and deposit that
+     * many root kindling in the moon statue; three times). // approx: the braziers
+     */
+    static final QuestPuzzle TFD_MOON_KINDLING = tfdMoonKindling();
+
+    private static QuestPuzzle tfdMoonKindling() {
+        String[][][][] rooms = {
+                {{{"north", "east", "south-west"}, {"north-east", "south"}},
+                        {{"north-west", "south", "east", "north-east"}, {"north", "south-west", "west"}},
+                        {{"east"}, {"north", "south", "west", "south-east", "north-west"}}},
+                {{{"north", "south"}, {"north-east", "south-east", "south-west", "north-west"}},
+                        {{"east", "west", "north"}, {"east", "west", "north", "south"}},
+                        {{"south-west"}, {"north", "north-east"}}},
+                {{{"north", "north-east", "east", "south-east", "south"}, {"south-west", "west", "north-west", "north"}},
+                        {{"north-west", "west"}, {"east", "south-east", "south"}},
+                        {{"north", "east", "south", "west"}, {"north-east", "south-east", "south-west", "north-west", "north", "south"}}}};
+        String[] options = new String[12];
+        for (int i = 0; i < options.length; i++) {
+            options[i] = "Deposit " + (i + 1) + " root kindling";
+        }
+        QuestPuzzle.Builder b = QuestPuzzle.builder("tfd_moon_kindling");
+        for (int r = 0; r < rooms.length; r++) {
+            b.room("moon" + (r + 1));
+            for (String[][] plates : rooms[r]) {
+                b.variant(null).prompt("* From the old tools you take a knife blade, pull ancient roots from around the room and carve them "
+                                        + "into root kindling.",
+                                "* With the prince on the west pressure plate, the lit braziers are: " + String.join(", ", plates[0]) + ".",
+                                "* With him on the east plate: " + String.join(", ", plates[1]) + ".",
+                                "* The moon statue wants as much kindling as the braziers lit, both times together.")
+                        .options(options).solution(plates[0].length + plates[1].length - 1);
+            }
+        }
+        return b.failLines("* The statue rejects the kindling, and moonfire licks at you.").build();
     }
 }

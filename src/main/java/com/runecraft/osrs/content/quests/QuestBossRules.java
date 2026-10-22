@@ -151,6 +151,99 @@ public final class QuestBossRules {
     public static final int ELVARG_DRAGONFIRE_MAX = 70;
     public static final int ELVARG_PRAYER_DRAIN_PERCENT = 10;
 
+    // ---------------------------------------------------------------- Sins of the Father: Vanstrom Klause (wiki quest guide)
+
+    /**
+     * His three specials. The first is picked at random; then they follow this order, and none comes again until all three
+     * have been used (wiki). // approx: the wiki doesn't say which order; the one it lists them in
+     */
+    public static final java.util.List<String> VANSTROM_SPECIALS = java.util.List.of("pets", "stare_into_darkness", "blood_orb");
+
+    /** His {@code n}th special (0-based) for a fight whose first special was {@code first}. */
+    public static String vanstromSpecial(int first, int n) {
+        return VANSTROM_SPECIALS.get(Math.floorMod(first + n, VANSTROM_SPECIALS.size()));
+    }
+
+    /** Protect from Magic halves his blood blasts (wiki: "reduces the damage from this attack by 50%"). */
+    public static final double VANSTROM_BLAST_PRAYED_SHARE = 0.5;
+    /** His blood blast heals him for a portion of what it deals. // approx: the wiki gives no share */
+    public static final double VANSTROM_BLAST_HEAL_SHARE = 0.25;
+    /** The acidic bloodveld's explosion when it reaches the player: 35-50, through prayers (wiki; DPS calculator max 50). */
+    public static final int VANSTROM_PET_MIN = 35;
+    public static final int VANSTROM_PET_MAX = 50;
+    /** Blocks from the arena centre, north or south (the side farther from the player), the bloodveld appears. */
+    public static final int VANSTROM_PET_DISTANCE = 9;
+    /** Blocks from the player the bloodveld explodes at. */
+    public static final double VANSTROM_PET_REACH = 1.4;
+    /** "Stare into darkness!": 40+ to a player who doesn't step off their tile (wiki). // approx: 35-45 */
+    public static final int VANSTROM_STARE_MIN = 35;
+    public static final int VANSTROM_STARE_MAX = 45;
+    /** Game ticks to step away. // playability: OSRS gives about one tick ("extremely unforgiving"); the strike floor here */
+    public static final int VANSTROM_STARE_TICKS = 3;
+    /**
+     * "Blood will be my strength!": a blood orb, visually one tile but 3x3, strengthens his magic attacks even through Protect
+     * from Magic while it lasts. Luring him into it bursts it and hits him for 20+; a player stepping in takes up to 40 and bursts
+     * it (wiki). // approx: the buff and how long the orb lasts
+     */
+    public static final double VANSTROM_ORB_RADIUS = 1.5;
+    public static final int VANSTROM_ORB_TICKS = 30;
+    public static final double VANSTROM_ORB_MAGIC_MULTIPLIER = 1.5;
+    public static final int VANSTROM_ORB_SELF_MIN = 20;
+    public static final int VANSTROM_ORB_SELF_MAX = 26;
+    public static final int VANSTROM_ORB_PLAYER_MAX = 40;
+    /** Second phase (wiki): every 2 seconds or so 10-15 shadows mark random tiles for lightning of up to 40. */
+    public static final int VANSTROM_LIGHTNING_EVERY_TICKS = 4;
+    public static final int VANSTROM_LIGHTNING_MIN_BOLTS = 10;
+    public static final int VANSTROM_LIGHTNING_MAX_BOLTS = 15;
+    public static final int VANSTROM_LIGHTNING_MAX = 40;
+    /** Blocks around the player the shadows fall in (one always on the player's own tile). // approx */
+    public static final int VANSTROM_LIGHTNING_SPREAD = 6;
+
+    /** How many bolts a lightning volley calls down, from a random 0-5. */
+    public static int vanstromBolts(int roll0to5) {
+        return VANSTROM_LIGHTNING_MIN_BOLTS + Math.max(0, Math.min(5, roll0to5));
+    }
+
+    // ---------------------------------------------------------------- While Guthix Sleeps: Surok, the Stone of Jas
+
+    /** Surok Magis (wiki): like Vorkath, six regular attacks and a special as every seventh. */
+    public static final int SUROK_SPECIAL_EVERY = 7;
+
+    /**
+     * Touching the Stone of Jas raises the player's combat stats to 255 for the fight against Lucien's two tormented demons,
+     * and stat drains don't touch them (wiki).
+     */
+    public static final int STONE_OF_JAS_LEVEL = 255;
+    /** The quest flag set while the player holds the Stone's power. */
+    public static final String STONE_OF_JAS_FLAG = "wgs_jas_power";
+    /** The demons' fire shield: non-demonbane hits land at this share while it is up (wiki: "reduces damage slightly"). // approx */
+    public static final double WGS_DEMON_SHIELD = 0.8;
+    /** Auto attacks between fire bombs (the tormented demon's 8 or 9). */
+    public static final int WGS_DEMON_ATTACKS_PER_BOMB = 8;
+    /** The fire bomb: a short bind, then fire on the player's tile and around it, up to 45 (DPS calculator special). */
+    public static final int WGS_DEMON_BOMB_MAX = 45;
+    public static final int WGS_DEMON_BIND_TICKS = 2;
+    /** Game ticks from the bind to the fire landing. // playability: lands after the bind, with time to step off */
+    public static final int WGS_DEMON_BOMB_TICKS = 5;
+    public static final double WGS_DEMON_BOMB_RADIUS = 1.5;
+
+    /** The boost that puts a skill at the Stone's level: {@code 255 - level}. */
+    public static int stoneOfJasBoost(int realLevel) {
+        return STONE_OF_JAS_LEVEL - realLevel;
+    }
+
+    /** The Curse of Arrav (wiki quick guide): every third attack Arrav swings his axe ahead of him for up to 26. */
+    public static final int COA_ARRAV_AXE_EVERY = 3;
+
+    /** The Final Dawn (wiki): Lucius's triple projectile and Metzli's specials come every third attack. */
+    public static final int TFD_LUCIUS_SPECIAL_EVERY = 3;
+    public static final int TFD_METZLI_SPECIAL_EVERY = 3;
+
+    /** Whether a boss's {@code attack}th attack (1-based) is its every-{@code n}th special. */
+    public static boolean nthIsSpecial(int attack, int n) {
+        return n > 0 && attack > 0 && attack % n == 0;
+    }
+
     /** Song of the Elves (wiki): the Fragment of Seren makes one of her specials every fourth attack (three normal ones first). */
     public static final int FRAGMENT_ATTACKS_PER_SPECIAL = 4;
 

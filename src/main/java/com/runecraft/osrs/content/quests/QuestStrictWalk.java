@@ -39,7 +39,11 @@ public final class QuestStrictWalk {
     public static final List<String> WALKED = List.of("desert_treasure_i", "monkey_madness_i", "dream_mentor", "lunar_diplomacy",
             "legends_quest", "regicide", "mournings_end_part_i", "mournings_end_part_ii", "roving_elves", "haunted_mine",
             "dragon_slayer_i", "the_fremennik_isles", "swan_song", "recipe_for_disaster", "making_friends_with_my_arm",
-            "a_kingdom_divided", "the_path_of_glouphrie", "beneath_cursed_sands", "a_night_at_the_theatre");
+            "a_kingdom_divided", "the_path_of_glouphrie", "beneath_cursed_sands", "a_night_at_the_theatre",
+            // round 44: puzzle quests given their real steps and puzzles
+            "the_golem", "hazeel_cult", "the_curse_of_arrav", "defender_of_varrock", "the_blood_moon_rises", "grim_tales",
+            "the_fremennik_exiles", "the_heart_of_darkness", "the_final_dawn", "enakhras_lament",
+            "sins_of_the_father", "underground_pass");
 
     private QuestStrictWalk() {
     }
@@ -285,7 +289,7 @@ public final class QuestStrictWalk {
     /** QuestInterpreter.skipped: an item or flag that switches the trigger off, or a drop already collected. */
     static boolean skipped(Trigger t, State st) {
         for (String item : t.unlessItems) {
-            if (st.has(item) > 0) {
+            if (st.has(item) >= t.unlessCount(item)) {
                 return true;
             }
         }

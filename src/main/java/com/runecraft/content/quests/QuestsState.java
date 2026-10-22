@@ -87,6 +87,15 @@ public final class QuestsState extends SavedData {
         return n;
     }
 
+    /** Sets a counter kept with the kill counters (quest lamps granted and used, see QuestLampService). */
+    public void setCount(UUID player, String key, int n) {
+        Map<String, Integer> m = kills.computeIfAbsent(player, u -> new HashMap<>());
+        Integer old = n == 0 ? m.remove(key) : m.put(key, n);
+        if (old == null || old != n) {
+            setDirty();
+        }
+    }
+
     /** Clears an objective's kill counter (once it has fired). */
     public void clearKills(UUID player, String key) {
         Map<String, Integer> m = kills.get(player);

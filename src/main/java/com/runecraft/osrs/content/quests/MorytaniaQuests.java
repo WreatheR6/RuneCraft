@@ -7,6 +7,7 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.AttackDef.Special;
 import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.MonsterDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.data.Drop;
 
@@ -407,7 +408,7 @@ final class MorytaniaQuests {
         b.quest("a_taste_of_hope", "A Taste of Hope", Difficulty.EXPERIENCED, 1)
                 .reqQuest("darkness_of_hallowvale")
                 .req(Skill.CRAFTING, 48).req(Skill.AGILITY, 45).req(Skill.ATTACK, 40).req(Skill.HERBLORE, 40).req(Skill.SLAYER, 38)
-                .xp(Skill.ATTACK, 2500).xp(Skill.AGILITY, 2500).xp(Skill.HERBLORE, 2500).xp(Skill.SLAYER, 2500)
+                // OSRS: a tome of experience, 3 x 2,500 XP in any skill of level 35+ (QuestLamps)
                 .stage("I can start this quest by speaking to Garth by the entrance to the Theatre of Blood in Ver Sinhaza. (Requires Darkness of Hallowvale and more.)")
                 .talk("garth_tob").say("Ranis Drakan and Vanstrom Klause just went into the Theatre. The Myreque would want to know.",
                         "@Safalaan Hallow: A vampyre in the Drakans' court, Flaygian, may help us. We must get into Ver Sinhaza, the vampyre stronghold.")
@@ -452,33 +453,39 @@ final class MorytaniaQuests {
                 .attack(AttackDef.of("magical_fire", AttackType.MAGIC, 1, 10, 1).special(Special.HAZARD, 8)
                         .telegraph(2, "Damien summons a magical fire! Stomp it out.")) // approx: his fires shield him in OSRS
                 .drops(Drop.always("bones")).skin(0xC8C8D0, 0x6A1A2A, 0x3A0A1A, 0x1A1A1A));
-        // Vanstrom Klause in Sins of the Father (wiki): level 459, 750 HP, magic up to 24 every 5 ticks, only blisterwood hurts him
-        // (recoil and Vengeance do nothing); after every 9-12 regular attacks one of his three specials, never the same twice in a
-        // row (QuestBossScripts.Vanstrom): "My pets will feast on your corpse!" (an acidic bloodveld that explodes for up to 50),
-        // "Blood will be my strength!" (a healing blood orb) and "Stare into darkness!" (heavy damage to a player facing him). At
-        // 0 hitpoints he heals 200, calls lightning (up to 46) and his attacks ignore protection prayers.
+        // Sins of the Father (wiki, DPS calculator): the acidic bloodveld Vanstrom calls up with "My pets will feast on your
+        // corpse!": level 56, 5 hitpoints, -100 defence against everything; it walks at the player and explodes for 35-50 when
+        // it reaches them (QuestBossScripts.Vanstrom), so it is best killed from range (melee barely hurts it).
+        b.monster(MonsterDef.of("sotf_acidic_bloodveld", "Acidic Bloodveld").level(56).stats(5, 80, 46, 2, 1, 1).speed(4)
+                .defenceBonus(-100, -100, -100, -100, -100)
+                .attack(AttackDef.of("acid", AttackType.MAGIC, 0, 1.5, 1)) // it does nothing but walk at the player and explode
+                .model("bloodveld").skin(0x6A9A2A, 0x4A7A1A, 0x3A5A10, 0x9AC040).size(0.9f, 1.8f, 1.0f).moveSpeed(0.28));
+        // Vanstrom Klause in Sins of the Father (wiki quest guide, DPS calculator): level 459, 750 HP, magic up to 24 every 5
+        // ticks that Protect from Magic halves and that heals him for part of what it deals; only blisterwood hurts him (recoil
+        // and Vengeance do nothing). QuestBossScripts.Vanstrom runs his specials ("My pets will feast on your corpse!": an acidic
+        // bloodveld that explodes for 35-50; "Stare into darkness!": 40+ on the player's tile; "Blood will be my strength!":
+        // a blood orb that strengthens his blasts) after every 9-12 regular attacks in a set order, and at 0 hitpoints his heal
+        // of 200 and the enraged phase: blasts that ignore prayer and lightning of up to 40 on marked tiles. The special attacks
+        // below only name them (weight 0: the script makes them).
         b.boss(BossDef.of("vanstrom_klause", "Vanstrom Klause").level(459).stats(750, 0, 0, 180, 180, 0).speed(5)
                 .defenceBonus(34, 34, 34, 34, 34)
                 .requiresWeapon("blisterwood_flail")
-                .attack(AttackDef.of("blood_blast", AttackType.MAGIC, 24, 10, 6).particle("minecraft:crimson_spore"))
+                // prayer-piercing so the script can halve it under Protect from Magic (wiki) and leave it whole when he enrages
+                .attack(AttackDef.of("blood_blast", AttackType.MAGIC, 24, 10, 6).special(Special.PRAYER_PIERCING, 0)
+                        .particle("minecraft:crimson_spore"))
                 .attack(AttackDef.of("weaken", AttackType.MAGIC, 24, 10, 2).special(Special.DRAIN_STAT, 0) // lowers Attack like a shadow spell
                         .particle("minecraft:squid_ink"))
-                .attack(AttackDef.of("pets", AttackType.MAGIC, 50, 12, 1).special(Special.SKY_STRIKE, 0)
-                        .telegraph(3, "Vanstrom Klause: My pets will feast on your corpse!"))
-                .attack(AttackDef.of("blood_orb", AttackType.MAGIC, 0, 12, 1).special(Special.HEAL_SELF, 40)
-                        .message("Vanstrom Klause: Blood will be my strength!").particle("minecraft:crimson_spore"))
-                .attack(AttackDef.of("stare_into_darkness", AttackType.MAGIC, 40, 12, 1)
-                        .telegraph(1, "Vanstrom Klause: Stare into darkness!")) // approx: OSRS hurts a player facing him
-                .attack(AttackDef.of("lightning", AttackType.MAGIC, 46, 14, 1).special(Special.SKY_STRIKE, 0)
-                        .telegraph(2, "Dark clouds gather over the graveyard!"))
+                .attack(AttackDef.of("pets", AttackType.MAGIC, 50, 12, 0))
+                .attack(AttackDef.of("blood_orb", AttackType.MAGIC, 40, 12, 0))
+                .attack(AttackDef.of("stare_into_darkness", AttackType.MAGIC, 45, 12, 0))
+                .attack(AttackDef.of("lightning", AttackType.MAGIC, 40, 14, 0))
+                .minion("sotf_acidic_bloodveld", 1)
                 .drops(Drop.always("bones")).size(0.8f, 2.4f, 1.0f).at("darkmeyer").arena(12, "crypt"));
         b.quest("sins_of_the_father", "Sins of the Father", Difficulty.MASTER, 2)
                 .reqQuest("a_taste_of_hope", "VAMPYRE_SLAYER")
                 .req(Skill.WOODCUTTING, 62).req(Skill.FLETCHING, 60).req(Skill.CRAFTING, 56).req(Skill.AGILITY, 52)
                 .req(Skill.ATTACK, 50).req(Skill.SLAYER, 50).req(Skill.MAGIC, 49)
-                // OSRS: a tome of experience, 6 x 15,000 XP in skills of the player's choice (level 60+). // approx: fixed skills
-                .xp(Skill.WOODCUTTING, 15000).xp(Skill.FLETCHING, 15000).xp(Skill.CRAFTING, 15000)
-                .xp(Skill.AGILITY, 15000).xp(Skill.ATTACK, 15000).xp(Skill.SLAYER, 15000)
+                // OSRS: a tome of experience, 6 x 15,000 XP in skills of the player's choice (level 60+) (QuestLamps)
                 .unlock("Access to Darkmeyer and the Daeyalt essence mine").unlock("Access to the Hallowed Sepulchre")
                 .stage("I can start this quest by speaking to Veliaf Hurtz in the Myreque hideout. (Requires A Taste of Hope, Vampyre Slayer and more.)")
                 .talk("veliaf_hurtz").say("Vanescula Drakan, Lord Drakan's own sister, wants to meet. It could be a trap... but we must hear her out.",
@@ -504,9 +511,10 @@ final class MorytaniaQuests {
                 .say("* Your Ivandis flail cuts the vampyres down. You reach Burgh de Rott and Ivan heads for the boathouse.")
                 .talk("ivan_strom").stay().needFlag("sotf_bridge").unlessFlag("sotf_trek").spawn("sotf_juvinate")
                 .say("A vampyre is still on us!")
-                .reach("quest_icyene_graveyard", 8).stay().needFlag("sotf_trek").unlessFlag("sotf_graveyard").flag("sotf_graveyard")
-                .say("* Ivan rows you to the Icyene graveyard. You solve the mausoleum door, and Vertida, Kael, Radigad, Polmafi, Ivan and",
-                        "* Veliaf each have their say.")
+                .puzzle("quest_icyene_graveyard", SOTF_MAUSOLEUM).stay().needFlag("sotf_trek").unlessFlag("sotf_mausoleum").flag("sotf_mausoleum")
+                .say("* Ivan rows you to the Icyene graveyard. The mausoleum door's strange lock clicks open.")
+                .reach("quest_icyene_graveyard", 8).stay().needFlag("sotf_mausoleum").unlessFlag("sotf_graveyard").flag("sotf_graveyard")
+                .say("* In the mausoleum Vertida, Kael, Radigad, Polmafi, Ivan and Veliaf each have their say.")
                 .reach("sotf_daeyalt_mine", 8).stay().needFlag("sotf_graveyard").unlessFlag("sotf_mine").needTool("pickaxe").flag("sotf_mine")
                 .say("* The Vyrewatch send you to the mines. You mine 15 daeyalt ore into the cart, then slip through a slashed tapestry",
                         "* to Safalaan's hideout.")
@@ -566,6 +574,91 @@ final class MorytaniaQuests {
      * The arboretum's valves (wiki quick guide's table): the old note names the gallons the tree needs, 7 per turn of the north
      * valve and 4 per turn of the south valve (0-5 each), so each amount has one setting.
      */
+    /** A mausoleum door board: the totals beside its five rows (top to bottom) and under its five columns (left to right). */
+    record SotfBoard(int[] rows, int[] cols) {
+    }
+
+    /** Boards with one shading each ({@link #sotfKakurasu} checks it). // approx: the door's boards differ per player */
+    static final java.util.List<SotfBoard> SOTF_BOARDS = java.util.List.of(
+            new SotfBoard(new int[]{10, 8, 7, 13, 1}, new int[]{12, 5, 4, 5, 10}),
+            new SotfBoard(new int[]{6, 14, 5, 10, 4}, new int[]{7, 3, 2, 15, 6}),
+            new SotfBoard(new int[]{14, 11, 9, 2, 2}, new int[]{2, 15, 6, 4, 3}),
+            new SotfBoard(new int[]{6, 3, 15, 5, 12}, new int[]{9, 9, 6, 8, 12}),
+            new SotfBoard(new int[]{6, 8, 10, 7, 13}, new int[]{5, 8, 10, 6, 14}),
+            new SotfBoard(new int[]{11, 11, 1, 5, 9}, new int[]{3, 8, 5, 8, 7}),
+            new SotfBoard(new int[]{4, 9, 5, 7, 7}, new int[]{3, 4, 8, 5, 9}),
+            new SotfBoard(new int[]{6, 15, 11, 3, 2}, new int[]{3, 11, 7, 5, 5}));
+
+    /**
+     * Every shading of the 5x5 Kakurasu lock that meets the totals, as its shaded squares (row * 5 + column, row by row): a
+     * shaded square adds its column number (1-5) to its row's total and its row number to its column's.
+     */
+    static java.util.List<java.util.List<Integer>> sotfKakurasu(int[] rows, int[] cols) {
+        java.util.List<java.util.List<Integer>> out = new java.util.ArrayList<>();
+        sotfSearch(rows, cols, 0, new int[5], out);
+        return out;
+    }
+
+    private static void sotfSearch(int[] rows, int[] cols, int r, int[] masks, java.util.List<java.util.List<Integer>> out) {
+        if (r == 5) {
+            for (int c = 0; c < 5; c++) {
+                int sum = 0;
+                for (int i = 0; i < 5; i++) {
+                    sum += (masks[i] >> c & 1) * (i + 1);
+                }
+                if (sum != cols[c]) {
+                    return;
+                }
+            }
+            java.util.List<Integer> cells = new java.util.ArrayList<>();
+            for (int i = 0; i < 5; i++) {
+                for (int c = 0; c < 5; c++) {
+                    if ((masks[i] >> c & 1) == 1) {
+                        cells.add(i * 5 + c);
+                    }
+                }
+            }
+            out.add(cells);
+            return;
+        }
+        for (int mask = 0; mask < 32; mask++) {
+            int sum = 0;
+            for (int c = 0; c < 5; c++) {
+                sum += (mask >> c & 1) * (c + 1);
+            }
+            if (sum == rows[r]) {
+                masks[r] = mask;
+                sotfSearch(rows, cols, r + 1, masks, out);
+            }
+        }
+    }
+
+    /**
+     * Sins of the Father (wiki: the mausoleum door's lock is a Kakurasu: mark squares so each row's and column's marked numbers
+     * add up to its total; it differs per player). The squares are marked row by row, left to right.
+     */
+    static final QuestPuzzle SOTF_MAUSOLEUM = sotfMausoleum();
+
+    private static QuestPuzzle sotfMausoleum() {
+        String[] options = new String[25];
+        for (int i = 0; i < 25; i++) {
+            options[i] = "Row " + (i / 5 + 1) + ", square " + (i % 5 + 1);
+        }
+        QuestPuzzle.Builder b = QuestPuzzle.builder("sotf_mausoleum").room("door");
+        for (SotfBoard board : SOTF_BOARDS) {
+            java.util.List<Integer> cells = sotfKakurasu(board.rows(), board.cols()).get(0);
+            b.variant(null).prompt("* There's a strange lock on the mausoleum door: a grid of five rows of five squares. A marked square "
+                                    + "counts its column's number (1 to 5, left to right) toward its row, and its row's number (1 to 5, top "
+                                    + "to bottom) toward its column.",
+                            "* The rows must total, top to bottom: " + java.util.Arrays.toString(board.rows()).replaceAll("[\\[\\]]", "") + ".",
+                            "* The columns must total, left to right: " + java.util.Arrays.toString(board.cols()).replaceAll("[\\[\\]]", "")
+                                    + ".",
+                            "* Mark the squares row by row, left to right.")
+                    .options(options).solution(cells.stream().mapToInt(Integer::intValue).toArray());
+        }
+        return b.failLines("* The lock's squares flash red and clear.").build();
+    }
+
     static final QuestPuzzle SOTF_VALVES = sotfValves();
 
     private static QuestPuzzle sotfFollow() {

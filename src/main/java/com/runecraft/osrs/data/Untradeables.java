@@ -31,6 +31,19 @@ public final class Untradeables {
                 "dragon_hunter_crossbow_b", "dragon_hunter_crossbow_t", "ca_antique_lamp_easy",
                 "ca_antique_lamp_medium", "ca_antique_lamp_hard", "ca_antique_lamp_elite", "ca_antique_lamp_master",
                 "ca_antique_lamp_grandmaster");
+        // Quest lamps and tomes (QuestLamps), the Varrock Museum's lamps and the old book of knowledge: OSRS wiki "Antique lamp",
+        // "Tome of experience" and each named lamp: tradeable no (QuestLampsTest keeps this list complete).
+        add("quest_lamp_a_kingdom_divided", "quest_lamp_a_night_at_the_theatre", "quest_lamp_a_tail_of_two_cats",
+                "quest_lamp_client_of_kourend", "quest_lamp_into_the_tombs", "quest_lamp_kings_ransom", "quest_lamp_legends_quest",
+                "quest_lamp_one_small_favour", "quest_lamp_recipe_for_disaster", "quest_lamp_the_final_dawn",
+                "quest_lamp_x_marks_the_spot", "combat_lamp", "dreamy_lamp", "blessed_lamp", "ancient_lamp", "lamp_of_knowledge",
+                "book_of_knowledge", "dusty_lamp", "magic_lamp_ides_of_milk", "magic_lamp_strength", "magic_lamp_slayer",
+                "magic_lamp_thieving", "magic_lamp_magic", "museum_lamp_finds", "museum_lamp_timeline", "museum_lamp_defender",
+                "museum_lamp_empty_lord", "tome_of_experience_hallowvale", "tome_of_experience_hope", "tome_of_experience_sins",
+                "tome_of_experience_blood_moon");
+        // The diary lamps and the champion's lamp (OSRS wiki: tradeable no).
+        add("antique_lamp_easy", "antique_lamp_medium", "antique_lamp_hard", "antique_lamp_elite", "antique_lamp_karamja_easy",
+                "antique_lamp_karamja_medium", "antique_lamp_karamja_hard", "champions_lamp");
         add("varlamore_token");
         add("void_seal"); // wiki "Void seal": tradeable no
         add("sun_kissed_bones"); // wiki: untradeable, but notable

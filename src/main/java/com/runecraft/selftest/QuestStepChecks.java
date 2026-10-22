@@ -123,6 +123,8 @@ final class QuestStepChecks {
         c.completeQuests(info);
         PlayerData data = Players.data(p());
         data.setQuestStage(info, 0);
+        // the walk replays the quest: its lamps are handed out again on completion (another walk may have claimed them)
+        com.runecraft.content.quests.QuestLampService.selfTestReset(p(), id);
         data.setQuestPoints(Math.max(q.minQuestPoints, 1000));
         int qpBefore = data.questPoints();
         Map<Skill, Integer> xpBefore = new HashMap<>();
@@ -269,8 +271,11 @@ final class QuestStepChecks {
                 throw failure("item reward " + item + " not in the pack after completing");
             }
         }
+        // the quest's lamps, tomes and skill choices, rubbed and chosen as the player does
+        String lamps = com.runecraft.osrs.content.quests.QuestLamps.grants(id).isEmpty() ? "" : "; " + QuestLampChecks.claim(c, id);
         return "walked " + steps + " steps: " + fights + " fights, " + puzzles + " puzzles, " + places + " places, "
-                + attacksOnPlayer[0] + " attacks taken" + (notes.isEmpty() ? "" : "; " + String.join(", ", new LinkedHashSet<>(notes)));
+                + attacksOnPlayer[0] + " attacks taken" + (notes.isEmpty() ? "" : "; " + String.join(", ", new LinkedHashSet<>(notes)))
+                + lamps;
     }
 
     /** What a step should change, to tell afterwards whether it took effect. */

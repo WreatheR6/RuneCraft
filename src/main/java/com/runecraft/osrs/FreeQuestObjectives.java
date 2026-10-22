@@ -98,10 +98,9 @@ public final class FreeQuestObjectives {
             // Romeo & Juliet: wild cadava bushes south-east of Varrock (wiki map pins 3264,3366 / 3268,3370 / 3277,3374).
             new Spot(Quest.ROMEO_AND_JULIET, 1, 4, 3270, 3370, 9, Action.GIVE, "cadava_berries", List.of("cadava_potion"),
                     "You pick some cadava berries from the bush.", null),
-            // Druidic Ritual: the Cauldron of Thunder is in Taverley Dungeon (wiki 2893, 9831). The dungeon's layout here is
-            // schematic and that tile is rock north of the blue dragons, so the cauldron stands in the corridor north of the
-            // entrance, before the dusty-key gate (DungeonsAsgarnia.taverley). // approx: ~25 tiles south-west of OSRS
-            new Spot(Quest.DRUIDIC_RITUAL, 2, 2, 2890, 9806, 3, Action.ENCHANT_MEATS, null, List.of(),
+            // Druidic Ritual: the Cauldron of Thunder in Taverley Dungeon (wiki 2893, 9831), in its own room north of the
+            // entrance, reached past the lesser demons' cage without the dusty key (DungeonsAsgarnia.taverley).
+            new Spot(Quest.DRUIDIC_RITUAL, 2, 2, 2893, 9831, 3, Action.ENCHANT_MEATS, null, List.of(),
                     "You dip the meat into the Cauldron of Thunder. It glows with a strange light.", null),
             // Witch's Potion: drink from Hetty's cauldron (2967, 3205) to finish.
             new Spot(Quest.WITCHS_POTION, 2, 2, 2967, 3205, 2, Action.COMPLETE, null, List.of(),

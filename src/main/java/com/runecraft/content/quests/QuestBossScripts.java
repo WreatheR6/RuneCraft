@@ -48,8 +48,13 @@ final class QuestBossScripts {
         BossScripts.register("head_menaphite_guard", FalseGods::new);
         BossScripts.register("dark_squall", MagicOnly::new);
         BossScripts.register("balance_elemental", BalanceForms::new);
+        BossScripts.register("wgs_tormented_demon", StoneDemon::new);
+        com.runecraft.platform.ServerTickEvents.END_SERVER_TICK.register(StoneDemon::releaseStonePower);
         BossScripts.register("fragment_of_seren", FragmentSpecials::new);
         BossScripts.register("vanstrom_klause", Vanstrom::new);
+        BossScripts.register("arrav", () -> new EveryNth(QuestBossRules.COA_ARRAV_AXE_EVERY, "axe_swing"));
+        BossScripts.register("tfd_lucius", () -> new EveryNth(QuestBossRules.TFD_LUCIUS_SPECIAL_EVERY, "triple_projectile"));
+        BossScripts.register("tfd_augur_metzli", () -> new EveryNth(QuestBossRules.TFD_METZLI_SPECIAL_EVERY, "sunfire_waves"));
         Vanstrom.register();
     }
 
@@ -72,6 +77,8 @@ final class QuestBossScripts {
         private int form = -1;
         private int attacks;
         private long lastMessage;
+        /** The next attack is the new form's stat-draining special (wiki: each form opens with it). */
+        private boolean drainNext;
 
         private static int hp(DataBossEntity boss) {
             return (int) Math.ceil(boss.getHealth() * boss.trueHitpoints() / boss.getMaxHealth());
@@ -81,8 +88,18 @@ final class QuestBossScripts {
             int next = boss.getRandom().nextInt(form < 0 ? 3 : 2);
             form = form >= 0 && next >= form ? next + 1 : next;
             attacks = 0;
+            drainNext = true;
             announce(boss, "The Balance Elemental turns " + BalanceElemental.FORM_NAMES[form] + "! (" + BalanceElemental.styleName(form)
-                    + " attacks)", ChatFormatting.AQUA);
+                    + " attacks: pray against " + BalanceElemental.styleName(form) + " before it drains you)", ChatFormatting.AQUA);
+        }
+
+        private static AttackDef named(DataBossEntity boss, String name) {
+            for (AttackDef a : boss.def().attacks) {
+                if (a.name().equals(name)) {
+                    return a;
+                }
+            }
+            return null;
         }
 
         @Override
@@ -108,20 +125,50 @@ final class QuestBossScripts {
             if (form < 0 || boss.def() == null) {
                 return null;
             }
-            for (AttackDef a : boss.def().attacks) {
-                if (a.name().equals(BalanceElemental.FORM_ATTACKS[form])) {
-                    return a;
-                }
-            }
-            return null;
+            AttackDef drain = drainNext ? named(boss, BalanceElemental.FORM_DRAINS[form]) : null;
+            return drain != null ? drain : named(boss, BalanceElemental.FORM_ATTACKS[form]);
         }
 
         @Override
         public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (attack != null && BalanceElemental.isDrain(attack.name())) {
+                drainNext = false; // the draining special opens the form; the four normal attacks follow
+                return attack;
+            }
             if (form >= 0 && ++attacks >= BalanceElemental.ATTACKS_PER_FORM) {
-                changeForm(boss); // the next attack comes in the new form
+                changeForm(boss); // the next attack is the new form's drain
             }
             return attack;
+        }
+
+        /**
+         * The draining special (wiki): unless the matching protection prayer is up when it lands, it lowers every combat stat and
+         * a large chunk of Prayer. The damage itself already went through the prayer (up to 89, blocked when protected).
+         */
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type, AttackDef attack) {
+            if (attack == null || !BalanceElemental.isDrain(attack.name())) {
+                return damage;
+            }
+            com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(player);
+            if (com.runecraft.combat.CombatHandler.isProtected(data, type)) {
+                Msg.game(player, "Your prayer shields you from the Balance Elemental's drain.");
+                return damage;
+            }
+            drain(player);
+            return damage;
+        }
+
+        /** Lowers Attack, Strength, Defence, Ranged and Magic and takes Prayer points ({@link BalanceElemental#statDrain}). */
+        static void drain(ServerPlayer player) {
+            com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(player);
+            for (com.runecraft.osrs.Skill s : new com.runecraft.osrs.Skill[]{com.runecraft.osrs.Skill.ATTACK, com.runecraft.osrs.Skill.STRENGTH,
+                    com.runecraft.osrs.Skill.DEFENCE, com.runecraft.osrs.Skill.RANGED, com.runecraft.osrs.Skill.MAGIC}) {
+                data.skills().setBoost(s, data.skills().boost(s) - BalanceElemental.statDrain(data.skills().currentLevel(s)));
+            }
+            data.setPrayerPoints(data.prayerPoints() - BalanceElemental.prayerDrain(data.prayerPoints()));
+            Msg.red(player, "The Balance Elemental drains your combat stats and prayer!");
+            com.runecraft.network.ServerNetworking.sync(player);
         }
 
         @Override
@@ -140,6 +187,146 @@ final class QuestBossScripts {
                                 + BalanceElemental.styleName(BalanceElemental.prayedStyle(form)) + ".");
             }
             return 0;
+        }
+    }
+
+    /**
+     * While Guthix Sleeps, Lucien's two tormented demons at the Stone of Jas (wiki quick guide): touching the Stone raises the
+     * player's combat stats to 255 for the fight, and drains don't touch them; the demons' fire shield weakens hits that aren't
+     * demonbane, and every eighth attack is a fire bomb: a short bind, then fire on and around the player's tile (up to 45), to
+     * be stepped out of. The Stone's power leaves the player once no demon is left near them ({@link #releaseStonePower}).
+     */
+    static final class StoneDemon implements BossScript {
+        /** Demons alive now (the Stone's power lasts while one is near the player). */
+        static final java.util.Set<DataBossEntity> LIVE = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+        private static final com.runecraft.osrs.Skill[] COMBAT = {com.runecraft.osrs.Skill.ATTACK, com.runecraft.osrs.Skill.STRENGTH,
+                com.runecraft.osrs.Skill.DEFENCE, com.runecraft.osrs.Skill.RANGED, com.runecraft.osrs.Skill.MAGIC};
+        private final QuestStrikes strikes = new QuestStrikes();
+        private int attacks;
+        /** Game tick the fire shield is down until (each fire bomb drops it for a while, as the slayer demons'). */
+        private long shieldDownUntil;
+        private long gameTick;
+
+        @Override
+        public void onSpawn(DataBossEntity boss) {
+            LIVE.add(boss);
+        }
+
+        @Override
+        public void tick(DataBossEntity boss) {
+            strikes.tick(boss);
+        }
+
+        @Override
+        public void gameTick(DataBossEntity boss, long gameTick) {
+            this.gameTick = gameTick;
+            LIVE.add(boss);
+            if (!(boss.level() instanceof ServerLevel world)) {
+                return;
+            }
+            for (ServerPlayer p : QuestStrikes.players(world)) {
+                if (p.distanceToSqr(boss) <= 24 * 24) {
+                    empower(p);
+                }
+            }
+        }
+
+        /** The Stone of Jas's power on a player fighting the demons in the quest: combat stats held at 255. */
+        static void empower(ServerPlayer p) {
+            QuestsState st = QuestsState.get(p);
+            if (!st.hasFlag(p.getUUID(), "wgs_stone") || st.hasFlag(p.getUUID(), "wgs_demons")) {
+                return;
+            }
+            com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+            boolean first = !st.hasFlag(p.getUUID(), QuestBossRules.STONE_OF_JAS_FLAG);
+            st.setFlag(p.getUUID(), QuestBossRules.STONE_OF_JAS_FLAG);
+            for (com.runecraft.osrs.Skill s : COMBAT) {
+                data.skills().setBoost(s, QuestBossRules.stoneOfJasBoost(data.skills().level(s)));
+            }
+            if (first) {
+                Msg.action(p, "The power of the Stone of Jas surges through you: your combat stats are 255!");
+                com.runecraft.network.ServerNetworking.sync(p);
+            }
+        }
+
+        /**
+         * Once a second: a player still holding the Stone's power with no demon left within 32 blocks loses it (the boosts go back
+         * to none, drained stats included).
+         */
+        static void releaseStonePower(net.minecraft.server.MinecraftServer server) {
+            if (server.getTickCount() % 20 != 0) {
+                return;
+            }
+            for (ServerLevel world : server.getAllLevels()) {
+                for (ServerPlayer p : QuestStrikes.players(world)) { // the self-test's player too
+                    release(p, false);
+                }
+            }
+        }
+
+        /** Takes the Stone's power from {@code p} if no demon is near (or at once with {@code now}); true if it was taken. */
+        static boolean release(ServerPlayer p, boolean now) {
+            QuestsState st = QuestsState.get(p);
+            if (!st.hasFlag(p.getUUID(), QuestBossRules.STONE_OF_JAS_FLAG)) {
+                return false;
+            }
+            if (!now) {
+                for (DataBossEntity d : LIVE) {
+                    if (d.isAlive() && d.level() == p.level() && d.distanceToSqr(p) <= 32 * 32) {
+                        return false;
+                    }
+                }
+            }
+            st.clearFlag(p.getUUID(), QuestBossRules.STONE_OF_JAS_FLAG);
+            com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+            for (com.runecraft.osrs.Skill s : COMBAT) {
+                data.skills().setBoost(s, 0);
+            }
+            Msg.game(p, "The Stone of Jas's power fades from you.");
+            com.runecraft.network.ServerNetworking.sync(p);
+            return true;
+        }
+
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (target != null && ++attacks % QuestBossRules.WGS_DEMON_ATTACKS_PER_BOMB == 0) {
+                fireBomb(boss, target);
+                return AttackDef.idle(AttackType.MAGIC); // the bomb is this turn's attack
+            }
+            return attack;
+        }
+
+        private void fireBomb(DataBossEntity boss, ServerPlayer target) {
+            target.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN,
+                    QuestBossRules.WGS_DEMON_BIND_TICKS * 12, 10, false, true));
+            Msg.red(target, "The tormented demon binds you in flame! Get off the burning tiles!");
+            strikes.add(boss, target.position(), QuestBossRules.WGS_DEMON_BOMB_RADIUS, 0, QuestBossRules.WGS_DEMON_BOMB_MAX,
+                    QuestBossRules.WGS_DEMON_BOMB_TICKS, net.minecraft.core.particles.ParticleTypes.FLAME, com.runecraft.boss.HazardKind.FIRE,
+                    "fire_bomb");
+            shieldDownUntil = gameTick + com.runecraft.osrs.content.slayer.TormentedDemons.SHIELD_DOWN_TICKS;
+        }
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (damage <= 0 || gameTick < shieldDownUntil) {
+                return damage;
+            }
+            String weapon = attacker.getMainHandItem().isEmpty() ? "" : Inv.idOf(attacker.getMainHandItem());
+            if (com.runecraft.osrs.content.slayer.TormentedDemons.pierces(weapon)) {
+                return damage;
+            }
+            return Math.max(1, (int) Math.floor(damage * QuestBossRules.WGS_DEMON_SHIELD));
+        }
+
+        @Override
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            onRemoved(boss);
+        }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            strikes.clear();
+            LIVE.remove(boss);
         }
     }
 
@@ -212,24 +399,52 @@ final class QuestBossScripts {
         }
     }
     /**
-     * Sins of the Father, Vanstrom Klause (wiki): magic attacks, some lowering Attack. He may open with one of his three
-     * specials at any point, then uses one after every 9-12 regular attacks, picked at random but never the same twice in a
-     * row. Only the blisterwood flail hurts him (recoil and Vengeance do nothing). Brought to 0 hitpoints he heals 200, stops
-     * his specials, calls lightning, and his attacks ignore protection prayers.
+     * Sins of the Father, Vanstrom Klause (wiki quest guide): magic blood blasts that heal him for part of what they deal and
+     * that Protect from Magic only halves, and an attack that lowers Attack. He may open with one of his three specials at any
+     * point, then uses one after every 9-12 regular attacks; the first is random, then they follow a set order and none comes
+     * back until all three were used ({@link QuestBossRules#vanstromSpecial}):
+     * <ul>
+     *   <li>"My pets will feast on your corpse!": an acidic bloodveld appears on the side of the arena away from the player and
+     *   walks at them, exploding for 35-50 through any prayer if it reaches them; killed, it leaves an acid pool;</li>
+     *   <li>"Stare into darkness!": the player's tile goes dark and is hit for 40+ unless they step off it;</li>
+     *   <li>"Blood will be my strength!": a 3x3 blood orb that strengthens his blasts through Protect from Magic; luring him into
+     *   it bursts it and hurts him, stepping into it hurts the player.</li>
+     * </ul>
+     * Only the blisterwood flail hurts him (recoil and Vengeance do nothing). Brought to 0 hitpoints he heals 200 and enrages: no
+     * more specials, his blasts ignore protection prayers, and every couple of seconds 10-15 shadows mark tiles around the player
+     * for lightning of up to 40, which only stepping off them avoids. Every dodgeable hit is marked on the floor and the cast bar
+     * ({@link QuestStrikes}).
      */
     static final class Vanstrom implements BossScript {
-        private static final String[] SPECIALS = {"pets", "blood_orb", "stare_into_darkness"};
-        private int sinceSpecial;
-        private int nextSpecial = -1;
-        private String lastSpecial;
         private boolean healed;
         /** The game time a blisterwood hit passed {@link #modifyIncoming}: the one damage the gate lets through. */
         private long approvedAt = Long.MIN_VALUE;
-        private AttackDef piercing;
+        private final QuestStrikes strikes = new QuestStrikes();
+        /** Real attacks until the next special (first: "at any time"), counted in {@link #beforeAttack}. */
+        private int untilSpecial = -1;
+        /** The order's starting special (random) and how many have been used. */
+        private int firstSpecial = -1;
+        private int specialsUsed;
+        /** His next regular attack, picked when the last one was made (chooseAttack runs every Minecraft tick). */
+        private String nextRegular = "blood_blast";
+        /** The acidic bloodveld out now, the player it hunts and where it was last seen. */
+        private java.util.UUID pet;
+        private java.util.UUID petPrey;
+        private net.minecraft.world.phys.Vec3 petLast;
+        /** The blood orb: its centre and the game tick it fades (0: none). */
+        private net.minecraft.world.phys.Vec3 orb;
+        private long orbUntil;
+        private com.runecraft.boss.FloorMarkers.Layer orbFloor;
+        private long gameTick;
+        private long nextLightning;
+
+        /** The bloodveld he calls up with "My pets will feast on your corpse!". */
+        static final String PET = "sotf_acidic_bloodveld";
 
         /**
          * Damage that skipped the blisterwood rule (a ring of recoil or suffering, Vengeance, thrown potions) never reaches
-         * him (wiki), and whatever else brings him to 0 still meets his heal before the second phase.
+         * him (wiki), and whatever else brings him to 0 still meets his heal before the second phase. Melee barely scratches
+         * his acidic bloodveld (wiki: "highly resistant and take reduced damage from melee attacks").
          */
         static void register() {
             com.runecraft.combat.CombatHooks.addMonsterDamageGate((player, target) ->
@@ -238,6 +453,23 @@ final class QuestBossScripts {
             com.runecraft.platform.ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) ->
                     !(entity instanceof DataBossEntity boss && boss.script() instanceof Vanstrom v)
                             || source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY) || !v.rise(boss));
+            com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
+                @Override
+                public int afterRoll(ServerPlayer player, net.minecraft.world.entity.LivingEntity target, AttackType type, int damage) {
+                    if (type.isMelee() && damage > 1 && isPet(target)) {
+                        return 1; // approx: the wiki gives no number for the melee resistance
+                    }
+                    return damage;
+                }
+            });
+        }
+
+        static boolean isPet(net.minecraft.world.entity.Entity e) {
+            if (!(e instanceof net.minecraft.world.entity.LivingEntity living)) {
+                return false;
+            }
+            com.runecraft.combat.MonsterStats stats = com.runecraft.combat.MonsterStats.of(living);
+            return stats.profile() != null && PET.equals(stats.profile().id);
         }
 
         private boolean consumeApproval(DataBossEntity boss) {
@@ -253,7 +485,10 @@ final class QuestBossScripts {
             }
             healed = true;
             boss.setHealth(boss.getMaxHealth() * 200f / boss.trueHitpoints());
-            announce(boss, "Vanstrom Klause drinks deep of the blood around him and rises again!", ChatFormatting.DARK_RED);
+            announce(boss, "Vanstrom Klause drinks deep of the blood around him and rises again! Watch for the shadows of his lightning.",
+                    ChatFormatting.DARK_RED);
+            endOrb();
+            nextLightning = gameTick + 2;
             return true;
         }
 
@@ -266,36 +501,257 @@ final class QuestBossScripts {
             return null;
         }
 
+        /**
+         * His next attack: a blood blast (prayer-piercing here so the script can halve it under Protect from Magic, and leave it
+         * whole in his second phase) or the Attack-lowering one. No side effects: the engine asks every Minecraft tick.
+         */
         @Override
         public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (boss.def() == null) {
                 return null;
             }
+            return named(boss, healed ? "blood_blast" : nextRegular);
+        }
+
+        /** The attack he really makes: counted towards his next special, which takes this turn's place when due. */
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (healed || target == null || boss.def() == null) {
+                return attack;
+            }
+            nextRegular = boss.getRandom().nextInt(4) == 0 ? "weaken" : "blood_blast";
+            if (untilSpecial < 0) {
+                untilSpecial = 1 + boss.getRandom().nextInt(13); // approx: "may use a special attack at any time" at the start
+            }
+            if (--untilSpecial > 0) {
+                return attack;
+            }
+            untilSpecial = 10 + boss.getRandom().nextInt(4); // the special after 9-12 regular attacks
+            if (firstSpecial < 0) {
+                firstSpecial = boss.getRandom().nextInt(QuestBossRules.VANSTROM_SPECIALS.size());
+            }
+            String special = QuestBossRules.vanstromSpecial(firstSpecial, specialsUsed++);
+            switch (special) {
+                case "pets" -> pets(boss, target);
+                case "stare_into_darkness" -> stare(boss, target);
+                default -> bloodOrb(boss, target);
+            }
+            return AttackDef.idle(AttackType.MAGIC); // the special is this turn's attack
+        }
+
+        private void pets(DataBossEntity boss, ServerPlayer target) {
+            if (!(boss.level() instanceof ServerLevel world)) {
+                return;
+            }
+            announce(boss, "Vanstrom Klause: My pets will feast on your corpse!", ChatFormatting.RED);
+            // the side of the arena (north or south of him) farther from the player
+            int side = target.getZ() > boss.getZ() ? -1 : 1;
+            net.minecraft.world.entity.Entity e = null;
+            for (int d = QuestBossRules.VANSTROM_PET_DISTANCE; d >= 2 && e == null; d -= 3) {
+                double z = boss.getZ() + side * d;
+                if (world.noCollision(new net.minecraft.world.phys.AABB(boss.getX() - 0.5, boss.getY(), z - 0.5, boss.getX() + 0.5,
+                        boss.getY() + 2, z + 0.5))) {
+                    e = ChampionOfScabaras.spawn(world, PET, boss.getX(), boss.getY(), z);
+                }
+            }
+            if (e == null) {
+                return;
+            }
+            boss.claimMinion(e);
+            if (e instanceof net.minecraft.world.entity.Mob mob) {
+                mob.setTarget(target);
+            }
+            pet = e.getUUID();
+            petPrey = target.getUUID();
+            petLast = e.position();
+            Msg.red(target, "An acidic bloodveld lopes towards you! Kill it from afar before it reaches you.");
+        }
+
+        private void stare(DataBossEntity boss, ServerPlayer target) {
+            announce(boss, "Vanstrom Klause: Stare into darkness!", ChatFormatting.DARK_PURPLE);
+            target.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.DARKNESS, 50, 0, false, false));
+            // playability: OSRS gives about a tick to step off the tile; here the strike floor, with the tile marked
+            strikes.add(boss, target.position(), 1.0, QuestBossRules.VANSTROM_STARE_MIN, QuestBossRules.VANSTROM_STARE_MAX,
+                    QuestBossRules.VANSTROM_STARE_TICKS, net.minecraft.core.particles.ParticleTypes.SQUID_INK,
+                    com.runecraft.boss.HazardKind.SHADOW, "stare_into_darkness");
+            Msg.red(target, "Darkness gathers on your tile: step off it!");
+        }
+
+        private void bloodOrb(DataBossEntity boss, ServerPlayer target) {
+            if (!(boss.level() instanceof ServerLevel world)) {
+                return;
+            }
+            announce(boss, "Vanstrom Klause: Blood will be my strength!", ChatFormatting.DARK_RED);
+            endOrb();
+            // between him and the player, offset a little: lure him through it (wiki)
+            double a = boss.getRandom().nextDouble() * Math.PI * 2;
+            net.minecraft.world.phys.Vec3 mid = boss.position().add(target.position()).scale(0.5);
+            orb = new net.minecraft.world.phys.Vec3(mid.x + Math.cos(a) * 2, boss.getY(), mid.z + Math.sin(a) * 2);
+            orbUntil = gameTick + QuestBossRules.VANSTROM_ORB_TICKS;
+            orbFloor = com.runecraft.boss.FloorMarkers.show(new com.runecraft.boss.FloorMarkers.Shape(world)
+                    .box(orb, QuestBossRules.VANSTROM_ORB_RADIUS, com.runecraft.boss.HazardKind.BLOOD), boss);
+            Msg.red(target, "A blood orb strengthens Vanstrom's magic! Lure him into it, but don't step in yourself.");
+        }
+
+        private void endOrb() {
+            if (orbFloor != null) {
+                orbFloor.clear();
+            }
+            orbFloor = null;
+            orb = null;
+            orbUntil = 0;
+        }
+
+        private static boolean inOrb(net.minecraft.world.phys.Vec3 orb, net.minecraft.world.entity.Entity e) {
+            return Math.abs(e.getX() - orb.x) <= QuestBossRules.VANSTROM_ORB_RADIUS
+                    && Math.abs(e.getZ() - orb.z) <= QuestBossRules.VANSTROM_ORB_RADIUS && Math.abs(e.getY() - orb.y) <= 2;
+        }
+
+        @Override
+        public void tick(DataBossEntity boss) {
+            strikes.tick(boss);
+        }
+
+        @Override
+        public void gameTick(DataBossEntity boss, long gameTick) {
+            this.gameTick = gameTick;
+            if (!(boss.level() instanceof ServerLevel world)) {
+                return;
+            }
+            tickPet(boss, world);
+            if (orb != null) {
+                world.sendParticles(new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.6f, 0.0f, 0.05f), 1.6f),
+                        orb.x, orb.y + 0.8, orb.z, 8, 0.5, 0.4, 0.5, 0);
+                if (gameTick >= orbUntil) {
+                    endOrb();
+                } else if (inOrb(orb, boss)) {
+                    // lured into his own orb: it bursts and hurts him (wiki: 20+), never past his rise
+                    int dmg = QuestBossRules.VANSTROM_ORB_SELF_MIN
+                            + boss.getRandom().nextInt(QuestBossRules.VANSTROM_ORB_SELF_MAX - QuestBossRules.VANSTROM_ORB_SELF_MIN + 1);
+                    float left = boss.getHealth() - dmg * boss.getMaxHealth() / boss.trueHitpoints();
+                    boss.setHealth(Math.max(boss.getMaxHealth() / boss.trueHitpoints(), left));
+                    announce(boss, "Vanstrom Klause blunders into his blood orb and it bursts over him!", ChatFormatting.GOLD);
+                    endOrb();
+                } else {
+                    for (ServerPlayer p : QuestStrikes.players(world)) {
+                        if (inOrb(orb, p)) {
+                            com.runecraft.combat.CombatHooks.nameAttack("blood_orb", null);
+                            com.runecraft.combat.CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(QuestBossRules.VANSTROM_ORB_PLAYER_MAX + 1));
+                            Msg.red(p, "The blood orb bursts as you step into it!");
+                            endOrb();
+                            break;
+                        }
+                    }
+                }
+            }
+            if (healed && gameTick >= nextLightning && boss.getTarget() instanceof ServerPlayer target && target.isAlive()) {
+                nextLightning = gameTick + QuestBossRules.VANSTROM_LIGHTNING_EVERY_TICKS;
+                lightning(boss, target);
+            }
+        }
+
+        /** A volley of 10-15 shadows: one on the player's tile, the rest around them, each a bolt of up to 40 (wiki). */
+        private void lightning(DataBossEntity boss, ServerPlayer target) {
+            int bolts = QuestBossRules.vanstromBolts(boss.getRandom().nextInt(6));
+            for (int i = 0; i < bolts; i++) {
+                net.minecraft.world.phys.Vec3 at = target.position();
+                if (i > 0) {
+                    int spread = QuestBossRules.VANSTROM_LIGHTNING_SPREAD;
+                    at = new net.minecraft.world.phys.Vec3(Math.floor(at.x) + boss.getRandom().nextInt(spread * 2 + 1) - spread + 0.5, at.y,
+                            Math.floor(at.z) + boss.getRandom().nextInt(spread * 2 + 1) - spread + 0.5);
+                }
+                strikes.add(boss, at, 0.8, 0, QuestBossRules.VANSTROM_LIGHTNING_MAX, 3,
+                        net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK, com.runecraft.boss.HazardKind.SHADOW, "lightning");
+            }
+        }
+
+        private void tickPet(DataBossEntity boss, ServerLevel world) {
+            if (pet == null) {
+                return;
+            }
+            net.minecraft.world.entity.Entity e = world.getEntity(pet);
+            if (e == null || !e.isAlive()) {
+                // killed before it reached anyone: it leaves an acid pool (wiki) // approx: the pool's damage and lifetime
+                if (petLast != null && e != null) {
+                    com.runecraft.boss.Mechanics.addHazard(world, petLast, 4, 15, boss, com.runecraft.boss.HazardKind.ACID);
+                }
+                pet = null;
+                return;
+            }
+            petLast = e.position();
+            ServerPlayer prey = petPrey == null ? null : (ServerPlayer) world.getPlayerByUUID(petPrey);
+            if (prey == null) {
+                for (ServerPlayer p : QuestStrikes.players(world)) {
+                    if (p.getUUID().equals(petPrey)) {
+                        prey = p; // the self-test's player
+                    }
+                }
+            }
+            if (prey == null || !prey.isAlive()) {
+                return;
+            }
+            if (e instanceof net.minecraft.world.entity.Mob mob && mob.getTarget() != prey) {
+                mob.setTarget(prey);
+            }
+            if (e.distanceTo(prey) <= QuestBossRules.VANSTROM_PET_REACH + prey.getBbWidth() / 2) {
+                world.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION, e.getX(), e.getY() + 0.5, e.getZ(), 2, 0.3, 0.3, 0.3, 0);
+                world.sendParticles(net.minecraft.core.particles.ParticleTypes.SNEEZE, e.getX(), e.getY() + 0.5, e.getZ(), 30, 0.8, 0.5, 0.8, 0.05);
+                com.runecraft.combat.CombatHooks.nameAttack("pets", null);
+                com.runecraft.combat.CombatHandler.applyDamage(boss, prey, QuestBossRules.VANSTROM_PET_MIN
+                        + boss.getRandom().nextInt(QuestBossRules.VANSTROM_PET_MAX - QuestBossRules.VANSTROM_PET_MIN + 1));
+                Msg.red(prey, "The acidic bloodveld explodes over you!");
+                pet = null;
+                e.discard();
+            }
+        }
+
+        /**
+         * His blood blast: Protect from Magic halves it, unless his blood orb strengthens it (wiki); in his second phase it
+         * ignores prayers. It heals him for part of what it deals.
+         */
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type, AttackDef attack) {
+            if (attack == null || !"blood_blast".equals(attack.name()) || damage <= 0) {
+                return damage;
+            }
             if (healed) {
-                if (boss.getRandom().nextInt(3) == 0) {
-                    return named(boss, "lightning");
-                }
-                if (piercing == null) {
-                    AttackDef blast = named(boss, "blood_blast");
-                    // approx: typeless in OSRS; here his magic blast that protection prayers no longer stop
-                    piercing = blast == null ? null : blast.special(AttackDef.Special.PRAYER_PIERCING, 0);
-                }
-                return piercing;
+                return damage;
             }
-            if (nextSpecial < 0) {
-                nextSpecial = 1 + boss.getRandom().nextInt(13); // approx: "may use a special attack at any time" at the start
+            int out = damage;
+            if (orb != null) {
+                out = (int) Math.round(damage * QuestBossRules.VANSTROM_ORB_MAGIC_MULTIPLIER);
+            } else if (com.runecraft.combat.CombatHandler.isProtected(com.runecraft.player.Players.data(player), AttackType.MAGIC)) {
+                out = (int) Math.floor(damage * QuestBossRules.VANSTROM_BLAST_PRAYED_SHARE);
             }
-            if (++sinceSpecial >= nextSpecial) {
-                sinceSpecial = 0;
-                nextSpecial = 10 + boss.getRandom().nextInt(4); // after 9-12 regular attacks
-                int pick = boss.getRandom().nextInt(lastSpecial == null ? SPECIALS.length : SPECIALS.length - 1);
-                if (lastSpecial != null && pick >= java.util.Arrays.asList(SPECIALS).indexOf(lastSpecial)) {
-                    pick++;
-                }
-                lastSpecial = SPECIALS[pick];
-                return named(boss, lastSpecial);
+            float heal = (float) (out * QuestBossRules.VANSTROM_BLAST_HEAL_SHARE);
+            if (heal > 0) {
+                boss.heal(heal * boss.getMaxHealth() / boss.trueHitpoints());
             }
-            return named(boss, boss.getRandom().nextInt(4) == 0 ? "weaken" : "blood_blast");
+            return out;
+        }
+
+        @Override
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            onRemoved(boss);
+        }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            strikes.clear();
+            endOrb();
+            if (pet != null && boss.level() instanceof ServerLevel world && world.getEntity(pet) != null) {
+                world.getEntity(pet).discard();
+            }
+            pet = null;
+        }
+
+        /** Self-test: whether he is in his second phase, the strikes he has marked, and whether his bloodveld or orb is out. */
+        boolean selfTestRisen() {
+            return healed;
+        }
+
+        int selfTestStrikes() {
+            return strikes.size();
         }
 
         @Override
@@ -376,23 +832,59 @@ final class QuestBossScripts {
         }
     }
 
+    /**
+     * A quest boss whose every {@code n}th real attack is one named special, its other attacks picked as usual (The Curse of
+     * Arrav: Arrav swings his axe ahead of him every third attack, QuestBossRules.COA_ARRAV_AXE_EVERY). Counted in beforeAttack,
+     * on the attacks it really makes.
+     */
+    static final class EveryNth implements BossScript {
+        private final int n;
+        private final String special;
+        private int attacks;
+
+        EveryNth(int n, String special) {
+            this.n = n;
+            this.special = special;
+        }
+
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (attack == null || boss.def() == null || !QuestBossRules.nthIsSpecial(++attacks, n)) {
+                return attack;
+            }
+            for (AttackDef a : boss.def().attacks) {
+                if (a.name().equals(special)) {
+                    return a;
+                }
+            }
+            return attack;
+        }
+    }
+
     static final class MagicOnly implements BossScript {
         private long lastMessage;
         private int attacks;
 
-        /** Wiki: Surok fights like Vorkath, six regular attacks and then one of his specials as the seventh. */
+        /** His regular attack (no side effects: the engine asks every Minecraft tick). */
         @Override
         public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (boss.def() == null || boss.def().attacks.isEmpty()) {
                 return null;
             }
-            List<AttackDef> all = boss.def().attacks;
-            attacks++;
-            if (attacks % 7 != 0) {
-                return all.get(0);
+            return boss.def().attacks.get(0);
+        }
+
+        /**
+         * Wiki: Surok fights like Vorkath, six regular attacks and then one of his specials as the seventh. Counted here, on the
+         * attacks he really makes (the count used to run in chooseAttack, which the engine calls every tick).
+         */
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (boss.def() == null || boss.def().attacks.size() < 2 || ++attacks % QuestBossRules.SUROK_SPECIAL_EVERY != 0) {
+                return attack;
             }
-            List<AttackDef> specials = all.subList(1, all.size());
-            return specials.isEmpty() ? all.get(0) : specials.get(boss.getRandom().nextInt(specials.size()));
+            List<AttackDef> specials = boss.def().attacks.subList(1, boss.def().attacks.size());
+            return specials.get(boss.getRandom().nextInt(specials.size()));
         }
 
         @Override
@@ -1053,7 +1545,7 @@ final class QuestBossScripts {
             }
         }
 
-        private static net.minecraft.world.entity.Entity spawn(ServerLevel world, String id, double x, double y, double z) {
+        static net.minecraft.world.entity.Entity spawn(ServerLevel world, String id, double x, double y, double z) {
             net.minecraft.world.entity.EntityType<?> type = com.runecraft.registry.ModEntities.typeById(id);
             net.minecraft.world.entity.Entity e = type == null ? null : type.create(world);
             if (e == null) {

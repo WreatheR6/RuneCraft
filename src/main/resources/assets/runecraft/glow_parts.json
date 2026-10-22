@@ -228,6 +228,7 @@
     "moon_gem",
     "frost_tip"
   ],
+  "bmr_drakan_blood_moon": [],
   "body_golem": [
     "core",
     "head"
@@ -415,6 +416,13 @@
   "chronozon": [
     "head",
     "jaw"
+  ],
+  "coa_armoured_zombie": [
+    "head"
+  ],
+  "coa_golem_guard": [
+    "core",
+    "head"
   ],
   "commander_zilyana": [
     "tiara_gem",
@@ -2463,6 +2471,15 @@
   "terrorbird": [
     "eyes",
     "warp_rift"
+  ],
+  "tfd_augur_metzli": [
+    "head"
+  ],
+  "tfd_emissary_brawler": [
+    "head"
+  ],
+  "tfd_emissary_enforcer": [
+    "head"
   ],
   "the_hueycoatl": [
     "eyes"

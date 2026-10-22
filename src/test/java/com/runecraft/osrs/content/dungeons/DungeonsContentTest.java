@@ -800,7 +800,8 @@ class DungeonsContentTest {
     void underGroundNpcsStandInCarvedAir() {
         Map<String, String> dungeonOf = Map.of("zooknock", "dng_ape_atoll_dungeon", "bunkwicket", "dng_ape_atoll_dungeon",
                 "waymottin", "dng_ape_atoll_dungeon", "bardur", "dng_waterbirth_dungeon", "quest_viggora_3", "dng_edgeville_dungeon",
-                "vannaka", "dng_edgeville_dungeon");
+                "vannaka", "dng_edgeville_dungeon",
+                "movario", "dng_lumbridge_swamp_caves");
         for (Map.Entry<String, String> e : dungeonOf.entrySet()) {
             com.runecraft.osrs.content.NpcDef npc = com.runecraft.osrs.content.ContentRegistry.npc(e.getKey());
             assertNotNull(npc, e.getKey());
@@ -819,6 +820,58 @@ class DungeonsContentTest {
         // Waterbirth is multicombat underground only: no surface multi box around the island any more.
         assertTrue(com.runecraft.osrs.MultiCombat.AROUND.stream().noneMatch(a -> a.place().equals("waterbirth_island")));
         assertTrue(com.runecraft.osrs.MultiCombat.UNDERGROUND.contains("dng_waterbirth_dungeon"));
+    }
+
+    /**
+     * Quest spots solved only underground can be reached on carved floor: While Guthix Sleeps' Chasm of Tears and Ancient
+     * Guthixian Temple in the Lumbridge Swamp Caves, Dragon Slayer II's tomb in the Shayzien Crypts (top and bottom floors).
+     * The objective counts from the spot's chunk centre, within its radius (6 for the reaches, 8 for the tomb's puzzle).
+     */
+    @Test
+    void undergroundQuestSpotsLieOverCarvedFloor() {
+        Object[][] spots = {{"wgs_light_creature", "dng_lumbridge_swamp_caves", 23, 6}, {"wgs_temple", "dng_lumbridge_swamp_caves", 23, 6},
+                {"ds2_kourend_tomb", "dng_shayzien_crypts", 41, 8}, {"ds2_kourend_tomb", "dng_shayzien_crypts", 17, 8}};
+        for (Object[] s : spots) {
+            PlaceDef place = com.runecraft.osrs.content.ContentRegistry.place((String) s[0]);
+            assertNotNull(place, (String) s[0]);
+            int cx = place.blockX();
+            int cz = place.blockZ();
+            int r = (Integer) s[3];
+            Set<Long> air = walkable(dungeon((String) s[1]), (Integer) s[2]);
+            int inside = 0;
+            for (int x = cx - r; x <= cx + r; x++) {
+                for (int z = cz - r; z <= cz + r; z++) {
+                    if ((x - cx) * (x - cx) + (z - cz) * (z - cz) <= (r - 1) * (r - 1) && air.contains(key(x, z))) {
+                        inside++;
+                    }
+                }
+            }
+            assertTrue(inside >= 4, s[0] + " near " + cx + "," + s[2] + "," + cz + ": " + inside + " carved floor blocks in reach");
+        }
+        // the light creatures and the temple are separate stops: the temple's objective can't be reached from the passage
+        PlaceDef chasm = com.runecraft.osrs.content.ContentRegistry.place("wgs_light_creature");
+        PlaceDef temple = com.runecraft.osrs.content.ContentRegistry.place("wgs_temple");
+        assertTrue(Math.abs(chasm.blockX() - temple.blockX()) + Math.abs(chasm.blockZ() - temple.blockZ()) >= 16);
+    }
+
+    /**
+     * Druidic Ritual's Cauldron of Thunder stands on its OSRS tile (2893, 9831) in Taverley Dungeon, reached on foot from the
+     * entrance without the dusty key: the blue dragons' cavern stays behind its gate, and a wall of rock parts the two.
+     */
+    @Test
+    void cauldronOfThunderOnItsTileWithoutTheDustyKey() {
+        Dungeons.Dungeon taverley = dungeon("dng_taverley_dungeon");
+        int cx = StructureDef.bx(2893);
+        int cz = StructureDef.bz(9831 - 6400);
+        assertTrue(taverley.structure().ops().stream().anyMatch(op -> op.block() != null && op.block().contains("water_cauldron")
+                && op.x1() == cx && op.z1() == cz), "the cauldron on its tile");
+        Set<Long> air = walkable(taverley, 21);
+        Set<Long> fromEntrance = reach(air, StructureDef.bx(2872), StructureDef.bz(3398));
+        assertTrue(fromEntrance.contains(key(cx + 1, cz)), "the cauldron is reached from the entrance");
+        assertFalse(fromEntrance.contains(key(StructureDef.bx(2872) + 42, StructureDef.bz(3398) - 46)),
+                "the blue dragons stay behind the dusty-key gate");
+        com.runecraft.osrs.FreeQuestObjectives.Spot spot = com.runecraft.osrs.FreeQuestObjectives.spots(com.runecraft.osrs.Quest.DRUIDIC_RITUAL, 2).get(0);
+        assertTrue(spot.contains(2893, 9831 - 6400, true) && !spot.contains(2893, 9831 - 6400, false));
     }
 
     /** The Mort'ton catacombs' key doors stand in their halls, one per metal, each guarding a crypt with its shades. */

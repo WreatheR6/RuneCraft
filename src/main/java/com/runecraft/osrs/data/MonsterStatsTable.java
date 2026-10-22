@@ -1149,7 +1149,7 @@ public final class MonsterStatsTable {
         maxHit("possessed_king_roald", "punch", 3); // was 8
         // Arrav
         row("arrav", 339, 600, 220, 220, 150, 150, 1, 5, 80, 80, 40, 160, 80, 100, 0, 0, "undead");
-        maxHit("arrav", "zombie_sword", 30); // was 22
+        maxHit("arrav", "axe", 30);
         // Gadderanks
         row("gadderanks", 35, 20, 20, 20, 70, 1, 1, 4, 10, 10, 10, 10, 10, 0, 0, 0);
         maxHit("gadderanks", "sword", 3); // was 5

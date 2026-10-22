@@ -71,7 +71,7 @@ public final class QuestStepWalk {
             }
         }
         for (String item : t.unlessItems) {
-            if (p.carried(item) > 0) {
+            if (p.carried(item) >= t.unlessCount(item)) {
                 return "switched off while carrying " + item;
             }
         }

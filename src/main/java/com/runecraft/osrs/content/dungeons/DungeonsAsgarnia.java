@@ -99,11 +99,15 @@ final class DungeonsAsgarnia {
         // The blue dragons' steps: east of the blue dragons' cavern, under the upper level, up to Eve's cavern.
         c.hall(ox + 60, bz(3415), bx(2966), bz(3415), f, 3, 4);
         c.stairs(bx(2966), bz(3415), 'w', f, top, 3, 5);
+        // The Cauldron of Thunder's room (Druidic Ritual) on its OSRS tile (2893, 9831), north of the entrance and reached without
+        // the dusty key: a passage north from beside the lesser demons' cage, clear of the blue dragons' cavern to its south.
+        c.hallZ(ox + 8, oz - 42, ox + 36, oz - 68, f, 3, 4);
+        c.room(bx(2893) - 6, bz(3431) - 6, bx(2893) + 6, bz(3431) + 2, f, 5); // a wall of rock to the blue dragons
         c.carve();
         // The dusty-key gate before the blue dragons.
         gate(c, ox + 37, oz - 20, f, 'z');
-        // The Cauldron of Thunder (Druidic Ritual) in the corridor before the gate, OSRS tile (2890, 9806) here. // approx
-        c.set(ox + 38, f + 1, oz - 16, mc("water_cauldron[level=3]"));
+        // The Cauldron of Thunder (Druidic Ritual) on its OSRS tile (2893, 9831).
+        c.set(bx(2893), f + 1, bz(3431), mc("water_cauldron[level=3]"));
         // The 70 Agility obstacle pipe from the chaos druids into the blue dragons' cavern, past the gate.
         c.shortcut("taverley_dungeon_pipe", ox + 42, oz - 7, f, ox + 42, oz - 31, f);
         // The lesser demons' cage (iron bars).

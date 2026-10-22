@@ -11,7 +11,6 @@ import com.runecraft.osrs.content.minigames.VarrockMuseum.CrateLoot;
 import com.runecraft.osrs.content.minigames.VarrockMuseum.KudosReward;
 import com.runecraft.osrs.content.minigames.VarrockMuseum.Question;
 import com.runecraft.osrs.content.minigames.VarrockMuseum.QuestKudos;
-import com.runecraft.player.Players;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.quest.QuestScripts;
 import com.runecraft.skill.XpService;
@@ -221,21 +220,14 @@ final class MuseumService {
         return any;
     }
 
-    /** An antique lamp: XP in the player's lowest skill at or above {@code minLevel}. // approx: no lamp item */
+    /**
+     * An antique lamp (CommonItems, {@link VarrockMuseum#lampItem}): the player rubs it to choose a skill of at least
+     * {@code minLevel} (the quests module's lamp choice).
+     */
     private static void lamp(ServerPlayer p, int xp, int minLevel) {
-        Skill best = null;
-        int bestLevel = Integer.MAX_VALUE;
-        for (Skill s : Skill.values()) {
-            int l = Players.data(p).skills().currentLevel(s);
-            if (l >= minLevel && l < bestLevel) {
-                best = s;
-                bestLevel = l;
-            }
-        }
-        if (best != null) {
-            XpService.add(p, best, xp);
-            Msg.game(p, "You rub the antique lamp and gain " + xp + " " + best.displayName() + " XP.");
-        }
+        Inv.give(p, VarrockMuseum.lampItem(xp), 1);
+        Msg.game(p, "You receive an antique lamp: rub it for " + String.format(java.util.Locale.ROOT, "%,d", xp)
+                + " XP in a skill of level " + minLevel + " or above.");
     }
 
     static void clerk(ServerPlayer p) {

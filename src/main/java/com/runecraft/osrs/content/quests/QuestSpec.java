@@ -319,9 +319,19 @@ public final class QuestSpec {
         return this;
     }
 
-    /** Skip this trigger if the player carries any of these items. */
+    /**
+     * Skip this trigger if the player carries any of these items: "item", or "item:count" to skip only once they carry that
+     * many (Legends' Quest's lost crystal pieces are found again one at a time until the player holds three).
+     */
     public QuestSpec unless(String... items) {
-        cur().unlessItems.addAll(List.of(items));
+        Map<String, Integer> counted = new LinkedHashMap<>();
+        parse(counted, items);
+        counted.forEach((item, n) -> {
+            cur().unlessItems.add(item);
+            if (n > 1) {
+                cur().unlessCounts.put(item, n);
+            }
+        });
         return this;
     }
 
@@ -497,6 +507,8 @@ public final class QuestSpec {
         public final List<String> tools = new ArrayList<>();
         public final Map<String, Integer> give = new LinkedHashMap<>();
         public final List<String> unlessItems = new ArrayList<>();
+        /** How many of an {@link #unlessItems} item switch the trigger off, when more than one ("item:3"). */
+        public final Map<String, Integer> unlessCounts = new LinkedHashMap<>();
         public final List<String> setFlags = new ArrayList<>();
         /** One of these is set on firing, picked per player ({@link QuestSpec#flagOneOf}). */
         public final List<String> flagOneOf = new ArrayList<>();
@@ -536,6 +548,11 @@ public final class QuestSpec {
         /** Key of this trigger's saved kill counter: quest, stage, position in the stage and creature. */
         public String counterKey(String questId, int indexInStage) {
             return questId + ":" + stage + ":" + indexInStage + ":" + target;
+        }
+
+        /** How many of an {@link #unlessItems} item the player must carry for it to switch the trigger off (1 by default). */
+        public int unlessCount(String item) {
+            return unlessCounts.getOrDefault(item, 1);
         }
 
         /** Whether the trigger ends the quest. */

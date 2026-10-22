@@ -40,7 +40,6 @@ final class MisthalinMoreQuests {
         b.place("demon_temple_storm", "Ruins of Uzer temple", 3480, 3085, PlaceDef.Style.CAVE);
         b.spot("rat_burgiss", "Rat Burgiss's camp", 3267, 3335);
         b.place("chaos_altar_surok", "Surok's lair", 3205, 3460, PlaceDef.Style.CAVE);
-        b.place("varrock_sewers_arrav", "Varrock sewers", 3237, 3459, PlaceDef.Style.CAVE);
         b.place("burgh_de_rott", "Burgh de Rott", 3495, 3210, PlaceDef.Style.RUINS);
         b.spot("falador_temple_knights", "Falador Temple Knight training ground", 2996, 3373);
         b.place("dorgesh_kaan_mine", "Lumbridge cellar cave", 3230, 3215, PlaceDef.Style.CAVE);
@@ -291,7 +290,7 @@ final class MisthalinMoreQuests {
         b.items(s -> s.add("kharedsts_memoirs", "Kharedst's memoirs", com.runecraft.osrs.ItemDef.Kind.SIMPLE, "book", 0x5A3A6A).value(0)
                 .stack(1).examine("A book that can teleport you around Great Kourend."));
         b.quest("client_of_kourend", "Client of Kourend", Difficulty.NOVICE, 1)
-                .reqQuest("x_marks_the_spot").xp(Skill.HITPOINTS, 500).xp(Skill.CRAFTING, 500).reward("kharedsts_memoirs")
+                .reqQuest("x_marks_the_spot").reward("kharedsts_memoirs") // and two 500 XP antique lamps (QuestLamps)
                 .stage("I can start this quest by speaking to Veos on the Port Sarim docks. (Requires X Marks the Spot.)")
                 .talk("veos_port_sarim").give("enchanted_scroll").travel("great_kourend")
                 .say("My client wants opinions on the five houses of Great Kourend. Take this enchanted scroll and ask around. *You sail to Great Kourend.*")
@@ -371,7 +370,7 @@ final class MisthalinMoreQuests {
         b.item("doctors_hat", "Doctor's hat", "cowl", 0xF0F0F2, "A hat that makes you look medical.");
         b.npc("quest_hild", "Hild", "BURTHORPE", 6, -6, 0xE8C0BA, 0x5A2A6A, 0x3A1A4A, 0x8A6A3E);
         b.quest("a_tail_of_two_cats", "A Tail of Two Cats", Difficulty.INTERMEDIATE, 2)
-                .reqQuest("icthlarins_little_helper").xp(Skill.COOKING, 2500).xp(Skill.CRAFTING, 2500)
+                .reqQuest("icthlarins_little_helper") // two 2,500 XP antique lamps, any skill of level 30+ (QuestLamps)
                 .stage("I can start this quest by speaking to Unferth in Burthorpe. (Requires Icthlarin's Little Helper.)")
                 .talk("unferth").say("My cat Bob has run off! He's no ordinary cat... he sees things. Find him, please.")
                 // OSRS: Hild enchants the catspeak amulet with 5 death runes so you can talk to Bob.
@@ -393,29 +392,127 @@ final class MisthalinMoreQuests {
                 .talk("bob_the_cat").say("Meow. *In a vision, Bob shows you a mighty warrior, Robert the Strong, and a dragon named Galvek. Strange...*");
     }
 
+    /**
+     * The Golem, after the wiki walkthrough and quest-helper's steps: the golem repaired with soft clay, the letter outside the
+     * ruins and the strange implement and black mushroom in the temple, Elissa at the Digsite and Varmen's notes in the Exam
+     * Centre, the curator's pocket and display case 30, the four statuettes turned to face the temple doors
+     * ({@link #GOLEM_STATUETTES}), Thammaron's remains, and the golem reprogrammed with a program written in black mushroom ink
+     * with a phoenix quill.
+     */
     private static void golem(QuestBook b) {
         b.npc("clay_golem", "Clay golem", "uzer_golem_room", 0, 0, 0xA87A5A, 0x8A6A4A, 0x6A4A3A, 0xA06A40);
-        b.npc("elissa", "Elissa", "uzer", 3, 3, 0xF0C8B3, 0x6A6AA1, 0x4A4A7B, 0xC08A3D);
+        // wiki: Elissa is in the north-east of the Digsite (quest-helper 3378, 3428)
+        b.npcAt("elissa", "Elissa", 3378, 3428, 0xF0C8B3, 0x6A6AA1, 0x4A4A7B, 0xC08A3D);
+        b.spot("uzer_temple", "Temple stairs, Uzer", 3493, 3090); // the stairs behind the golem (the temple is an instance)
+        b.spot("golem_exam_bookcase", "Exam Centre bookcase", 3367, 3332); // the south-eastern bookcase
+        // display case 30 is upstairs in OSRS (3257, 3453, floor 1) // approx: on the museum's ground floor here
+        b.spot("golem_display_case", "Varrock Museum display case 30", 3257, 3453);
         b.item("statuette", "Statuette", "statue", 0xC0A062, "A statuette from the Varrock Museum.");
+        b.item("golem_letter", "Letter", "note", 0xE8DCB8, "A letter to Elissa about the expedition to Uzer.");
+        b.item("strange_implement", "Strange implement", "key", 0x8A7A5A, "A strange implement from the temple of Uzer.");
+        b.item("black_mushroom", "Black mushroom", "secondary", 0x2A2A2A, "A black mushroom from the temple of Uzer.");
+        b.item("varmens_notes", "Varmen's notes", "book", 0x8A6A4A, "Varmen's notes on the expedition to Uzer.");
+        b.item("display_cabinet_key", "Display cabinet key", "key", 0xC0A040, "The key to the Varrock Museum's display cabinets.");
+        b.item("black_mushroom_ink", "Black mushroom ink", "vial", 0x1A1A1A, "Ink ground from a black mushroom.");
+        b.item("phoenix_quill_pen", "Phoenix quill pen", "note", 0xE06020, "A quill pen made from a phoenix feather.");
+        b.item("golem_program", "Golem program", "note", 0xE8DCB8, "A new program for the golem: its task is done.");
         b.quest("the_golem", "The Golem", Difficulty.INTERMEDIATE, 1)
                 .req(Skill.CRAFTING, 20).req(Skill.THIEVING, 25).xp(Skill.CRAFTING, 1000).xp(Skill.THIEVING, 1000)
                 .stage("I can start this quest by speaking to the clay golem in the ruins of Uzer. (Requires 20 Crafting, 25 Thieving.)")
                 .talk("clay_golem").say("I must protect Uzer from the demon Thammaron! But I am cracked. Repair me with soft clay.")
                 .stage("I should repair the golem with 4 soft clay.")
-                .talk("clay_golem").take("clay:4").say("I am whole! Now I must find the demon. The archaeologist Elissa knows of Uzer's history.")
-                .stage("I should ask Elissa about the demon of Uzer.")
-                .talk("elissa").say("Thammaron was defeated long ago. A statuette in the Varrock Museum opens the throne room. Curator Haig Halen has it.")
-                .stage("I should get the statuette from the Varrock Museum. Curator Haig Halen keeps the display case key on him.")
-                .talk("curator_haig_halen").reqSkill(Skill.THIEVING, 25).give("statuette")
-                .say("The Uzer statuette? Certainly not, it's a priceless exhibit!",
-                        "* While he isn't looking, you pick his pocket for the display case key and take the statuette.")
-                .missing("The Uzer statuette? Certainly not! *He pats the key in his pocket.* (Requires 25 Thieving.)")
-                .stage("I should open the throne room and give the golem a new program so it can rest.")
-                .talk("clay_golem").take("statuette")
-                .say("* You place the statuette in the alcove and the throne room opens. Inside lies the demon's skeleton.",
-                        "* You write a new program for the golem: 'Your task is done.'")
-                .stage("I should tell the golem its task is done.")
-                .talk("clay_golem").say("Thammaron is dead and my task is complete. I may rest at last. Thank you.");
+                .talk("clay_golem").take("soft_clay:4")
+                .say("* You press the soft clay into the golem's cracks.", "I am whole! Now I must destroy the demon Thammaron.",
+                        "> How do I open the portal to the demon?",
+                        "The four statuettes in the temple must be turned to the correct pattern. But I do not know it.")
+                .missing("I am cracked. Use soft clay on me: four pieces will mend me.")
+                .stage("I should find out how to open the portal: look around the ruins and the temple behind the golem, and ask the "
+                        + "archaeologist Elissa at the Digsite.")
+                .reach("uzer", 3).stay().unless("golem_letter").unlessFlag("golem_elissa")
+                .give("golem_letter").say("* By the ruins lies a letter to Elissa: an expedition to Uzer was abandoned when the Digsite "
+                        + "opened near Varrock.")
+                .reach("uzer_temple", 3).stay().unless("strange_implement").give("strange_implement", "black_mushroom")
+                .say("* You climb down into the temple. Black mushrooms grow by the entrance; you pick one.",
+                        "* In the north-western corner lies a strange implement. Four alcoves stand by the great doors: one is empty.")
+                .talk("elissa").stay().need("golem_letter").unlessFlag("golem_elissa").flag("golem_elissa")
+                .say("> I found this letter in the ruins of Uzer.", "My late husband Varmen led that expedition. His notes should still be "
+                        + "in the Exam Centre: try the bookcase in the south-east corner.")
+                .reach("golem_exam_bookcase", 3).stay().needFlag("golem_elissa").unless("varmens_notes")
+                .give("varmens_notes").say("* In the south-eastern bookcase you find Varmen's notes. He writes of the golems and the great city of "
+                        + "Uzer, and of a statuette he took from the temple; the others, he says, all looked upon its doors.")
+                .talk("elissa").need("varmens_notes")
+                .say("> Varmen took a statuette from the temple. Where did it go?", "His finds were sold to the Varrock Museum. Ask "
+                        + "Curator Haig Halen.")
+                .missing("?!golem_elissa|Uzer? I'm afraid I don't know much about it.",
+                        "?golem_elissa|Have you found Varmen's notes? The bookcase in the south-east corner of the Exam Centre.")
+                .stage("I should get the statuette from the Varrock Museum. Curator Haig Halen keeps the display cabinet key on him.")
+                .talk("curator_haig_halen").stay().unlessFlag("golem_curator").flag("golem_curator")
+                .say("> I'm looking for a statuette from Uzer.", "The Uzer statuette? Certainly not, it's a priceless exhibit!")
+                .talk("curator_haig_halen").stay().needFlag("golem_curator").unless("display_cabinet_key", "statuette")
+                .reqSkill(Skill.THIEVING, 25).give("display_cabinet_key")
+                .say("* While he isn't looking, you pick his pocket: a display cabinet key.")
+                .missing("Hmm? *He pats the key in his pocket.* (Pickpocketing him needs 25 Thieving.)")
+                .reach("golem_display_case", 3).need("display_cabinet_key").give("statuette")
+                .say("* You unlock display case 30 and take the Uzer statuette.")
+                .missing("* Display case 30 is locked. The curator keeps the key.")
+                .stage("I should open Thammaron's throne room: put the statuette in the empty alcove in the temple of Uzer and turn the "
+                        + "statuettes to the right pattern.")
+                .puzzle("uzer_temple", GOLEM_STATUETTES).stay().unlessFlag("golem_portal").take("statuette").flag("golem_portal")
+                .say("* The statuettes lock into place and the great doors swing open.")
+                .reach("uzer_temple", 3).needFlag("golem_portal")
+                .say("* You step through the portal into the throne room. On his throne lie the remains of Thammaron: the demon died of his "
+                        + "wounds long ago.")
+                .stage("I should tell the golem the demon is dead. If it won't believe me, I can reprogram it: the strange implement opens "
+                        + "its head, and a program written on papyrus with a phoenix quill in black mushroom ink will set its mind at rest.")
+                .talk("clay_golem").stay().unlessFlag("golem_told").flag("golem_told")
+                .say("> Thammaron is dead. He died of his wounds long ago.", "Impossible! My task is to destroy him. Until it is done, I cannot rest.")
+                .reach("uzer", 3).stay().needFlag("golem_told").unless("black_mushroom_ink", "phoenix_quill_pen", "golem_program")
+                .need("pestle_and_mortar").take("black_mushroom", "vial").give("black_mushroom_ink")
+                .say("* You grind the black mushroom into the vial: black mushroom ink.")
+                .reach("uzer", 3).stay().needFlag("golem_told").unless("phoenix_quill_pen", "golem_program").need("black_mushroom_ink")
+                .take("phoenix_feather").give("phoenix_quill_pen")
+                .say("* You dip the phoenix feather in the ink: a phoenix quill pen.")
+                .reach("uzer", 3).stay().needFlag("golem_told").unless("golem_program").need("phoenix_quill_pen")
+                .take("papyrus", "black_mushroom_ink").give("golem_program")
+                .say("* With the quill you write a new program on the papyrus: 'Thammaron is dead. Your task is done.'")
+                .talk("clay_golem").needFlag("golem_told").need("strange_implement").take("golem_program")
+                .say("* You open the golem's head with the strange implement and put the new program inside.",
+                        "Thammaron is dead and my task is complete. I may rest at last. Thank you.")
+                .missing("?golem_told|My task is to destroy Thammaron. Until it is done, I cannot rest.");
+    }
+
+    /**
+     * The Golem (wiki walkthrough): with the statuette back in the empty alcove, all four statuettes must be turned to face the
+     * temple's double doors to the north. Each turn of a statuette moves it a quarter clockwise; they can be turned in any
+     * order. // approx: where each statuette starts facing (OSRS: fixed); here drawn per player
+     */
+    static final QuestPuzzle GOLEM_STATUETTES = golemStatuettes();
+
+    private static QuestPuzzle golemStatuettes() {
+        String[] names = {"north-west", "south-west", "north-east", "south-east"};
+        String[] facing = {"north", "east", "south", "west"};
+        // starting facings (0 north, 1 east, 2 south, 3 west): the museum's statuette (south-east) is never already right
+        int[][] starts = {{3, 2, 3, 3}, {0, 3, 2, 3}, {2, 0, 3, 2}, {3, 3, 0, 1}, {1, 0, 3, 3}, {0, 2, 2, 3}}; // at most 5 turns
+        QuestPuzzle.Builder b = QuestPuzzle.builder("golem_statuettes").room("alcoves");
+        for (int[] start : starts) {
+            List<String> prompt = new java.util.ArrayList<>();
+            prompt.add("* You set the statuette in the empty alcove. Four statuettes stand before the great double doors to the north.");
+            StringBuilder now = new StringBuilder("* They face: ");
+            List<Integer> turns = new java.util.ArrayList<>();
+            for (int i = 0; i < 4; i++) {
+                now.append(i == 0 ? "" : ", ").append(names[i]).append(' ').append(facing[start[i]]);
+                for (int t = 0; t < (4 - start[i]) % 4; t++) {
+                    turns.add(i);
+                }
+            }
+            prompt.add(now + ".");
+            prompt.add("* Each turn moves a statuette a quarter clockwise. Turn them to the pattern that opens the doors.");
+            b.variant(null).prompt(prompt.toArray(String[]::new))
+                    .options("Turn the north-west statuette", "Turn the south-west statuette", "Turn the north-east statuette",
+                            "Turn the south-east statuette")
+                    .anyOrder(turns.stream().mapToInt(Integer::intValue).toArray());
+        }
+        return b.failLines("* The statuettes grind round to where they started. The doors stay shut.").build();
     }
 
     private static void shadowOfTheStorm(QuestBook b) {
@@ -430,7 +527,8 @@ final class MisthalinMoreQuests {
                 .drops(Drop.always("bones")).size(1.0f, 2.4f, 1.0f).at("demon_temple_storm").arena(10, "lava"));
         b.npcAt("father_reen_al_kharid", "Father Reen", 3271, 3159, 0xE0B8AA, 0x2A2A2E, 0x1A1A20, 0x6A6A6C); // cache tile
         b.quest("shadow_of_the_storm", "Shadow of the Storm", Difficulty.INTERMEDIATE, 1)
-                .reqQuest("DEMON_SLAYER", "the_golem").req(Skill.CRAFTING, 30).xp(Skill.STRENGTH, 10000).reward("darklight")
+                .reqQuest("DEMON_SLAYER", "the_golem").req(Skill.CRAFTING, 30).reward("darklight")
+                // 10,000 XP in a combat skill other than Prayer: the player picks (QuestLamps)
                 .stage("I can start this quest by speaking to Father Reen south of the Al Kharid bank. (Requires Demon Slayer, The Golem, 30 Crafting.)")
                 .talk("father_reen_al_kharid").say("A cult in Uzer plans to summon the demon Agrith-Naar! Your Silverlight could stop it.",
                         "Meet me in the ruins of Uzer.")
@@ -467,10 +565,10 @@ final class MisthalinMoreQuests {
     private static void defenderOfVarrock(QuestBook b) {
         b.npc("captain_rovin", "Captain Rovin", "varrock_palace", 3, -3, 0xE8C0BA, 0xC0C0CA, 0x2A3A6C, 0x8A8A8D);
         b.npcAt("elias_white_dov", "Elias White", 3283, 3501, 0xE0B89B, 0x6A6A8B, 0x4A4A5C, 0x2A2A2C); // the Jolly Boar Inn
-        b.boss(BossDef.of("arrav", "Arrav").level(159).stats(180, 130, 130, 120, 1, 1).speed(4)
-                .defenceBonus(60, 60, 60, 20, 60)
-                .attack(AttackDef.of("zombie_sword", AttackType.SLASH, 22, 2.5, 10))
-                .drops(Drop.always("bones")).skin(0x8AA07B, 0xA08A3A, 0x6A5A2A, 0x5A6A4A).at("varrock_sewers_arrav").arena(10, "crypt"));
+        // OSRS fights no Arrav here (wiki, Arrav: an NPC in Defender of Varrock; his fight is The Curse of Arrav's): he is met in
+        // Zemouregal's base, whose trapdoor ends the Jolly Boar Inn's trail (quest-helper 3343, 3515; the base is an instance)
+        b.spot("dov_zemouregals_base", "Zemouregal's base", 3343, 3515);
+        b.npcAt("arrav_dov", "Arrav", 3345, 3517, 0x8AA07C, 0xA08A3B, 0x6A5A2B, 0x5A6A4B);
         b.quest("defender_of_varrock", "Defender of Varrock", Difficulty.EXPERIENCED, 2)
                 .req(Skill.SMITHING, 55).req(Skill.HUNTER, 52)
                 .reqQuest("shield_of_arrav", "temple_of_ikov", "below_ice_mountain", "family_crest", "what_lies_below", "ROMEO_AND_JULIET", "DEMON_SLAYER")
@@ -479,15 +577,40 @@ final class MisthalinMoreQuests {
                 .stage("I can start this quest by speaking to Elias White in the Jolly Boar Inn. (Requires Shield of Arrav, What Lies Below and more.)")
                 .talk("elias_white_dov").say("Zombies are rising beneath Varrock! An ancient hero, Arrav, leads them, raised by Zamorakians.",
                         "Captain Rovin at the palace must be warned.")
-                .stage("I should go into the sewers and confront the undead hero Arrav.")
+                .stage("I should follow the trail from the Jolly Boar Inn with Elias White and find out what Zemouregal is planning.")
                 .reach("jolly_boar_inn", 8).stay().unlessFlag("dov_trail").flag("dov_trail")
                 .say("* With Elias White you follow the trail of plants, rocks and bushes to a trapdoor, collecting a grubby key on the way.")
-                .kill("arrav").needFlag("dov_trail").flag("dov_arrav").say("* Arrav, hero of Avarrocka, is freed from the Zamorakian curse. His spirit thanks you.")
+                // approx: the armoured zombies killed for their red mist (3 bottles before Arrav's door, 3 after) are not modelled
+                .reach("dov_zemouregals_base", 8).stay().needFlag("dov_trail").unlessFlag("dov_base").flag("dov_base")
+                .say("* Down the trapdoor, Elias spies Zemouregal's zombie army from a balcony. You bottle the red mist the armoured "
+                        + "zombies leave behind and open the west door.")
+                .talk("arrav_dov").needFlag("dov_base").flag("dov_arrav")
+                .say("> Arrav? The hero of Avarrocka?", "I am... while his attention is elsewhere. Zemouregal raised me, and I cannot "
+                                + "disobey him.", "He means to take Varrock with this army. Warn your captain, and find the shield I once bore.",
+                        "* Arrav strides away at Zemouregal's call. Further in, past more zombies, you see the whole army from a second balcony.")
+                .missing("* The trail of plants, rocks and bushes from the Jolly Boar Inn leads to a trapdoor.")
                 .stage("I should report to Captain Rovin.")
-                .reach("camdozaal", 10).stay().needFlag("dov_arrav").unlessFlag("dov_shield").take("chaos_core").flag("dov_shield")
-                .say("* Ramarno lets you use the Sacred Forge: you imbue barronite with a chaos core and forge a shield.")
-                .missing("* The Sacred Forge needs a chaos core to imbue the barronite.")
-                .talk("captain_rovin").needFlag("dov_shield").missing("Elias told me what you found. Ramarno in Camdozaal could forge a shield against Arrav.")
+                // wiki quick guide: Rovin, the Sacred Forge in Camdozaal (a chaos core used on a barronite deposit), Rovin's Shield of
+                // Arrav, Reldo's list of elders and the census, and the true descendant of Avarrocka's founder
+                .talk("captain_rovin").stay().needFlag("dov_arrav").unlessFlag("dov_rovin").flag("dov_rovin")
+                .say("An army of zombies, led by Arrav himself? Then we need the Shield of Arrav, and it lies broken in the museum.",
+                        "Ramarno keeps the Sacred Forge in the ruins of Camdozaal. If anyone can restore it, he can.")
+                .reach("camdozaal", 10).stay().needFlag("dov_rovin").unlessFlag("dov_shield").take("chaos_core", "barronite_deposit")
+                .flag("dov_shield")
+                .say("* Ramarno agrees to help. You use the chaos core on a barronite deposit and the imbued barronite on the Sacred Forge.")
+                .missing("* The Sacred Forge needs imbued barronite: a chaos core used on a barronite deposit.")
+                .talk("captain_rovin").stay().needFlag("dov_shield").unlessFlag("dov_restored").flag("dov_restored")
+                .say("The shield is whole again! But Arrav cast it to the son of Avarrocka's founder: only his true descendant can wield it.",
+                        "Reldo keeps the old records in the palace library.")
+                .talk("reldo").stay().needFlag("dov_restored").unlessFlag("dov_reldo").flag("dov_reldo")
+                .say("The founders of Avarrocka? The list of elders is in those scrolls by the table, and the census is beside them.",
+                        "* The list of elders and the census point to one family still in Varrock: the Fitzharmons.")
+                .talk("dimintheis").stay().needFlag("dov_reldo").unlessFlag("dov_descendant").flag("dov_descendant")
+                .say("> I need your help with the zombie invasion.", "A Fitzharmon, the heir of Avarrocka's founder? Then give me that shield.",
+                        "* Dimintheis raises the Shield of Arrav in the square. The zombies crumble around him.")
+                .talk("captain_rovin").needFlag("dov_descendant")
+                .missing("?!dov_rovin|Elias told me what you found. We must be ready for Zemouregal's army.",
+                        "?dov_restored|Find the true descendant of Avarrocka's founder. Reldo can help.")
                 .say("Varrock is safe! The city honours you, defender.");
     }
 

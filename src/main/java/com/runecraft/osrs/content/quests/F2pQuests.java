@@ -58,6 +58,20 @@ final class F2pQuests {
     }
 
     // ---------------------------------------------------------------- Dragon Slayer I
+    /** The Oracle's riddle (OSRS dialogue): a mind bomb, silk, a lobster pot and an unfired bowl open Thalzar's door. */
+    static final String DS1_RIDDLE = "The map's behind a door below, but entering is rather tough. This is that you need to know: you "
+            + "must use the following stuff. First, a drink used by a mage. Next, some worm string, changed to sheet. Then a small "
+            + "crustacean cage. Last, a bowl that's not seen heat.";
+
+    /** Thalzar's magic door (wiki): use the four things the Oracle's riddle names on it, in any order. */
+    static final QuestPuzzle DS1_MAGIC_DOOR = QuestPuzzle.builder("ds1_magic_door").room("door").variant(null)
+            .prompt("* A magic door in the north-east corner of the Dwarven Mine. The Oracle's words come back to you:", "@Oracle: " + DS1_RIDDLE,
+                    "* Use the four things on the door.")
+            .options("Wizard's mind bomb", "Silk", "Lobster pot", "Unfired bowl", "Beer", "Ball of wool", "Crayfish cage", "Bowl",
+                    "Raw lobster", "Pot")
+            .anyOrder(0, 1, 2, 3).shuffle()
+            .failLines("* Nothing happens. The door stays shut.").build();
+
     private static void dragonSlayer(QuestBook b) {
         b.npc("guildmaster", "Guildmaster", "champions_guild", 2, 2, 0xE8C4A0, 0x2A3A8A, 0x2A2A5A, 0x9A9A9A);
         b.npc("oziach", "Oziach", "EDGEVILLE", -6, 7, 0xD0A080, 0x5A4A3A, 0x3A2A1A, 0x8A6A4A);
@@ -146,8 +160,8 @@ final class F2pQuests {
                 .missing("Map piece cost 10,000 shiny coins. You not have. Go away.")
                 // Wiki: the Oracle gives the riddle; the four items are used on the magic door in the north-east of the Dwarven Mine.
                 .talk("oracle").stay().unless("map_part_thalzar", "crandor_map").unlessFlag("ds1_oracle").flag("ds1_oracle")
-                .say("The magic door seeks 'a thing which is not quite a bowl, silk that is fine, a pot for lobsters and that which makes the mind explode'.")
-                .reach("dwarven_mine_north", 10).stay().needFlag("ds1_oracle").unless("map_part_thalzar", "crandor_map")
+                .say(DS1_RIDDLE)
+                .puzzle("dwarven_mine_north", DS1_MAGIC_DOOR).stay().needFlag("ds1_oracle").unless("map_part_thalzar", "crandor_map")
                 .take("unfired_bowl", "silk", "lobster_pot", "wizards_mind_bomb").give("map_part_thalzar")
                 .say("* You use the unfired bowl, silk, lobster pot and wizard's mind bomb on the magic door in the Dwarven Mine. "
                         + "It swings open, and in the chest inside is Thalzar's map piece.")
@@ -469,7 +483,7 @@ final class F2pQuests {
         b.item("treasure_scroll", "Treasure scroll", "note", 0xE8D8A8, "A treasure scroll with a riddle.");
         b.item("ancient_casket", "Ancient casket", "casket", 0x6A4A2A, "An ancient casket for Veos.");
         b.quest("x_marks_the_spot", "X Marks the Spot", Difficulty.NOVICE, 1)
-                .xp(Skill.HITPOINTS, 300).reward("coins:200", "clue_scroll_beginner")
+                .reward("coins:200", "clue_scroll_beginner") // and a 300 XP antique lamp (QuestLamps)
                 .stage("I can start this quest by speaking to Veos in the Sheared Ram pub in Lumbridge.")
                 .talk("veos").give("treasure_scroll").say("I'm looking for a treasure hunter. This scroll leads to an ancient casket.",
                         "The first clue: 'Dig outside the castle of the Duke, where his statue stands.'")

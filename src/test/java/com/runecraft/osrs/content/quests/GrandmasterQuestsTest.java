@@ -279,11 +279,14 @@ class GrandmasterQuestsTest {
             assertEquals(Integer.parseInt(a[2]), boss(a[0]).attacks.stream().filter(x -> x.name().equals(a[1])).findFirst()
                     .orElseThrow(() -> new AssertionError(a[0] + " " + a[1])).maxHit(), a[0] + " " + a[1]);
         }
-        // three 100,000 XP ancient lamps, all in combat skills
-        assertEquals(300000.0, dt2.def.xpRewards().values().stream().mapToDouble(Double::doubleValue).sum());
-        assertTrue(dt2.def.xpRewards().keySet().stream().allMatch(s -> List.of(com.runecraft.osrs.Skill.ATTACK, com.runecraft.osrs.Skill.STRENGTH,
-                com.runecraft.osrs.Skill.DEFENCE, com.runecraft.osrs.Skill.HITPOINTS, com.runecraft.osrs.Skill.RANGED, com.runecraft.osrs.Skill.MAGIC,
-                com.runecraft.osrs.Skill.PRAYER).contains(s)));
+        // three 100,000 XP ancient lamps the player rubs, in a combat skill or Prayer of level 60+ (no fixed XP)
+        assertTrue(dt2.def.xpRewards().isEmpty());
+        QuestLamps.Grant ancient = QuestLamps.grants("desert_treasure_ii").get(0);
+        assertEquals(3, ancient.count());
+        QuestLamps.Lamp lamp = QuestLamps.get(ancient.lamp());
+        assertEquals(100_000, lamp.xp());
+        assertEquals(60, lamp.minLevel());
+        assertEquals(QuestLamps.COMBAT_PRAYER, lamp.skills());
     }
 
     /** A puzzle draws a player {@code picks} rooms: every one of those slots must be presented by some step. */

@@ -25,6 +25,30 @@ final class ElfQuests {
         songOfTheElves(b);
     }
 
+    /**
+     * The Underground Pass grid (wiki: five columns of tiles, many over pits; the safe path is found by trial and error, differs per
+     * player and never changes; it never goes back east, never diagonally, and never north or south in the middle column). The
+     * moves, from the east edge in front of the middle row: 0 west, 1 north, 2 south. // approx: the paths
+     */
+    static final int[][] UP_GRID_PATHS = {
+            {0, 1, 0, 2, 0, 0, 1, 1, 0, 0}, {0, 2, 2, 0, 1, 0, 0, 0, 1, 0}, {0, 0, 1, 1, 0, 0, 2, 0, 0},
+            {0, 1, 1, 0, 2, 2, 2, 0, 0, 2, 0, 0}, {0, 2, 0, 0, 0, 1, 1, 0, 2, 0}, {0, 0, 2, 0, 0, 1, 0, 1, 0}};
+
+    static final QuestPuzzle UP_GRID = upGrid();
+
+    private static QuestPuzzle upGrid() {
+        QuestPuzzle.Builder b = QuestPuzzle.builder("up_grid").room("grid");
+        for (int[] path : UP_GRID_PATHS) {
+            b.variant(null).prompt("@Koftik: You must pick your own path now.",
+                            "* A grid of tiles, five wide, bars the way west; you stand at its east edge, before the middle row. Many tiles "
+                                    + "hide pits. The voices whisper of the path of the righteous: it never turns back east, never cuts across "
+                                    + "diagonally, and never strays north or south in the middle column.",
+                            "* Find the safe path, and remember it: it is always the same.")
+                    .options("Step west", "Step north", "Step south").solution(path);
+        }
+        return b.failLines("* The tile gives way and you fall into a pit! You climb back out to the start of the grid.").build();
+    }
+
     private static void undergroundPass(QuestBook b) {
         b.npc("koftik", "Koftik", "underground_pass_entrance", 0, 0, 0xE0B89E, 0x6A5A3A, 0x4A3A2A, 0x5A3A1A);
         b.npc("kardia", "Kardia", "underground_pass", 3, 3, 0xB0C0A1, 0x3A2A3A, 0x2A1A2A, 0x2A2A2B);
@@ -48,10 +72,13 @@ final class ElfQuests {
                 .say("The pass is full of traps. Follow me, and pray to Saradomin.",
                         "The bridge over the chasm is raised. If you could cut the rope holding it up... with a burning arrow, perhaps.")
                 // OSRS: an oily cloth from the abandoned equipment, wrapped round an arrow, lit and shot at the bridge rope (25 Ranged).
-                .reach("underground_pass", 10).needFlag("up_koftik").need("tinderbox").take("bronze_arrow").reqSkill(Skill.RANGED, 25)
+                .reach("underground_pass", 10).stay().needFlag("up_koftik").unlessFlag("up_bridge").need("tinderbox").take("bronze_arrow")
+                .reqSkill(Skill.RANGED, 25).flag("up_bridge")
                 .say("* You find an oily cloth among some abandoned equipment and wrap it around an arrow.",
                         "* You light it and fire at the rope holding the bridge. The rope burns through and the bridge crashes down across the chasm.")
                 .missing("* The bridge is raised on the far side. A burning arrow could cut its rope: you'll need an arrow and a tinderbox.")
+                .puzzle("underground_pass", UP_GRID).needFlag("up_bridge")
+                .say("* You step off the last tile and pull the lever beside the gate. It lifts.")
                 .stage("To destroy Iban I need a doll from the witch Kardia, plus Iban's shadow, conscience and ashes... and venom from the spider Kalrag.")
                 .talk("kardia").stay().unless("doll_of_iban").give("doll_of_iban").say("Iban's doll? Take it... and leave me be! Imbue it with his shadow, conscience, ashes and blood.")
                 .talk("niloof").stay().unless("ibans_shadow").give("ibans_shadow", "ibans_conscience", "ibans_ashes")
@@ -158,9 +185,9 @@ final class ElfQuests {
         b.spot("sote_ysgawyn_clearing", "Isafdar clearing", 2256, 3168);
         b.spot("sote_lletya_statue", "Lletya's empty plinth", 2340, 3165); // approx: the centre of the village
         b.spot("sote_dig_swamp", "South Isafdar swamp", 2225, 3133);
-        b.spot("sote_dig_zulandra", "North of Zul-Andra", 2197, 3058); // approx: two steps north of the STASH unit
-        b.spot("sote_dig_gates", "Outside Prifddinas' south gates", 2240, 3255); // approx
-        b.spot("sote_spin", "Western entry to the Underground Pass", 2312, 3213); // approx
+        b.spot("sote_dig_zulandra", "North of Zul-Andra", 2203, 3061); // quest-helper tile
+        b.spot("sote_dig_gates", "Outside Prifddinas' south gates", 2240, 3269); // quest-helper tile
+        b.spot("sote_spin", "Western entry to the Underground Pass", 2309, 3215); // quest-helper tile
         // OSRS Wiki "Iorwerth Warrior": level 108, 105 HP, 95 Attack/Strength, 80 Defence, stab max hit 10 every 4 ticks.
         b.spot("sote_iorwerth_cave", "Iorwerth Camp cave", 2202, 3263); // the cave on the north side of the Iorwerth Camp (quest-helper tile)
         b.boss(BossDef.of("iorwerth_warrior", "Iorwerth Warrior").level(108).stats(105, 95, 95, 80, 1, 1).speed(4)

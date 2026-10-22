@@ -83,6 +83,8 @@ final class QuestWalkChecks {
         PlayerData data = Players.data(p);
         c.completeQuests(info);
         data.setQuestStage(info, 0);
+        // the walk replays the quest: its lamps are handed out again on completion (another walk may have claimed them)
+        com.runecraft.content.quests.QuestLampService.selfTestReset(p, id);
         data.setQuestPoints(1000);
         int qpBefore = data.questPoints();
         QuestStrictWalk.Plan plan = QuestStrictWalk.plan(q, p.getStringUUID());
@@ -145,7 +147,9 @@ final class QuestWalkChecks {
         if (qp != info.questPoints()) {
             throw new AssertionError("completing gave " + qp + " quest points, expected " + info.questPoints());
         }
-        return plan.steps().size() + " steps: " + kills + " kills, " + places + " places, " + puzzles + " puzzles";
+        // the quest's lamps and skill choices, rubbed and chosen as the player does
+        String lamps = com.runecraft.osrs.content.quests.QuestLamps.grants(id).isEmpty() ? "" : "; " + QuestLampChecks.claim(c, id);
+        return plan.steps().size() + " steps: " + kills + " kills, " + places + " places, " + puzzles + " puzzles" + lamps;
     }
 
     /**

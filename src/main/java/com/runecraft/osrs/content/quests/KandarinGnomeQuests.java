@@ -251,8 +251,7 @@ final class KandarinGnomeQuests {
         b.quest("monkey_madness_i", "Monkey Madness I", Difficulty.MASTER, 3)
                 .reqQuest("tree_gnome_village", "the_grand_tree")
                 // Wiki: Daero gives 35,000 XP in each of the two skills the player focuses on (Attack and Defence, or Strength and
-                // Hitpoints) and 20,000 in each of the other two. // approx: the Attack and Defence pair is picked here
-                .xp(Skill.ATTACK, 35000).xp(Skill.DEFENCE, 35000).xp(Skill.STRENGTH, 20000).xp(Skill.HITPOINTS, 20000)
+                // Hitpoints) and 20,000 in each of the other two: the player picks (QuestLamps)
                 .reward("coins:10000", "diamond:3")
                 .unlock("Ability to wield the dragon scimitar")
                 .stage("I can start this quest by speaking to King Narnode Shareen under the Grand Tree. (Requires Tree Gnome Village and The Grand Tree.)")
