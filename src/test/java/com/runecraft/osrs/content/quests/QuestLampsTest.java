@@ -195,6 +195,37 @@ class QuestLampsTest {
         assertNull(QuestLamps.get("antique_lamp_easy"));
     }
 
+    /**
+     * The Varrock Museum's antique lamps (wiki, Antique lamp (Varrock Museum)) are real lamps the player rubs: Historian Minas's
+     * for Shield of Arrav, Merlin's Crystal and Making History (1,000 XP, level 20), Defender of Varrock (5,000, 30) and Curse of
+     * the Empty Lord (10,000, 50), and the specimen crate's (500, 10). None can be replaced.
+     */
+    @Test
+    void museumLampsAreRubbedForAnySkill() {
+        int lamps = 0;
+        for (com.runecraft.osrs.content.minigames.VarrockMuseum.QuestKudos q : com.runecraft.osrs.content.minigames.VarrockMuseum.QUEST_KUDOS) {
+            if (q.lampXp() == 0) {
+                continue;
+            }
+            lamps++;
+            Lamp l = QuestLamps.get(com.runecraft.osrs.content.minigames.VarrockMuseum.lampItem(q.lampXp()));
+            assertNotNull(l, q.quest());
+            assertEquals(q.lampXp(), l.xp(), q.quest());
+            assertEquals(q.lampLevel(), l.minLevel(), q.quest());
+            assertEquals(QuestLamps.ANY, l.skills(), q.quest());
+            assertEquals(Kind.LAMP, l.kind());
+            assertNull(l.npc(), "the museum's lamps can't be replaced");
+            assertTrue(QuestLamps.commonItem(l.id()));
+            assertTrue(ItemCatalog.exists(l.id()), l.id());
+            assertEquals("Antique lamp", ItemCatalog.get(l.id()).name());
+        }
+        assertEquals(5, lamps);
+        Lamp crate = QuestLamps.get(com.runecraft.osrs.content.minigames.VarrockMuseum.lampItem(
+                com.runecraft.osrs.content.minigames.VarrockMuseum.CRATE_LAMP_XP));
+        assertEquals(500, crate.xp());
+        assertEquals(10, crate.minLevel());
+    }
+
     @Test
     void kingdomDividedAndArchitecturalAllianceGiveTwoLampsBetweenThem() {
         String lamp = "quest_lamp_a_kingdom_divided";

@@ -2,6 +2,7 @@ package com.runecraft.osrs.content.quests;
 
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.content.CommonItems;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -188,6 +189,12 @@ public final class QuestLamps {
         grant("the_path_of_glouphrie", "magic_lamp_slayer", 1);
         grant("the_path_of_glouphrie", "magic_lamp_thieving", 1);
         grant("the_path_of_glouphrie", "magic_lamp_magic", 1);
+        // ---- the Varrock Museum's antique lamps (wiki: Antique lamp (Varrock Museum)): the items are CommonItems', handed out by
+        // Historian Minas for the timeline quests and by the specimen crates (minigames, MuseumService); none can be replaced ----
+        lamp(CommonItems.MUSEUM_LAMP_FINDS, "Antique lamp", Kind.LAMP, 500, 1, ANY, 10, null, "I wonder what happens if I rub it...");
+        lamp(CommonItems.MUSEUM_LAMP_TIMELINE, "Antique lamp", Kind.LAMP, 1_000, 1, ANY, 20, null, "I wonder what happens if I rub it...");
+        lamp(CommonItems.MUSEUM_LAMP_DEFENDER, "Antique lamp", Kind.LAMP, 5_000, 1, ANY, 30, null, "I wonder what happens if I rub it...");
+        lamp(CommonItems.MUSEUM_LAMP_EMPTY_LORD, "Antique lamp", Kind.LAMP, 10_000, 1, ANY, 50, null, "I wonder what happens if I rub it...");
         // ---- tomes of experience (wiki: Tome of experience (<quest>)) ----
         lamp("tome_of_experience_hallowvale", "Tome of experience", Kind.TOME, 2_000, 3, ANY, 30, "veliaf_hurtz",
                 "A tome of experience that awards 2,000 XP per chapter.");
@@ -339,11 +346,17 @@ public final class QuestLamps {
         return Math.max(0, items - held);
     }
 
+    /** Whether a lamp's item is defined in CommonItems (the Varrock Museum's lamps, which another module hands out). */
+    public static boolean commonItem(String id) {
+        return id.equals(CommonItems.MUSEUM_LAMP_FINDS) || id.equals(CommonItems.MUSEUM_LAMP_TIMELINE)
+                || id.equals(CommonItems.MUSEUM_LAMP_DEFENDER) || id.equals(CommonItems.MUSEUM_LAMP_EMPTY_LORD);
+    }
+
     /** Registers the lamp and tome items. */
     static void items(QuestBook b) {
         b.items(s -> {
             for (Lamp l : LAMPS.values()) {
-                if (l.kind() == Kind.CHOICE) {
+                if (l.kind() == Kind.CHOICE || commonItem(l.id())) {
                     continue;
                 }
                 s.add(l.id(), l.name(), ItemDef.Kind.SIMPLE, l.kind() == Kind.TOME ? "book" : "lamp",

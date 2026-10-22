@@ -282,6 +282,20 @@ public final class VarrockMuseum {
     /** Antique lamp from the storage crate: 500 XP in a skill of level 10 or more. */
     public static final int CRATE_LAMP_XP = 500;
 
+    /**
+     * The antique lamp item (CommonItems) for a museum reward of {@code xp}: the crate's (500), the three timeline quests'
+     * (1,000), Defender of Varrock's (5,000) or Curse of the Empty Lord's (10,000). The player rubs it to pick the skill.
+     */
+    public static String lampItem(int xp) {
+        return switch (xp) {
+            case CRATE_LAMP_XP -> com.runecraft.osrs.content.CommonItems.MUSEUM_LAMP_FINDS;
+            case 1000 -> com.runecraft.osrs.content.CommonItems.MUSEUM_LAMP_TIMELINE;
+            case 5000 -> com.runecraft.osrs.content.CommonItems.MUSEUM_LAMP_DEFENDER;
+            case 10000 -> com.runecraft.osrs.content.CommonItems.MUSEUM_LAMP_EMPTY_LORD;
+            default -> throw new IllegalArgumentException("no museum lamp of " + xp + " XP");
+        };
+    }
+
     public static void items(ItemSink items) {
         items.add("trowel", "Trowel", Kind.TOOL, "trowel", 0x8A8A8A).value(1).stack(1).examine("A small hand-held digging tool.");
         items.add("rock_pick", "Rock pick", Kind.TOOL, "pickaxe", 0x7A7A7A).value(1).stack(1).examine("A small pick for digging.");

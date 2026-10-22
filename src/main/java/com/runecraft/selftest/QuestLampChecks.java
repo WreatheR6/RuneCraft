@@ -46,7 +46,36 @@ final class QuestLampChecks {
         }
         checks.add(new SelfTest.Check("quest:lamps:reclaim", () -> reclaim(c)));
         checks.add(new SelfTest.Check("quest:lamps:kingdom_divided", () -> kingdomDivided(c)));
+        checks.add(new SelfTest.Check("quest:lamps:museum", () -> museum(c)));
         return checks;
+    }
+
+    /**
+     * The Varrock Museum's antique lamps (Historian Minas, the specimen crate) are rubbed like any quest lamp: each one in hand
+     * opens the skill choice and gives exactly its XP, and a skill below its level is refused.
+     */
+    private static String museum(TestContext c) {
+        ServerPlayer p = c.player;
+        PlayerData d = Players.data(p);
+        List<String> done = new ArrayList<>();
+        for (int xp : new int[]{500, 1000, 5000, 10000}) {
+            Lamp l = QuestLamps.get(com.runecraft.osrs.content.minigames.VarrockMuseum.lampItem(xp));
+            Inv.remove(p, l.id(), Inv.count(p, l.id()));
+            Inv.give(p, l.id(), 1);
+            if (!rub(c, l.id()).consumesAction()) {
+                throw new AssertionError(l.id() + ": rubbing it did nothing");
+            }
+            Skill s = firstSkill(p, l);
+            int before = d.skills().xpTenths(s);
+            if (!QuestLampService.choose(p, l.id() + ":" + s.name())) {
+                throw new AssertionError(l.id() + ": the choice was refused");
+            }
+            if (d.skills().xpTenths(s) - before != xp * 10 || Inv.count(p, l.id()) != 0) {
+                throw new AssertionError(l.id() + ": " + (d.skills().xpTenths(s) - before) / 10.0 + " XP, " + Inv.count(p, l.id()) + " left");
+            }
+            done.add(xp + " XP");
+        }
+        return "museum lamps rubbed: " + String.join(", ", done);
     }
 
     /** The first skill a player may put a lamp's XP into (every skill is 99 on the test player). */
