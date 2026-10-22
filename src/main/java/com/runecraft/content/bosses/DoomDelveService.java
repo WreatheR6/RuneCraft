@@ -469,6 +469,9 @@ final class DoomDelveService {
         private record Larva(Mob mob, boolean giant) {
         }
 
+        /** A falling rock of a rock throw hits a player this close (blocks, horizontally) to its shadow. */
+        static final double DEBRIS_RADIUS = 1.2;
+
         /** A thrown rock: it explodes at {@code due}, then its debris and projectiles land. */
         private static final class RockThrow {
             final long due;
@@ -738,12 +741,21 @@ final class DoomDelveService {
                     for (int i = 0; i < extra; i++) {
                         t.shadows.add(around(boss, t.stoodAt, 8));
                     }
-                    t.landsAt = now + 2;
+                    // Round 44 // playability: the debris lands on the strike floor (3 game ticks, 36 MC) after its shadows
+                    // appear, and the projectiles come with it (2 ticks later from delve 7, OSRS Wiki): the shadows are the
+                    // only cue for where it falls, and two ticks left a player walking out of two overlapping shadows (3
+                    // blocks) and switching the knocked-off prayer back 24 MC. OSRS: about 2 ticks // approx (not on the wiki)
+                    t.landsAt = now + com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS;
                     t.projectilesLeft = DoomDelves.rockThrowProjectiles(level);
                     t.magicNext = t.magicFirst;
-                    t.nextProjectile = now + 2 + (level >= 7 ? 2 : 0);
+                    t.nextProjectile = t.landsAt + (level >= 7 ? 2 : 0);
                     for (ServerPlayer p : near) {
                         BossFx.disablePrayers(p, "The exploding rock knocks your protection prayers away!");
+                    }
+                    // the shadows on the cast bar of the players near them, counting down to the debris
+                    int landIn = (int) (t.landsAt - now) * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK;
+                    for (Vec3 s : t.shadows) {
+                        com.runecraft.network.HudNet.groundCast(world, s, DEBRIS_RADIUS, boss, null, landIn, "Debris");
                     }
                     continue;
                 }
@@ -754,7 +766,7 @@ final class DoomDelveService {
                 } else if (now == t.landsAt) {
                     for (ServerPlayer p : near) {
                         for (Vec3 s : t.shadows) {
-                            if (flat(p.position(), s) < 1.2) {
+                            if (flat(p.position(), s) < DEBRIS_RADIUS) {
                                 CombatHooks.nameAttack("debris", null);
                                 CombatHandler.applyDamage(boss, p, DoomDelves.DEBRIS_MIN
                                         + boss.getRandom().nextInt(DoomDelves.DEBRIS_MAX - DoomDelves.DEBRIS_MIN + 1));

@@ -70,6 +70,8 @@ public final class RealPlayer implements AutoCloseable {
     private static final double MOVED = 0.5;
     /** How far (blocks) a dodge looks for a safe-coloured floor tile. */
     private static final int SAFE_TILE_REACH = 8;
+    /** Fresh routes a blocked walk tries before the player stops where it is. */
+    private static final int MAX_REPLANS = 3;
 
     /** One thing the player saw coming. */
     private static final class Cue {
@@ -111,6 +113,9 @@ public final class RealPlayer implements AutoCloseable {
     private final Consumer<HudNet.SentCast> castBefore;
     private final Consumer<HudNet.GroundCast> groundBefore;
     private final List<Cue> cues = new ArrayList<>();
+    /** The (source, landing) keys of the round ground casts seen on Minecraft tick {@link #shapedMc}. */
+    private final java.util.Set<Long> shapedThisTick = new java.util.HashSet<>();
+    private long shapedMc = Long.MIN_VALUE;
     private boolean closed;
 
     private boolean autoPray;
@@ -128,6 +133,13 @@ public final class RealPlayer implements AutoCloseable {
     private Vec3 goal;
     private boolean dodging;
     private int stuckMc;
+    /** Fresh routes a blocked walk has tried since its goal was set. */
+    private int replans;
+    /** Whether the last route reached its spot's own column (false: it ends at the nearest column it can reach). */
+    private boolean planReached = true;
+    /** Walks that ended short of their spot (blocked, or the spot off the floor), and the last such spot. */
+    private int blockedWalks;
+    private Vec3 lastBlocked;
     private double vy;
     private long lastTickMc = Long.MIN_VALUE;
     private long frozenMc;
@@ -234,6 +246,36 @@ public final class RealPlayer implements AutoCloseable {
         return mortal;
     }
 
+    /** Melee armour (head, body, legs, feet) for {@link #wear}: no quest locks, 75 Defence at most. */
+    public static final List<String> MELEE_ARMOUR = List.of("justiciar_faceguard", "justiciar_chestguard", "justiciar_legguards",
+            "primordial_boots");
+    /** Ranged armour for {@link #wear}, worn where players range or switch styles. */
+    public static final List<String> RANGED_ARMOUR = List.of("armadyl_helmet", "armadyl_chestplate", "armadyl_chainskirt",
+            "pegasian_boots");
+
+    /** What the player wore before {@link #wear}, put back on {@link #close}. */
+    private final Map<net.minecraft.world.entity.EquipmentSlot, net.minecraft.world.item.ItemStack> wornBefore =
+            new java.util.EnumMap<>(net.minecraft.world.entity.EquipmentSlot.class);
+
+    /**
+     * Wears armour for the fight, given as item ids for the head, body, legs and feet (in that order): a real player comes
+     * dressed. {@link #close} puts back what was worn before.
+     */
+    public RealPlayer wear(List<String> armour) {
+        net.minecraft.world.entity.EquipmentSlot[] slots = {net.minecraft.world.entity.EquipmentSlot.HEAD,
+                net.minecraft.world.entity.EquipmentSlot.CHEST, net.minecraft.world.entity.EquipmentSlot.LEGS,
+                net.minecraft.world.entity.EquipmentSlot.FEET};
+        for (int i = 0; i < Math.min(slots.length, armour.size()); i++) {
+            net.minecraft.world.item.ItemStack piece = Inv.stack(armour.get(i), 1);
+            if (piece.isEmpty()) {
+                continue;
+            }
+            wornBefore.putIfAbsent(slots[i], p.getItemBySlot(slots[i]).copy());
+            p.setItemSlot(slots[i], piece);
+        }
+        return this;
+    }
+
     // ------------------------------------------------------------------ cues
 
     /**
@@ -253,16 +295,30 @@ public final class RealPlayer implements AutoCloseable {
             return;
         }
         boolean dodge = (c.flags() & CastBar.FLAG_DODGE) != 0;
+        if (dodge && shapedThisTick.contains(groundKey(c.source(), c.landInMc()))) {
+            return; // the row of a round strike or hazard just seen with its place and size (onGround dodges that one)
+        }
         boolean prayable = !dodge && (c.flags() & CastBar.FLAG_UNPRAYABLE) == 0;
         long now = ActionManager.mcTick();
         add(new Cue(c.label() == null || c.label().isEmpty() ? "cast" : c.label(), now, now + c.landInMc(),
                 prayable ? RealReaction.protectionOf(c.style()) : -1, dodge, null, 0, p.position()));
     }
 
+    /** A ground cast's (source, landing) key: its cast-bar row, sent right after it, carries the same. */
+    private static long groundKey(int sourceId, int landInMc) {
+        return ((long) sourceId << 32) ^ (landInMc & 0xFFFFFFFFL);
+    }
+
     private void onGround(HudNet.GroundCast g) {
         if (closed || g.world() != world) {
             return;
         }
+        long nowMc = ActionManager.mcTick();
+        if (nowMc != shapedMc) {
+            shapedThisTick.clear();
+            shapedMc = nowMc;
+        }
+        shapedThisTick.add(groundKey(g.source() == null ? -1 : g.source().getId(), g.landInMc()));
         double dx = p.getX() - g.centre().x;
         double dz = p.getZ() - g.centre().z;
         if (!CastBar.nearStrike(dx, p.getY() - g.centre().y, dz, g.radius())) {
@@ -673,6 +729,11 @@ public final class RealPlayer implements AutoCloseable {
         route = plan(at);
         routeIndex = 0;
         stuckMc = 0;
+        replans = 0;
+        if (!planReached && Math.hypot(at.x - p.getX(), at.z - p.getZ()) > 0.5) {
+            blockedWalks++;
+            lastBlocked = at;
+        }
     }
 
     /** Routes keep at least {@code radius} (plus half the player's width) from these spots until {@link #clearAvoid}. */
@@ -759,15 +820,27 @@ public final class RealPlayer implements AutoCloseable {
             }
             return feet(x, z, near);
         };
-        List<int[]> cells = GridPath.find(sx, sz, sy, gx, gz, ROUTE_RADIUS, ROUTE_NODES, floor);
-        if (cells != null && !cells.isEmpty()) {
+        // the nearest column it can reach when the spot itself can't be (off the floor, behind the platform's barrier wall): a
+        // player walks to the edge, never off it
+        List<int[]> cells = GridPath.findNearest(sx, sz, sy, gx, gz, ROUTE_RADIUS, ROUTE_NODES, floor);
+        int[] end = cells.isEmpty() ? new int[]{sx, sy, sz} : cells.get(cells.size() - 1);
+        boolean reached = end[0] == gx && end[2] == gz;
+        if (!cells.isEmpty()) {
             cells = GridPath.smooth(new int[]{sx, sy, sz}, cells, floor);
             for (int i = 0; i < cells.size() - 1; i++) {
                 int[] c = cells.get(i);
                 out.add(new Vec3(c[0] + 0.5, c[1], c[2] + 0.5));
             }
         }
-        out.add(at); // the last point is the spot itself (a straight walk when no route was found)
+        if (reached) {
+            out.add(at); // the last point is the spot itself
+        } else {
+            // as close to the spot as the last reachable column lets it stand (its body inside the column)
+            double x = Math.max(end[0] + 0.3, Math.min(end[0] + 0.7, at.x));
+            double z = Math.max(end[2] + 0.3, Math.min(end[2] + 0.7, at.z));
+            out.add(new Vec3(x, end[1], z));
+        }
+        planReached = reached;
         return out;
     }
 
@@ -808,18 +881,17 @@ public final class RealPlayer implements AutoCloseable {
             }
             if (moved < s * 0.3) {
                 if (++stuckMc > 6) {
-                    // blocked: a route from here, once; then stop where the player is
-                    if (stuckMc < 40 && goal != null) {
+                    // blocked for a third of a second: a fresh route from here, up to MAX_REPLANS times; then the player stops
+                    // where it is (the walk's own checks then say what it missed)
+                    stuckMc = 0;
+                    if (goal != null && replans++ < MAX_REPLANS) {
                         route = plan(goal);
                         routeIndex = 0;
-                        stuckMc = 7;
-                        if (route.size() <= 1 && Math.hypot(goal.x - p.getX(), goal.z - p.getZ()) > 0.4) {
-                            stuckMc = 40;
-                        }
-                    }
-                    if (stuckMc >= 40) {
+                    } else {
                         route = null;
                         dodging = false;
+                        blockedWalks++;
+                        lastBlocked = goal;
                     }
                 }
                 break;
@@ -1002,6 +1074,10 @@ public final class RealPlayer implements AutoCloseable {
         if (frozenMc > 0) {
             sb.append(", frozen ").append(frozenMc).append(" MC");
         }
+        if (blockedWalks > 0 && lastBlocked != null) {
+            sb.append(String.format(Locale.ROOT, ", %d walk(s) stopped short (last to %.1f, %.1f, %.1f)", blockedWalks,
+                    lastBlocked.x, lastBlocked.y, lastBlocked.z));
+        }
         if (mortal) {
             sb.append(", ate ").append(ate).append('/').append(foodGiven).append(" sharks, drank ").append(drank)
                     .append(" doses (").append(potionsGiven).append(" potions), ")
@@ -1034,6 +1110,8 @@ public final class RealPlayer implements AutoCloseable {
         if (mortal) {
             p.setInvulnerable(wasInvulnerable);
         }
+        wornBefore.forEach(p::setItemSlot);
+        wornBefore.clear();
     }
 
     // ------------------------------------------------------------------ death guard (no-heal mode)

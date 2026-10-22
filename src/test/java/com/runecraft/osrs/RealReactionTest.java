@@ -152,4 +152,25 @@ class RealReactionTest {
         GridPath.Floor cliff = (x, z, nearY) -> x < 0 || x > 6 || z != 0 ? GridPath.NONE : x < 3 ? 64 : 66;
         assertNull(GridPath.find(0, 0, 64, 6, 0, 8, 500, cliff));
     }
+
+    /** A goal off the floor (past the self-test platform's barrier wall): the route stops at the floor's nearest column. */
+    @Test
+    void nearestReachableColumnForAGoalOffTheFloor() {
+        boolean[][] none = new boolean[10][10];
+        GridPath.Floor floor = room(none);
+        List<int[]> path = GridPath.findNearest(2, 5, 64, 14, 5, 32, 5000, floor);
+        assertNotNull(path);
+        int[] last = path.get(path.size() - 1);
+        assertEquals(9, last[0], "stops at the east edge");
+        assertEquals(5, last[2]);
+        assertNull(GridPath.find(2, 5, 64, 14, 5, 32, 5000, floor), "find still says there is no way");
+        // a reachable goal: the same route as find
+        assertEquals(GridPath.find(2, 5, 64, 7, 8, 32, 5000, floor).size(), GridPath.findNearest(2, 5, 64, 7, 8, 32, 5000, floor).size());
+        // the start is already the nearest column: nowhere to go
+        boolean[][] wallEast = new boolean[10][10];
+        for (int z = 0; z < 10; z++) {
+            wallEast[3][z] = true;
+        }
+        assertTrue(GridPath.findNearest(2, 5, 64, 8, 5, 32, 5000, room(wallEast)).isEmpty());
+    }
 }

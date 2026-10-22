@@ -89,7 +89,8 @@ final class NoHealChecks {
         Vec3 start = Vec3.atBottomCenterOf(c.near(0, plan.startDistance()));
         float yaw = (float) (Math.toDegrees(Math.atan2(first.getZ() - start.z, first.getX() - start.x)) - 90.0);
         p.teleportTo(c.world, start.x, start.y, start.z, yaw, 0);
-        RealPlayer real = RealPlayer.start(p).autoPray(true).autoDodge(true).noHeal(FOOD, PRAYER_POTIONS);
+        RealPlayer real = RealPlayer.start(p).autoPray(true).autoDodge(true).noHeal(FOOD, PRAYER_POTIONS)
+                .wear(NoHealWalks.armour(id));
         Fight f = new Fight(p, real, first);
         int kcBefore = data.killCount(id);
         String outcome;

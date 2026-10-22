@@ -37,6 +37,19 @@ public final class GridPath {
      * start or {@code maxNodes} visits.
      */
     public static List<int[]> find(int sx, int sz, int sy, int gx, int gz, int maxRadius, int maxNodes, Floor floor) {
+        return find(sx, sz, sy, gx, gz, maxRadius, maxNodes, floor, false);
+    }
+
+    /**
+     * As {@link #find}, but when the goal can't be reached (a wall, a hole, past the search) the route to the column nearest the
+     * goal that can be: a player walking to a spot off the arena's floor stops at its edge instead of walking off it. An empty
+     * list when the start is that nearest column; never null.
+     */
+    public static List<int[]> findNearest(int sx, int sz, int sy, int gx, int gz, int maxRadius, int maxNodes, Floor floor) {
+        return find(sx, sz, sy, gx, gz, maxRadius, maxNodes, floor, true);
+    }
+
+    private static List<int[]> find(int sx, int sz, int sy, int gx, int gz, int maxRadius, int maxNodes, Floor floor, boolean nearest) {
         if (sx == gx && sz == gz) {
             return new ArrayList<>();
         }
@@ -46,6 +59,8 @@ public final class GridPath {
         PriorityQueue<Open> open = new PriorityQueue<>((a, b) -> Double.compare(a.f, b.f));
         best.put(key(sx, sz), 0.0);
         open.add(new Open(start, heuristic(sx, sz, gx, gz)));
+        Node closest = start;
+        double closestH = heuristic(sx, sz, gx, gz);
         int visits = 0;
         while (!open.isEmpty() && visits++ < maxNodes) {
             Open o = open.poll();
@@ -55,12 +70,12 @@ public final class GridPath {
                 continue; // a stale entry
             }
             if (n.x == gx && n.z == gz) {
-                List<int[]> path = new ArrayList<>();
-                for (Node at = n; at != null && at != start; at = from.get(key(at.x, at.z))) {
-                    path.add(new int[]{at.x, at.y, at.z});
-                }
-                Collections.reverse(path);
-                return path;
+                return pathTo(n, start, from);
+            }
+            double h = heuristic(n.x, n.z, gx, gz);
+            if (h < closestH - 1e-9) {
+                closest = n;
+                closestH = h;
             }
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dz = -1; dz <= 1; dz++) {
@@ -91,7 +106,16 @@ public final class GridPath {
                 }
             }
         }
-        return null;
+        return nearest ? pathTo(closest, start, from) : null;
+    }
+
+    private static List<int[]> pathTo(Node n, Node start, Map<Long, Node> from) {
+        List<int[]> path = new ArrayList<>();
+        for (Node at = n; at != null && at != start; at = from.get(key(at.x, at.z))) {
+            path.add(new int[]{at.x, at.y, at.z});
+        }
+        Collections.reverse(path);
+        return path;
     }
 
     /** The feet height stepping from {@code n} into column ({@code x}, {@code z}): at most a block up or down, else NONE. */

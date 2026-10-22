@@ -178,14 +178,14 @@ public final class Mechanics {
         final HazardHit onHit;
 
         Hazard(ServerLevel world, Vec3 pos, int damage, long untilGameTick, LivingEntity owner, long placedMc, HazardKind kind,
-               String name, HazardHit onHit, Map<UUID, Long> sharedLastHit) {
+               String name, HazardHit onHit, Map<UUID, Long> sharedLastHit, int armMc) {
             this.world = world;
             this.pos = pos;
             this.damage = Math.max(1, damage);
             this.untilGameTick = untilGameTick;
             this.owner = owner;
             this.placedMc = placedMc;
-            this.armAtMc = placedMc + ThreatTiming.HAZARD_ARM_MC;
+            this.armAtMc = placedMc + Math.max(ThreatTiming.HAZARD_ARM_MC, armMc);
             this.kind = kind;
             this.name = name == null ? "hazard" : name;
             this.onHit = onHit;
@@ -1069,10 +1069,21 @@ public final class Mechanics {
      */
     public static void addHazard(ServerLevel world, Vec3 pos, int damage, int gameTicks, LivingEntity owner, HazardKind kind,
                                  String name, HazardHit onHit, Map<UUID, Long> sharedLastHit) {
-        HAZARDS.add(new Hazard(world, pos, damage, ActionManager.gameTick() + gameTicks, owner, ActionManager.mcTick(), kind, name, onHit,
-                sharedLastHit));
+        addHazard(world, pos, damage, gameTicks, owner, kind, name, onHit, sharedLastHit, ThreatTiming.HAZARD_ARM_MC);
+    }
+
+    /**
+     * {@link #addHazard(ServerLevel, Vec3, int, int, LivingEntity, HazardKind, String, HazardHit, Map)} arming {@code armMc}
+     * Minecraft ticks after it is placed (never sooner than {@link ThreatTiming#HAZARD_ARM_MC}): round 44, for pools dropped
+     * in a field round the player, where stepping off one can mean walking round its neighbours (Vorkath's acid).
+     */
+    public static void addHazard(ServerLevel world, Vec3 pos, int damage, int gameTicks, LivingEntity owner, HazardKind kind,
+                                 String name, HazardHit onHit, Map<UUID, Long> sharedLastHit, int armMc) {
+        Hazard h = new Hazard(world, pos, damage, ActionManager.gameTick() + gameTicks, owner, ActionManager.mcTick(), kind, name,
+                onHit, sharedLastHit, armMc);
+        HAZARDS.add(h);
         // round 43: on the cast bar of the players near it, counting down to its arming (a typeless spot to step off)
-        com.runecraft.network.HudNet.groundCast(world, pos, ThreatTiming.HAZARD_RADIUS, owner, null, ThreatTiming.HAZARD_ARM_MC,
+        com.runecraft.network.HudNet.groundCast(world, pos, ThreatTiming.HAZARD_RADIUS, owner, null, (int) (h.armAtMc - h.placedMc),
                 com.runecraft.osrs.CastBar.strikeLabel(kind != null ? kind.name() : name == null ? "hazard" : name));
     }
 

@@ -329,12 +329,12 @@ public final class DoomWalk {
         if (Players.data(p).isActive(Prayer.PROTECT_FROM_MAGIC)) {
             throw fail("delve 2: the exploding rock left the player's protection prayer on");
         }
-        // Round 44: the nearest spot clear of every shadow (the debris hits within 1.2 of one), walked to a reaction time after
-        // the shadows appear; the debris lands two game ticks after them.
+        // Round 44: the nearest spot clear of every shadow (the debris hits within DEBRIS_RADIUS of one), walked to a reaction
+        // time after the shadows appear; the debris lands on the strike floor (3 game ticks) after them.
         Vec3 c = s.homeVec();
         List<com.runecraft.osrs.RealReaction.Disc> discs = new ArrayList<>();
         for (Vec3 sh : s.walkShadows()) {
-            discs.add(new com.runecraft.osrs.RealReaction.Disc(sh.x, sh.z, 1.2, 0, "debris"));
+            discs.add(new com.runecraft.osrs.RealReaction.Disc(sh.x, sh.z, DoomDelveService.DoomScript.DEBRIS_RADIUS, 0, "debris"));
         }
         double[] spot = com.runecraft.osrs.RealReaction.safeSpot(p.getX(), p.getZ(), discs, 0, 12,
                 (x, z) -> Math.hypot(x - c.x, z - c.z) <= 11);
@@ -343,7 +343,8 @@ public final class DoomWalk {
         }
         Vec3 clear = BossFx.ground(BossFx.world(boss), spot[0], spot[1], p.getY());
         int since = BossWalks.sinceGameTick(boss);
-        d.walkOut("debris", clear, since, 2 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK - since, boss);
+        d.walkOut("debris", clear, since, com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS
+                * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK - since, boss);
         d.clearDamage();
         d.ticks(boss, 4);
         if (d.damage("debris") > 0) {

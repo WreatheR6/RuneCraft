@@ -56,7 +56,9 @@ public final class RaidNoHealWalk {
         com.runecraft.skill.XpService.updateMaxHealth(p);
         p.setHealth(p.getMaxHealth());
         com.runecraft.player.Players.data(p).setPrayerPoints(99);
-        RealPlayer real = RealPlayer.start(p).autoPray(true).autoDodge(true).noHeal(FOOD, PRAYER_POTIONS);
+        // dressed as a raider (melee armour: Ba-Ba, Tekton and the Maiden are meleed), the pass's own hits don't use it
+        RealPlayer real = RealPlayer.start(p).autoPray(true).autoDodge(true).noHeal(FOOD, PRAYER_POTIONS)
+                .wear(RealPlayer.MELEE_ARMOUR);
         Map<LivingEntity, int[]> adds = new HashMap<>(); // {first seen tick, attacks without damage}
         int planned = Math.max(4, ROOM_TICKS / PLAYER_SPEED - 8);
         double boost = 1.0;

@@ -315,9 +315,10 @@ final class ClassicBossWalks {
             int[] acid = taken("acid_pool");
             expect(acid[1] > 0 && acid[0] > 0, "standing still in the acid phase hurt nothing (the pool under the player)");
             // OSRS Wiki (Vorkath/Strategies): standing on acid deals up to 10 a tick, which Vorkath leeches as health. The pool
-            // arms 12 MC after it lands (round 41's hazards), then hits once a game tick.
-            expect(acid[1] >= acidTicks - 1 && acid[1] <= acidTicks, "the pool under the player hit " + acid[1] + " of the acid phase's "
-                    + acidTicks + " ticks");
+            // arms VorkathScript.ACID_ARM_MC after it lands (round 44: the strike floor), then hits once a game tick.
+            int armTicks = (VorkathScript.ACID_ARM_MC + ActionManager.MC_TICKS_PER_GAME_TICK - 1) / ActionManager.MC_TICKS_PER_GAME_TICK;
+            expect(acid[1] >= acidTicks - armTicks && acid[1] <= acidTicks - armTicks + 1, "the pool under the player hit " + acid[1]
+                    + " of the acid phase's " + acidTicks + " ticks (it arms after " + armTicks + ")");
             for (int i = 0; i < 12 && Mechanics.hazardsOf(boss) > 0; i++) {
                 now = realTick(boss, p, now);
             }

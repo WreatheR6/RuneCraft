@@ -28,6 +28,8 @@ import net.minecraft.world.phys.Vec3;
  * hits (28 ranged, 72 dragonfire, a 30 spawn explosion).
  */
 final class VorkathScript extends ScriptedBoss {
+    /** Minecraft ticks from an acid pool landing to its first hit: the strike floor (round 44, see startAcid). */
+    static final int ACID_ARM_MC = com.runecraft.osrs.ArenaTiming.MIN_LEAD_MC;
     /** Live zombified spawns (Crumble Undead kills them in one cast). */
     private static final java.util.Set<net.minecraft.world.entity.LivingEntity> SPAWNS =
             java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
@@ -216,7 +218,10 @@ final class VorkathScript extends ScriptedBoss {
         acidHits.clear();
         // The pools are ground hazards of acid (round 42): lime floor blocks under them while the phase lasts, put back when it
         // ends; up to 10 a tick on a player in one, which Vorkath leeches. // playability: OSRS hits from the tick they land,
-        // here 12 MC after (the hazards' arming), the pools drawn as they land
+        // here ACID_ARM_MC after, the pools drawn as they land. Round 44: the strike floor (36 MC), not a hazard's 12: the 28
+        // pools fall in a field round the player, and one landing beside the pool under the player (most acid phases, about
+        // four in five) leaves 2-3 blocks to walk round both, 0.7-0.95 s with the reaction margin, past the 0.6 s a 12 MC
+        // arming gives (the no-heal pass's walk-out budget).
         for (Vec3 a : acid) {
             com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), a, ZulrahVorkath.ACID_MAX, ZulrahVorkath.RAPID_FIRE_SHOTS, boss,
                     com.runecraft.boss.HazardKind.ACID, "acid_pool", (p, dealt) -> {
@@ -224,7 +229,7 @@ final class VorkathScript extends ScriptedBoss {
                         if (boss.isAlive() && dealt > 0) {
                             boss.heal(mcHp(boss, dealt));
                         }
-                    }, acidHits);
+                    }, acidHits, ACID_ARM_MC);
         }
         acidTicks = ZulrahVorkath.RAPID_FIRE_SHOTS;
         cooldown = ZulrahVorkath.RAPID_FIRE_SHOTS + 2;

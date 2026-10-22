@@ -781,21 +781,43 @@ final class BossFightChecks {
         for (AbstractArrow a : c.world.getEntitiesOfClass(AbstractArrow.class, box, a -> a.getOwner() == p)) {
             before.add(a.getUUID());
         }
-        com.runecraft.combat.AttackTimer.click(p, boss, com.runecraft.osrs.AttackClock.Kind.RANGED);
-        List<AbstractArrow> flying = c.world.getEntitiesOfClass(AbstractArrow.class, box,
-                a -> a.getOwner() == p && !before.contains(a.getUUID()));
-        for (int t = 0; t < ARROW_FLIGHT_MC && !flying.isEmpty(); t++) {
-            for (AbstractArrow a : flying) {
-                if (a.isAlive()) {
-                    a.tick(); // nothing else in the world ticks during a fight check
-                }
-            }
-            flying.removeIf(a -> !a.isAlive() || a.isRemoved()); // it struck the boss or the ground (its ammo landed)
+        // The boss is summoned on the player's spot: an arrow fired from inside its body never meets it (a ray starting inside
+        // a box doesn't clip it), so the player shoots from just outside its body, as a ranger stands, and steps back after.
+        Vec3 stood = p.position();
+        float yaw = p.getYRot();
+        float pitch = p.getXRot();
+        double clear = boss.getBbWidth() / 2 + SHOT_STAND_OFF;
+        Vec3 away = stood.subtract(boss.position()).multiply(1, 0, 1);
+        boolean stepped = away.length() < clear;
+        if (stepped) {
+            Vec3 dir = away.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : away.normalize();
+            Vec3 at = boss.position().add(dir.scale(clear));
+            p.teleportTo(c.world, at.x, stood.y, at.z, yaw, pitch);
         }
-        for (AbstractArrow a : flying) {
-            a.discard(); // fell short or flew past: gone with the shot
+        try {
+            com.runecraft.combat.AttackTimer.click(p, boss, com.runecraft.osrs.AttackClock.Kind.RANGED);
+            List<AbstractArrow> flying = c.world.getEntitiesOfClass(AbstractArrow.class, box,
+                    a -> a.getOwner() == p && !before.contains(a.getUUID()));
+            for (int t = 0; t < ARROW_FLIGHT_MC && !flying.isEmpty(); t++) {
+                for (AbstractArrow a : flying) {
+                    if (a.isAlive()) {
+                        a.tick(); // nothing else in the world ticks during a fight check
+                    }
+                }
+                flying.removeIf(a -> !a.isAlive() || a.isRemoved()); // it struck the boss or the ground (its ammo landed)
+            }
+            for (AbstractArrow a : flying) {
+                a.discard(); // fell short or flew past: gone with the shot
+            }
+        } finally {
+            if (stepped) {
+                p.teleportTo(c.world, stood.x, stood.y, stood.z, yaw, pitch);
+            }
         }
     }
+
+    /** Blocks past the boss's body the player shoots from when it stands inside or against it. */
+    private static final double SHOT_STAND_OFF = 2.0;
 
     /**
      * A heavy hit (a sixth of the boss's hitpoints, at least 50) through the boss's own rules (immunities, damage caps,

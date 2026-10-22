@@ -103,6 +103,18 @@ public final class NoHealWalks {
         }
     }
 
+    /**
+     * The armour the player wears into a boss's no-heal fight: what a real player brings (a naked player against these bosses
+     * would die on their accuracy, not on the real-time windows this pass measures). Defence only: the pass's own attacks
+     * don't use the player's bonuses.
+     */
+    public static List<String> armour(String id) {
+        return switch (id) {
+            case "cerberus", "the_nightmare", "vardorvis", "sol_heredit" -> RealPlayer.MELEE_ARMOUR;
+            default -> RealPlayer.RANGED_ARMOUR;
+        };
+    }
+
     /** The plan of a boss (the shared player alone for a boss with none of its own). */
     public static Plan plan(String id) {
         return switch (id) {
