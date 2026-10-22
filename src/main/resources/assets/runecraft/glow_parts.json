@@ -416,6 +416,13 @@
     "head",
     "jaw"
   ],
+  "coa_armoured_zombie": [
+    "head"
+  ],
+  "coa_golem_guard": [
+    "core",
+    "head"
+  ],
   "commander_zilyana": [
     "tiara_gem",
     "sword_gem"

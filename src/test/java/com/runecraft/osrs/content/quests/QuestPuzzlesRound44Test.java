@@ -75,9 +75,9 @@ class QuestPuzzlesRound44Test {
     void curseOfArravFightsArravAndTheGolemGuard() {
         QuestSpec q = BOOK.spec("the_curse_of_arrav");
         List<String> kills = q.triggers().stream().filter(t -> t.kind == QuestSpec.Trigger.Kind.KILL).map(t -> t.target).toList();
-        assertEquals(List.of("coa_golem_guard", "coa_arrav"), kills);
-        var arrav = BOOK.bosses.stream().filter(b -> b.id.equals("coa_arrav")).findFirst().orElseThrow();
-        assertEquals(339, arrav.level);
+        assertEquals(List.of("coa_golem_guard", "arrav"), kills);
+        var arrav = BOOK.bosses.stream().filter(b -> b.id.equals("arrav")).findFirst().orElseThrow();
+        assertEquals(339, arrav.combatLevel);
         assertEquals(600, arrav.hitpoints);
         assertTrue(QuestBossRules.nthIsSpecial(3, QuestBossRules.COA_ARRAV_AXE_EVERY));
         assertFalse(QuestBossRules.nthIsSpecial(4, QuestBossRules.COA_ARRAV_AXE_EVERY));

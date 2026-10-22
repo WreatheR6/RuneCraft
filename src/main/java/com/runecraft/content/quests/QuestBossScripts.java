@@ -52,7 +52,7 @@ final class QuestBossScripts {
         com.runecraft.platform.ServerTickEvents.END_SERVER_TICK.register(StoneDemon::releaseStonePower);
         BossScripts.register("fragment_of_seren", FragmentSpecials::new);
         BossScripts.register("vanstrom_klause", Vanstrom::new);
-        BossScripts.register("coa_arrav", () -> new EveryNth(QuestBossRules.COA_ARRAV_AXE_EVERY, "axe_swing"));
+        BossScripts.register("arrav", () -> new EveryNth(QuestBossRules.COA_ARRAV_AXE_EVERY, "axe_swing"));
         Vanstrom.register();
     }
 

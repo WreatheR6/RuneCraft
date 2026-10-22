@@ -629,7 +629,7 @@ final class MahjarratQuests {
         // DPS calculator (Arrav, The Curse of Arrav): level 339, 600 HP, crush up to 30 every 5 ticks; every third attack he
         // swings his axe ahead of him for up to 26 (wiki), dodged by stepping beside or behind him (QuestBossScripts.EveryNth)
         // while armoured zombies (10 HP, up to 10) leave venom pools where they go (4 a tick)
-        b.boss(BossDef.of("coa_arrav", "Arrav").level(339).stats(600, 220, 220, 150, 150, 1).speed(5)
+        b.boss(BossDef.of("arrav", "Arrav").level(339).stats(600, 220, 220, 150, 150, 1).speed(5)
                 .defenceBonus(80, 80, 40, 160, 80)
                 .attack(AttackDef.of("axe", AttackType.CRUSH, 30, 2.5, 6))
                 .attack(AttackDef.of("raise_zombies", AttackType.MAGIC, 0, 10, 1).special(Special.SUMMON, 2)
@@ -752,9 +752,9 @@ final class MahjarratQuests {
                 .say("* You fire your mith grapple at the metal bars over the fire traps and swing across the pipe.")
                 .missing("* Fire traps guard the floor beyond the doors. A mith grapple could cross on the bars above them.")
                 .reach("coa_zemouregals_base", 8).stay().needFlag("coa_pipe").unlessFlag("coa_pedestal").need("canopic_jar_full")
-                .flag("coa_pedestal").spawn("coa_arrav")
+                .flag("coa_pedestal").spawn("arrav")
                 .say("* You reach for Arrav's heart on its pedestal. Arrav steps from the shadows, Zemouregal's will in his eyes!")
-                .kill("coa_arrav").needFlag("coa_pedestal").take("canopic_jar_full").give("arravs_heart")
+                .kill("arrav").needFlag("coa_pedestal").take("canopic_jar_full").give("arravs_heart")
                 .say("* Arrav falls to his knees. You seal his beating heart in the canopic jar, and Zemouregal's hold on him breaks.",
                         "* Zemouregal himself appears, cursing, and vanishes into the shadows.")
                 .missing("* Without the canopic jar there is nothing to hold Arrav's heart.")

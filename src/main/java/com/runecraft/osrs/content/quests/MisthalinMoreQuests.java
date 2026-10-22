@@ -40,7 +40,6 @@ final class MisthalinMoreQuests {
         b.place("demon_temple_storm", "Ruins of Uzer temple", 3480, 3085, PlaceDef.Style.CAVE);
         b.spot("rat_burgiss", "Rat Burgiss's camp", 3267, 3335);
         b.place("chaos_altar_surok", "Surok's lair", 3205, 3460, PlaceDef.Style.CAVE);
-        b.place("varrock_sewers_arrav", "Varrock sewers", 3237, 3459, PlaceDef.Style.CAVE);
         b.place("burgh_de_rott", "Burgh de Rott", 3495, 3210, PlaceDef.Style.RUINS);
         b.spot("falador_temple_knights", "Falador Temple Knight training ground", 2996, 3373);
         b.place("dorgesh_kaan_mine", "Lumbridge cellar cave", 3230, 3215, PlaceDef.Style.CAVE);
@@ -566,10 +565,10 @@ final class MisthalinMoreQuests {
     private static void defenderOfVarrock(QuestBook b) {
         b.npc("captain_rovin", "Captain Rovin", "varrock_palace", 3, -3, 0xE8C0BA, 0xC0C0CA, 0x2A3A6C, 0x8A8A8D);
         b.npcAt("elias_white_dov", "Elias White", 3283, 3501, 0xE0B89B, 0x6A6A8B, 0x4A4A5C, 0x2A2A2C); // the Jolly Boar Inn
-        b.boss(BossDef.of("arrav", "Arrav").level(159).stats(180, 130, 130, 120, 1, 1).speed(4)
-                .defenceBonus(60, 60, 60, 20, 60)
-                .attack(AttackDef.of("zombie_sword", AttackType.SLASH, 22, 2.5, 10))
-                .drops(Drop.always("bones")).skin(0x8AA07B, 0xA08A3A, 0x6A5A2A, 0x5A6A4A).at("varrock_sewers_arrav").arena(10, "crypt"));
+        // OSRS fights no Arrav here (wiki, Arrav: an NPC in Defender of Varrock; his fight is The Curse of Arrav's): he is met in
+        // Zemouregal's base, whose trapdoor ends the Jolly Boar Inn's trail (quest-helper 3343, 3515; the base is an instance)
+        b.spot("dov_zemouregals_base", "Zemouregal's base", 3343, 3515);
+        b.npcAt("arrav_dov", "Arrav", 3345, 3517, 0x8AA07C, 0xA08A3B, 0x6A5A2B, 0x5A6A4B);
         b.quest("defender_of_varrock", "Defender of Varrock", Difficulty.EXPERIENCED, 2)
                 .req(Skill.SMITHING, 55).req(Skill.HUNTER, 52)
                 .reqQuest("shield_of_arrav", "temple_of_ikov", "below_ice_mountain", "family_crest", "what_lies_below", "ROMEO_AND_JULIET", "DEMON_SLAYER")
@@ -578,15 +577,40 @@ final class MisthalinMoreQuests {
                 .stage("I can start this quest by speaking to Elias White in the Jolly Boar Inn. (Requires Shield of Arrav, What Lies Below and more.)")
                 .talk("elias_white_dov").say("Zombies are rising beneath Varrock! An ancient hero, Arrav, leads them, raised by Zamorakians.",
                         "Captain Rovin at the palace must be warned.")
-                .stage("I should go into the sewers and confront the undead hero Arrav.")
+                .stage("I should follow the trail from the Jolly Boar Inn with Elias White and find out what Zemouregal is planning.")
                 .reach("jolly_boar_inn", 8).stay().unlessFlag("dov_trail").flag("dov_trail")
                 .say("* With Elias White you follow the trail of plants, rocks and bushes to a trapdoor, collecting a grubby key on the way.")
-                .kill("arrav").needFlag("dov_trail").flag("dov_arrav").say("* Arrav, hero of Avarrocka, is freed from the Zamorakian curse. His spirit thanks you.")
+                // approx: the armoured zombies killed for their red mist (3 bottles before Arrav's door, 3 after) are not modelled
+                .reach("dov_zemouregals_base", 8).stay().needFlag("dov_trail").unlessFlag("dov_base").flag("dov_base")
+                .say("* Down the trapdoor, Elias spies Zemouregal's zombie army from a balcony. You bottle the red mist the armoured "
+                        + "zombies leave behind and open the west door.")
+                .talk("arrav_dov").needFlag("dov_base").flag("dov_arrav")
+                .say("> Arrav? The hero of Avarrocka?", "I am... while his attention is elsewhere. Zemouregal raised me, and I cannot "
+                                + "disobey him.", "He means to take Varrock with this army. Warn your captain, and find the shield I once bore.",
+                        "* Arrav strides away at Zemouregal's call. Further in, past more zombies, you see the whole army from a second balcony.")
+                .missing("* The trail of plants, rocks and bushes from the Jolly Boar Inn leads to a trapdoor.")
                 .stage("I should report to Captain Rovin.")
-                .reach("camdozaal", 10).stay().needFlag("dov_arrav").unlessFlag("dov_shield").take("chaos_core").flag("dov_shield")
-                .say("* Ramarno lets you use the Sacred Forge: you imbue barronite with a chaos core and forge a shield.")
-                .missing("* The Sacred Forge needs a chaos core to imbue the barronite.")
-                .talk("captain_rovin").needFlag("dov_shield").missing("Elias told me what you found. Ramarno in Camdozaal could forge a shield against Arrav.")
+                // wiki quick guide: Rovin, the Sacred Forge in Camdozaal (a chaos core used on a barronite deposit), Rovin's Shield of
+                // Arrav, Reldo's list of elders and the census, and the true descendant of Avarrocka's founder
+                .talk("captain_rovin").stay().needFlag("dov_arrav").unlessFlag("dov_rovin").flag("dov_rovin")
+                .say("An army of zombies, led by Arrav himself? Then we need the Shield of Arrav, and it lies broken in the museum.",
+                        "Ramarno keeps the Sacred Forge in the ruins of Camdozaal. If anyone can restore it, he can.")
+                .reach("camdozaal", 10).stay().needFlag("dov_rovin").unlessFlag("dov_shield").take("chaos_core", "barronite_deposit")
+                .flag("dov_shield")
+                .say("* Ramarno agrees to help. You use the chaos core on a barronite deposit and the imbued barronite on the Sacred Forge.")
+                .missing("* The Sacred Forge needs imbued barronite: a chaos core used on a barronite deposit.")
+                .talk("captain_rovin").stay().needFlag("dov_shield").unlessFlag("dov_restored").flag("dov_restored")
+                .say("The shield is whole again! But Arrav cast it to the son of Avarrocka's founder: only his true descendant can wield it.",
+                        "Reldo keeps the old records in the palace library.")
+                .talk("reldo").stay().needFlag("dov_restored").unlessFlag("dov_reldo").flag("dov_reldo")
+                .say("The founders of Avarrocka? The list of elders is in those scrolls by the table, and the census is beside them.",
+                        "* The list of elders and the census point to one family still in Varrock: the Fitzharmons.")
+                .talk("dimintheis").stay().needFlag("dov_reldo").unlessFlag("dov_descendant").flag("dov_descendant")
+                .say("> I need your help with the zombie invasion.", "A Fitzharmon, the heir of Avarrocka's founder? Then give me that shield.",
+                        "* Dimintheis raises the Shield of Arrav in the square. The zombies crumble around him.")
+                .talk("captain_rovin").needFlag("dov_descendant")
+                .missing("?!dov_rovin|Elias told me what you found. We must be ready for Zemouregal's army.",
+                        "?dov_restored|Find the true descendant of Avarrocka's founder. Reldo can help.")
                 .say("Varrock is safe! The city honours you, defender.");
     }
 
