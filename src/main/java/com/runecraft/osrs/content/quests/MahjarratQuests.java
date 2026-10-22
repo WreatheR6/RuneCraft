@@ -366,10 +366,10 @@ final class MahjarratQuests {
                 .say("* By the old campfire on the south-west beach, past a lynx, you pick argian berries.")
                 .talk("kasonde").stay().needFlag("dt2_v_defended").unlessFlag("dt2_v_serum").take("dt2_korbal_herb", "dt2_argian_berries").flag("dt2_v_serum")
                 .say("* In the great pyramid you add the korbal herb and the argian berries to Kasonde's unfinished serum and drink it.",
-                        "The strangled won't root you now. Vardorvis waits in the snowy square to the north-west. Bring me the temple key he guards.")
+                        "The strangled won't root you now. Vardorvis waits at the ritual site to the west. Bring me the temple key he guards.")
                 .missing("The serum needs a korbal herb and argian berries.")
                 .reach("dt2_vardorvis_square", 6).stay().needFlag("dt2_v_serum").unlessFlag("dt2_v_vardorvis").spawn("dt2_quest_vardorvis")
-                .say("* In the snowy square, a hulking figure with a parasitic head drags his axe through the snow: Vardorvis!")
+                .say("* At the ritual site, a hulking figure with a parasitic head drags his axe through the snow: Vardorvis!")
                 .kill("dt2_quest_vardorvis").stay().needFlag("dt2_v_serum").unlessFlag("dt2_v_vardorvis").flag("dt2_v_vardorvis")
                 .say("* Vardorvis collapses. You pick up the temple key he carried.")
                 .talk("kasonde").stay().needFlag("dt2_v_vardorvis").unlessFlag("dt2_v_betrayal").flag("dt2_v_betrayal").spawn("dt2_kasonde")
@@ -471,12 +471,18 @@ final class MahjarratQuests {
      * scripts (registered by the bosses module) with lower max hits.
      */
     private static void dt2Chapters(QuestBook b) {
-        b.spot("dt2_burning_man", "The Burning Man", 1446, 3822); // approx: south-west of Xeric's Inferno
-        b.spot("dt2_hosidius_house", "House south of the Hosidius estate agent", 1779, 3620); // approx
-        b.spot("dt2_stranglewood_dock", "Stranglewood boat dock", 1270, 3550); // approx: west of fairy ring BLS
-        b.spot("dt2_korbal_outcrop", "Stranglewood korbal outcrop", 1150, 3470); // approx
-        b.spot("dt2_argian_beach", "Stranglewood south-west beach", 1120, 3380); // approx
-        b.spot("dt2_vardorvis_square", "Stranglewood snowy square", 1130, 3450); // approx: north-west of the city
+        // quest-helper (DesertTreasureII VardorvisSteps): Barus by the burning man in south-west Lovakengj (1459, 3782), Kasonde's
+        // desk (1781, 3619), the Stranglewood boat (1227, 3470, on the river: the spot is on the bank beside it), Kasonde and his
+        // hideout's entry (1191, 3404), the korbal herb (1155, 3447), the argian berry bush (1126, 3323), the temple entry
+        // (1174, 3428; Kasonde turns on the player in its room) and Vardorvis at the ritual site (1129, 3419)
+        b.spot("dt2_burning_man", "The Burning Man", 1459, 3782);
+        b.spot("dt2_hosidius_house", "House south of the Hosidius estate agent", 1781, 3619);
+        b.spot("dt2_stranglewood_dock", "Stranglewood boat dock", 1230, 3470);
+        b.spot("dt2_kasonde_hideout", "Kasonde's hideout, Stranglewood", 1191, 3404);
+        b.spot("dt2_korbal_outcrop", "Stranglewood korbal outcrop", 1155, 3447);
+        b.spot("dt2_argian_beach", "Stranglewood south-west beach", 1126, 3323);
+        b.spot("dt2_stranglewood_temple", "Stranglewood temple", 1174, 3428);
+        b.spot("dt2_vardorvis_square", "Stranglewood ritual site", 1129, 3419);
         b.spot("dt2_scar_central", "The Scar, central passage", 3410, 2805); // approx
         b.spot("dt2_scar_northwest", "The Scar, north-west passage", 3395, 2820); // approx
         b.spot("dt2_scar_southeast", "The Scar, south-east passage", 3435, 2775); // approx
@@ -531,7 +537,7 @@ final class MahjarratQuests {
                 .defenceBonus(30, 20, 30, 10, 0)
                 .attack(AttackDef.of("strangle", AttackType.STAB, 3, 2.5, 6).special(Special.FREEZE, 3)) // typeless roots in OSRS
                 .drops(Drop.always("bones")).skin(0x4A5A3A, 0x3A4A2A, 0x2A3A1A, 0x6A8A4A).size(0.7f, 1.9f, 1.0f)
-                .at("dt2_stranglewood_dock").arena(8, "jungle"));
+                .at("dt2_kasonde_hideout").arena(8, "jungle"));
         b.boss(BossDef.of("dt2_kasonde", "Kasonde").level(231).stats(240, 190, 190, 90, 90, 190).speed(3)
                 .defenceBonus(30, 30, 30, 250, 50)
                 .attack(AttackDef.of("crossbow", AttackType.RANGED, 20, 10, 5))
@@ -539,7 +545,7 @@ final class MahjarratQuests {
                 .attack(AttackDef.of("explosive_vial", AttackType.RANGED, 15, 10, 1).special(Special.HAZARD, 4)
                         .telegraph(2, "Kasonde hurls an explosive vial!").particle("minecraft:flame")) // approx
                 .drops(Drop.always("bones")).skin(Cast.BROWN, 0x5A6A3A, 0x3A4A2A, 0x2A2A2A).size(0.6f, 1.9f, 1.0f)
-                .at("dt2_korbal_outcrop").arena(9, "jungle"));
+                .at("dt2_stranglewood_temple").arena(9, "jungle"));
         // The Desert Treasure: the Mysterious Figure (271) and Sliske's four wights.
         b.boss(BossDef.of("dt2_mysterious_figure", "Mysterious Figure").level(271).stats(450, 120, 120, 120, 120, 120).speed(4)
                 .defenceBonus(20, 40, 60, 30, 20)

@@ -101,7 +101,10 @@ class QuestRound33RepairTest {
             Map.entry("dallas_jones", new Object[]{"varrock_museum", 3, 2}), // round 37: to the Musa Point pub
             Map.entry("quest_archeio", new Object[]{"arceuus", 3, -3}), // round 37: into the Arceuus Library
             Map.entry("elissa", new Object[]{"uzer", 3, 3}), // round 44: from Uzer to the Digsite
-            Map.entry("movario", new Object[]{"guthix_sanctum", 4, 4})); // round 44: down to the Lumbridge Swamp Caves
+            Map.entry("movario", new Object[]{"guthix_sanctum", 4, 4}), // round 44: down to the Lumbridge Swamp Caves
+            // round 44: from the old Zemouregal's fort place (3375, 3480, removed) to Zemouregal's base
+            Map.entry("elias_white", new Object[]{"osrs:3375,3480", 0, 3}),
+            Map.entry("keef", new Object[]{"gu_tanoth", 3, -3})); // round 44: to his ledge in Gu'Tanoth
 
     private static int[] oldBlock(Object[] before) {
         String place = (String) before[0];

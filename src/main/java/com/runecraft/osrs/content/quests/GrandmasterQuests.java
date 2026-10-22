@@ -59,7 +59,7 @@ final class GrandmasterQuests {
         b.item("mm2_deconstructed_onyx", "Deconstructed onyx", "gem", 0x2A2A2A, "The charged onyx from Glough's device, chiselled apart.");
         b.spot("glough_cave", "Glough's cave", 2490, 3520); // approx: north-east of the Gnome Stronghold
         Cast.npc(b, "kob", "Kob", "troll_stronghold", 4, 4, Cast.TROLL, 0x5A4A3A);
-        Cast.npc(b, "keef", "Keef", "gu_tanoth", 3, -3, Cast.TROLL, 0x6A5A2A);
+        Cast.npcAt(b, "keef", "Keef", 2542, 3031, Cast.TROLL, 0x6A5A2A); // quest-helper: on his ledge in Gu'Tanoth
         // The troll generals (wiki): Kob level 185, 200 HP, slashes up to 57 (27 through Protect from Melee); Keef level 178, 180 HP,
         // crush up to 47 (he also hits through prayer). Both every 5 ticks; they give up when beaten.
         b.boss(BossDef.of("mm2_kob", "Kob").level(185).stats(200, 180, 175, 80, 0, 0).speed(5)

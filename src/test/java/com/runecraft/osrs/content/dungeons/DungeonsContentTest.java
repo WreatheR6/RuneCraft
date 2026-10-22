@@ -826,6 +826,26 @@ class DungeonsContentTest {
         assertTrue(Math.abs(chasm.blockX() - temple.blockX()) + Math.abs(chasm.blockZ() - temple.blockZ()) >= 16);
     }
 
+    /**
+     * Druidic Ritual's Cauldron of Thunder stands on its OSRS tile (2893, 9831) in Taverley Dungeon, reached on foot from the
+     * entrance without the dusty key: the blue dragons' cavern stays behind its gate, and a wall of rock parts the two.
+     */
+    @Test
+    void cauldronOfThunderOnItsTileWithoutTheDustyKey() {
+        Dungeons.Dungeon taverley = dungeon("dng_taverley_dungeon");
+        int cx = StructureDef.bx(2893);
+        int cz = StructureDef.bz(9831 - 6400);
+        assertTrue(taverley.structure().ops().stream().anyMatch(op -> op.block() != null && op.block().contains("water_cauldron")
+                && op.x1() == cx && op.z1() == cz), "the cauldron on its tile");
+        Set<Long> air = walkable(taverley, 21);
+        Set<Long> fromEntrance = reach(air, StructureDef.bx(2872), StructureDef.bz(3398));
+        assertTrue(fromEntrance.contains(key(cx + 1, cz)), "the cauldron is reached from the entrance");
+        assertFalse(fromEntrance.contains(key(StructureDef.bx(2872) + 42, StructureDef.bz(3398) - 46)),
+                "the blue dragons stay behind the dusty-key gate");
+        com.runecraft.osrs.FreeQuestObjectives.Spot spot = com.runecraft.osrs.FreeQuestObjectives.spots(com.runecraft.osrs.Quest.DRUIDIC_RITUAL, 2).get(0);
+        assertTrue(spot.contains(2893, 9831 - 6400, true) && !spot.contains(2893, 9831 - 6400, false));
+    }
+
     /** The Mort'ton catacombs' key doors stand in their halls, one per metal, each guarding a crypt with its shades. */
     @Test
     void shadeCatacombDoors() {

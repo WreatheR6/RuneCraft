@@ -28,7 +28,9 @@ public final class QuestNpcMoves {
             // Round 44: Elissa from the ruins of Uzer to the north-east of the Digsite (The Golem, quest-helper tile)
             "elissa",
             // Round 44: Movario from the surface by Guthix's sanctum down to the Lumbridge Swamp Caves (While Guthix Sleeps)
-            "movario");
+            "movario",
+            // Round 44: Elias White to Zemouregal's base (The Curse of Arrav) and Keef to his ledge in Gu'Tanoth (Monkey Madness II)
+            "elias_white", "keef");
 
     /** Block x/z where the NPC is spawned (its place's centre plus its offset), or null if its place is unknown. */
     public static int[] homeBlock(NpcDef def) {
