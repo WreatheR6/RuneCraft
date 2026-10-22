@@ -186,7 +186,8 @@ public final class CannonService {
         for (Map.Entry<String, String> e : Multicannon.BOSS_LAIRS.entrySet()) {
             ArenaLayout.Arena arena = ArenaLayout.of(e.getKey());
             if (arena != null && Math.abs(centre.getX() - arena.x()) <= arena.radius() + 4
-                    && Math.abs(centre.getZ() - arena.z()) <= arena.radius() + 4) {
+                    && Math.abs(centre.getZ() - arena.z()) <= arena.radius() + 4
+                    && (!arena.underground() || Math.abs(centre.getY() - arena.floorY()) <= 12)) { // not the ground over a lair
                 return e.getValue();
             }
         }

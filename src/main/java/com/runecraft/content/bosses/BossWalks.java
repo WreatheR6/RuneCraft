@@ -866,7 +866,9 @@ public final class BossWalks {
         if (until(boss, d, 6, () -> !boss.isAlive()) < 0) {
             throw fail("Branda didn't fall with Eldric");
         }
-        return "fire wall doused, ranged boost, blast dodged on the safe spot, subdued and fell together";
+        // their cave below the Asgarnian Ice Dungeon: in by the hut, summoned at its stone, out again
+        String lair = LairWalk.visit(p, com.runecraft.osrs.content.bosses.RoyalTitansLoot.BRANDA);
+        return "fire wall doused, ranged boost, blast dodged on the safe spot, subdued and fell together; " + lair;
     }
 
     /**

@@ -229,6 +229,9 @@ public final class YamaWalk {
             }
             sp.runEnergy = BossMechanics.RUN_ENERGY_FULL;
             log.add("forfeit breath: " + dealt + " damage took " + dealt + "% run energy, 1% every 4 ticks");
+            // his domain below the Chasm of Fire: in by the hut beside the chasm, summoned at its stone, out by the portal
+            partner.teleportTo(world, p.getX() + 40, p.getY(), p.getZ() + 40, 0, 0);
+            log.add(LairWalk.visit(p, "yama"));
             return String.join("; ", log);
         } finally {
             if (second != null && second.isAlive()) {

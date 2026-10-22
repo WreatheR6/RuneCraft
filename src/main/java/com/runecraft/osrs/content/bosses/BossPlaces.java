@@ -57,15 +57,15 @@ public final class BossPlaces {
                 PlaceDef.of("araxyte_cave", "Morytania Spider Cave", 3657, 3405, Style.CAVE, List.of()),
                 PlaceDef.of("hueycoatl_lair", "The Hueycoatl's lair", 1510, 3285, Style.RUINS, List.of()),
                 PlaceDef.of("neypotzli", "Neypotzli", 1360, 3190, Style.CAVE, List.of()),
-                // Approximate: the Royal Titans' cave beneath the Asgarnian Ice Dungeon.
+                // Approximate: the Royal Titans' cave beneath the Asgarnian Ice Dungeon (BossLairs; its hut is north-west of the trapdoor).
                 PlaceDef.of("royal_titans_lair", "Royal Titans' lair", 3008, 3150, Style.CAVE, List.of()),
                 PlaceDef.of("watsons_house", "Watson's house", 1645, 3574, Style.TOWN, List.of()),
                 PlaceDef.of("fortis_colosseum", "Fortis Colosseum", 1800, 3105, Style.ARENA, List.of()),
-                // 2025-2026 bosses (ModernBosses). Yama's lair lies beneath the Chasm of Fire; the arena stands clear of the
-                // chasm's own entrance (1433, 3671).
-                PlaceDef.of("yamas_lair", "Yama's Lair", 1404, 3712, Style.RUINS, List.of()), // approx
-                // Mokhaiotl's lair is entered from the Tlati jungle north of Tal Teklan.
-                PlaceDef.of("mokhaiotl_lair", "Mokhaiotl's lair", 1282, 3128, Style.CAVE, List.of()), // approx: the crater at the head of the stream
+                // 2025-2026 bosses (ModernBosses). Yama's Domain lies below the Chasm of Fire (BossLairs): its entrance hut stands
+                // beside the chasm's own entrance (1433, 3671). The hut and the cave are the bosses module's structure.
+                PlaceDef.of("yamas_lair", "Yama's Lair", 1446, 3672, Style.NONE, List.of()), // approx
+                // Mokhaiotl's delve lies below the Ruins of Mokhaiotl, entered from their lobby in the Tonali Cavern (BossLairs).
+                PlaceDef.of("mokhaiotl_lair", "Mokhaiotl's lair", 1311, 3164, Style.NONE, List.of()),
                 // The Gemstone Crab moves between three Tlati Rainforest spawns (wiki: 1275,3160, 1351,3110 and 1237,3042); this is
                 // the south-western one.
                 PlaceDef.of("gemstone_crab_mine", "Tlati Rainforest mine (Gemstone Crab)", 1237, 3042, Style.CAMP, List.of()),
@@ -77,8 +77,8 @@ public final class BossPlaces {
                 // Swamp. Arenas are built 14 + radius blocks east of their place (ArenaLayout), so the place sits 11.5 tiles
                 // west of that tile; with the snap to chunk centres his arena is centred within 5 tiles of it.
                 PlaceDef.of(DERANGED_SWAMP, "Deranged archaeologist's clearing", 3672, 3706, Style.NONE, List.of()),
-                // The Maggot King's hive in the Vampyrium, reached through Darkmeyer.
-                PlaceDef.of("maggot_kings_hive", "Maggot King's hive", 3660, 3310, Style.CAVE, List.of())); // approx
+                // The Maggot King's hive in the Vampyrium, reached through Darkmeyer: a cave below ground here (BossLairs).
+                PlaceDef.of("maggot_kings_hive", "Maggot King's hive", 3660, 3310, Style.NONE, List.of())); // approx
     }
 
     public static List<BlockDef> blocks() {
@@ -90,6 +90,8 @@ public final class BossPlaces {
                 BlockDef.scripted(DukeRules.MUSCA_MUSHROOMS, "Musca mushrooms", 0x6A8A4A, "mushroom"),
                 BlockDef.scripted(DukeRules.SALT_PILE, "Salt pile", 0xE0E0E8, "rock"),
                 BlockDef.scripted(DukeRules.VAT, "Fermentation vat", 0x6A5A4A, "vat"),
-                BlockDef.scripted(ClassicBosses.SCURRIUS_FOOD_PILE, "Food Pile", 0x8A6A3A, "crate"));
+                BlockDef.scripted(ClassicBosses.SCURRIUS_FOOD_PILE, "Food Pile", 0x8A6A3A, "crate"),
+                BlockDef.scripted(BossLairs.ENTRANCE, "Entrance", 0x4A3A2A, "portal_door"),
+                BlockDef.scripted(BossLairs.EXIT, "Exit portal", 0x8A4AC8, "portal_glow"));
     }
 }

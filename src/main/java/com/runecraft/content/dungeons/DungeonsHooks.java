@@ -553,7 +553,14 @@ public final class DungeonsHooks implements ModuleHooks {
                 Msg.game(player, "The way is blocked.");
                 return;
             }
-            BlockPos to = Gielinor.safeSpot(world, a.x(), a.z() + Math.max(2, a.radius() / 2));
+            BlockPos to;
+            if (a.underground()) {
+                // a lair carved underground (BossDef.lair): onto its floor, south of the centre
+                com.runecraft.world.StructurePlacer.applyAround(world, a.x(), a.z(), a.radius() + 6);
+                to = new BlockPos(a.x(), a.floorY() + 1, a.z() + Math.max(2, a.radius() / 2));
+            } else {
+                to = Gielinor.safeSpot(world, a.x(), a.z() + Math.max(2, a.radius() / 2));
+            }
             Msg.game(player, p.message());
             player.teleportTo(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYRot(), player.getXRot());
             return;

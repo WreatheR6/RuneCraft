@@ -75,6 +75,18 @@ public final class BossDef extends CombatProfile<BossDef> {
         return this;
     }
 
+    /**
+     * An underground lair: the arena is carved at block (x, floorY, z) below ground instead of beside the place on the
+     * surface ({@code ArenaLayout}); null for a surface arena. The bosses module carves the cave around it and its way in.
+     */
+    public int[] lair;
+
+    /** The arena lies underground, centred on OSRS tile (tileX, tileY), its floor at block height {@code floorY}. */
+    public BossDef lair(int tileX, int tileY, int floorY) {
+        this.lair = new int[]{com.runecraft.osrs.GielinorMap.toBlockX(tileX), floorY, com.runecraft.osrs.GielinorMap.toBlockZ(tileY)};
+        return this;
+    }
+
     public BossDef raidOnly() {
         this.raidOnly = true;
         return this;

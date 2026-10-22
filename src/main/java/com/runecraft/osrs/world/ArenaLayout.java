@@ -18,9 +18,23 @@ import java.util.Map;
  * builder, the terrain model and the smoke tests so they all agree.
  */
 public final class ArenaLayout {
-    /** An arena centre in block coordinates. */
-    public record Arena(String bossId, String placeId, int x, int z, int radius) {
+    /**
+     * An arena centre in block coordinates. {@code floorY}: the floor height of an underground lair ({@code BossDef.lair}),
+     * or {@link #SURFACE} for an arena built on the ground beside its place.
+     */
+    public record Arena(String bossId, String placeId, int x, int z, int radius, int floorY) {
+        public Arena(String bossId, String placeId, int x, int z, int radius) {
+            this(bossId, placeId, x, z, radius, SURFACE);
+        }
+
+        /** Whether the arena is carved underground (its floor at {@link #floorY}). */
+        public boolean underground() {
+            return floorY != SURFACE;
+        }
     }
+
+    /** {@link Arena#floorY} of an arena on the surface (its floor is wherever the ground is). */
+    public static final int SURFACE = Integer.MIN_VALUE;
 
     /** Extra blocks kept clear around an arena's radius. */
     private static final int MARGIN = 3;
@@ -68,6 +82,11 @@ public final class ArenaLayout {
         Map<String, Arena> out = new LinkedHashMap<>();
         for (BossDef b : ContentRegistry.bosses()) {
             if (b.raidOnly || b.place == null) {
+                continue;
+            }
+            if (b.lair != null) {
+                // an underground lair: carved where the boss defines it, clear of the surface layout
+                out.put(b.id, new Arena(b.id, b.place, b.lair[0], b.lair[2], b.arenaRadius, b.lair[1]));
                 continue;
             }
             int[] centre = placeCentre(b.place);
