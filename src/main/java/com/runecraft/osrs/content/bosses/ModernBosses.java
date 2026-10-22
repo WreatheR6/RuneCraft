@@ -162,8 +162,10 @@ public final class ModernBosses {
                         .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive()
                         .skin(0x8A7AA0, 0x5A4A70, 0x3A2A50, 0xC0A0FF).size(0.6f, 1.8f, 1.0f).moveSpeed(0.0),
                 // Araxxor's nine eggs (OSRS Wiki "Araxxor/Strategies"): 65 hitpoints; the Araxxor script hatches them in order.
+                // "Both the eggs and the araxytes count as on-task monsters for the purposes of benefiting from the slayer
+                // helmet's damage bonus, but will not reduce the player's task kill count" (SlayerBossRules.NO_TASK_KILL).
                 MonsterDef.of(BossMechanics.ARAXYTE_EGG, "Egg").level(1).stats(BossMechanics.ARAXYTE_EGG_HP, 1, 1, 1, 1, 1)
-                        .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive()
+                        .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive().slayer(92, "araxytes")
                         .skin(0xD8D0C0, 0xB8B0A0, 0x908878, 0x6AC04A).size(0.9f, 1.0f, 1.0f).moveSpeed(0.0));
     }
 
@@ -364,7 +366,7 @@ public final class ModernBosses {
                 st(0, 16, 0, -16, -18, 105, 128, 100, -5, 112, 4, 0, 0, 0), Skill.DEFENCE, 85).examine("A chestplate sworn to Yama, purified.");
         BossItems.wearItem(items, "radiant_oathplate_legs", "Radiant oathplate legs", Kind.ARMOUR, "platelegs", 0xD8D8E0, 25_000_000, Slot.LEGS,
                 st(0, 12, 0, -12, -14, 75, 100, 73, -3, 81, 2, 0, 0, 0), Skill.DEFENCE, 85).examine("Platelegs sworn to Yama, purified.");
-        for (String c : new String[]{"catalyst", "worm", "shard", "oathplate", "harmony"}) {
+        for (String c : new String[]{"catalyst", "worm", "shard", "oathplate", "harmony", "familiar"}) {
             items.add("contract_of_" + c + "_acquisition", "Contract of " + c + " acquisition", Kind.SIMPLE, "scroll", 0x6A2A5A)
                     .value(75000).weight(0.4).examine("A contract issued by Yama. Present it to him to discuss some new terms.");
         }

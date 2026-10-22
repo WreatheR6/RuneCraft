@@ -35,7 +35,24 @@ public final class SlayerBossRules {
      * is the wiki's (58, 58, 65; {@code MonsterTraits}). The Sire's respiratory systems have no task category at all and get
      * their 50 XP from the Sire's script.
      */
-    public static final Set<String> NO_TASK_KILL = Set.of("acidic_araxyte", "mirrorback_araxyte", "ruptura_araxyte");
+    public static final Set<String> NO_TASK_KILL = Set.of("acidic_araxyte", "mirrorback_araxyte", "ruptura_araxyte",
+            BossMechanics.ARAXYTE_EGG);
+    /**
+     * Of those, the ones that give no Slayer XP either: Araxxor's eggs (they count as on-task for the slayer helmet, but the
+     * wiki gives a destroyed egg no Slayer experience: approx).
+     */
+    public static final Set<String> NO_TASK_XP = Set.of(BossMechanics.ARAXYTE_EGG);
+    /**
+     * Minions that count as the boss's task creatures on a boss task (OSRS Wiki "Araxxor": the eggs and the hatched araxytes
+     * count as on-task monsters for the slayer helmet), keyed by minion id: the boss whose boss task they belong to.
+     */
+    public static final Map<String, String> TASK_MINIONS = Map.of("acidic_araxyte", "araxxor", "mirrorback_araxyte", "araxxor",
+            "ruptura_araxyte", "araxxor", BossMechanics.ARAXYTE_EGG, "araxxor");
+
+    /** Whether a creature's kill gives Slayer XP on task ({@link #NO_TASK_XP} never does). */
+    public static boolean taskXp(String creatureId) {
+        return creatureId == null || !NO_TASK_XP.contains(creatureId);
+    }
 
     private static final Map<String, Access> ALL = new LinkedHashMap<>();
 

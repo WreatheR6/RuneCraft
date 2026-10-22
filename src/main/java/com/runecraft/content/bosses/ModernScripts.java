@@ -154,6 +154,8 @@ final class ModernScripts {
         /** Each fighter's damage to Yama (their contribution, YamaLoot) and the players themselves. */
         private final Map<UUID, Integer> damageBy = new java.util.LinkedHashMap<>();
         private final Map<UUID, ServerPlayer> fighters = new java.util.LinkedHashMap<>();
+        /** The pet rolls this script made on the kill, per player (1/n each; the boss engine's own roll isn't here). */
+        private final Map<UUID, List<Integer>> petRolls = new HashMap<>();
         /** Who showed Yama the contract (only they receive its reward) and their name. */
         private UUID contractHost;
         private String contractHostName = "my challenger";
@@ -162,9 +164,54 @@ final class ModernScripts {
         /** Autos at the current target (in a duo he turns on the other player now and then). */
         private int autosAtTarget;
 
+        /** Live Yama fights (for the familiar contract's rules on the fighters' food, potions and specials). */
+        private static final Set<Yama> ACTIVE = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+        /** The boss this script runs. */
+        private DataBossEntity self;
+
+        /** The live Yama fight under this contract that a player is part of (in the arena, not an intruder), or null. */
+        static Yama fightOf(ServerPlayer p, java.util.function.Predicate<YamaContract> contract) {
+            synchronized (ACTIVE) {
+                for (Yama y : ACTIVE) {
+                    DataBossEntity b = y.self;
+                    if (b != null && b.isAlive() && !b.isRemoved() && y.contract != null && contract.test(y.contract)
+                            && p.level() == b.level() && p.distanceToSqr(b) < 32 * 32 && !y.intruder(p)) {
+                        return y;
+                    }
+                }
+            }
+            return null;
+        }
+
         /** The rewards of a kill: every fighter's own roll on their contribution; the killer's come back to drop. */
         static void register() {
             com.runecraft.boss.DataBossService.loot("yama", Yama::rollLoot);
+            // The contract of familiar acquisition (OSRS Wiki): no healing or prayer restoration from consumables, doubled
+            // natural special attack regeneration and special attacks that always hit.
+            com.runecraft.skill.ItemUses.addConsumeGuard((player, def) -> fightOf(player, YamaContract::noConsumables) != null
+                    && BossMechanics.familiarBlocks(def.id(), def.kind() == com.runecraft.osrs.ItemDef.Kind.FOOD)
+                    ? "The terms of your contract forbid that." : null);
+            com.runecraft.content.systems.SpecialAttackService.doubleRegen = com.runecraft.content.systems.SpecialAttackService.doubleRegen
+                    .or(p -> fightOf(p, YamaContract::noConsumables) != null);
+            CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
+                @Override
+                public double accuracy(ServerPlayer player, net.minecraft.world.entity.LivingEntity target, AttackType type) {
+                    return SpecialAttackService.specialActive(player) && fightOf(player, YamaContract::noConsumables) != null
+                            ? MinionRules.ALWAYS_HITS : 1.0;
+                }
+            });
+            // The contract of forfeit breath (OSRS Wiki): "Yama drains run energy percentage equal to damage dealt" - any
+            // damage of his, his flares' or his Judge's (the losing blow itself excepted).
+            CombatHooks.addDamageListener((player, attacker, attack, style, damage) -> {
+                if (damage <= 0 || attacker == null || "forfeit".equals(attack)) {
+                    return;
+                }
+                Yama y = attacker instanceof DataBossEntity b && b.script() instanceof Yama s ? s : OWNED.get(attacker);
+                if (y != null && y.contract == YamaContract.FORFEIT_BREATH && !y.intruder(player)) {
+                    SysState.SysPlayer sp = SysState.of(player);
+                    sp.runEnergy = BossMechanics.forfeitAfterHit(sp.runEnergy, damage);
+                }
+            });
             // Under a solo contract only its challenger may hurt Yama, his flares or his Judge, whatever the damage path
             // (the hit hook below refuses the usual paths before any contribution is credited).
             com.runecraft.combat.CombatHooks.addMonsterDamageGate((player, target) -> {
@@ -208,12 +255,8 @@ final class ModernScripts {
                     Inv.give(p, com.runecraft.skill.Drops.withDoses(CombatHooks.dropStack(p, boss, d.item(), d.count()), d.doses()));
                     com.runecraft.collection.CollectionLog.obtain(p, d.item());
                 }
-                if (!YamaLoot.junk(share) && r.nextInt(YamaLoot.PET) == 0) {
-                    Inv.give(p, "pet_yami", 1);
-                    com.runecraft.collection.CollectionLog.obtain(p, "pet_yami");
-                    p.getServer().getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.literal(
-                            p.getName().getString() + " has a funny feeling like they're being followed.")
-                            .withStyle(net.minecraft.ChatFormatting.GOLD), false);
+                if (!YamaLoot.junk(share)) {
+                    y.rollPet(p, YamaLoot.petRate(contract), r::nextInt);
                 }
                 int kc = com.runecraft.player.Players.data(p).incrementKillCount("yama");
                 Msg.game(p, "Your Yama success count is: " + kc + ".");
@@ -222,6 +265,22 @@ final class ModernScripts {
                 }
             }
             return mine;
+        }
+
+        /** Rolls a 1/{@code rate} chance of Yami for a player (and notes the roll for the walk). */
+        private void rollPet(ServerPlayer p, int rate, java.util.function.IntUnaryOperator nextInt) {
+            petRolls.computeIfAbsent(p.getUUID(), k -> new ArrayList<>()).add(rate);
+            if (nextInt.applyAsInt(rate) == 0) {
+                givePet(p);
+            }
+        }
+
+        private static void givePet(ServerPlayer p) {
+            Inv.give(p, "pet_yami", 1);
+            com.runecraft.collection.CollectionLog.obtain(p, "pet_yami");
+            p.getServer().getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.literal(
+                    p.getName().getString() + " has a funny feeling like they're being followed.")
+                    .withStyle(net.minecraft.ChatFormatting.GOLD), false);
         }
 
         private static List<com.runecraft.skill.Drops.Rolled> rolled(List<YamaLoot.Loot> loot) {
@@ -254,6 +313,11 @@ final class ModernScripts {
 
         YamaContract walkContract() {
             return contract;
+        }
+
+        /** The script's pet rolls on the kill for a player (1/n each), on top of the boss engine's 1/2,500 for the slayer. */
+        List<Integer> walkPetRolls(ServerPlayer p) {
+            return petRolls.getOrDefault(p.getUUID(), List.of());
         }
 
         int walkStage() {
@@ -375,6 +439,11 @@ final class ModernScripts {
                 contractHost = contract == null ? null : challenger.getUUID();
                 contractHostName = challenger.getName().getString();
             }
+            self = boss;
+            synchronized (ACTIVE) {
+                ACTIVE.add(this);
+            }
+            autosToSpecial = Math.min(autosToSpecial, BossMechanics.yamaAutosBeforeSpecial(contract));
             fireStyle = boss.getRandom().nextBoolean();
             BossFx.say(boss, contract == null ? "Yama: Let us begin. Mind the glyphs, mortal."
                     : "Yama: The terms of the " + contract.displayName() + " are binding. Begin!");
@@ -452,24 +521,26 @@ final class ModernScripts {
             }
         }
 
-        /** Phase 3: his fire (magic) and shadow (ranged) autos pierce the matching protection prayer for up to 3. */
+        /**
+         * His fire (magic) and shadow (ranged) autos pierce the matching protection prayer: up to 3 in phase 3, more in every
+         * phase under the contracts of sensory clouding and familiar acquisition, never under divine severance
+         * ({@link BossMechanics#yamaAutoPierce}).
+         */
         @Override
         protected void afterAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
-            if (stage < 3 || target == null || (attack != ModernBosses.YAMA_FIRE && attack != ModernBosses.YAMA_SHADOW)) {
+            int pierce = BossMechanics.yamaAutoPierce(stage, contract);
+            if (pierce <= 0 || target == null || (attack != ModernBosses.YAMA_FIRE && attack != ModernBosses.YAMA_SHADOW)) {
                 return;
             }
             Prayer prayer = attack == ModernBosses.YAMA_FIRE ? Prayer.PROTECT_FROM_MAGIC : Prayer.PROTECT_FROM_MISSILES;
             if (BossFx.protects(target, prayer)) {
-                hurt(boss, target, attack.name(), boss.getRandom().nextInt(BossMechanics.YAMA_PIERCE_P3 + 1));
+                hurt(boss, target, attack.name(), boss.getRandom().nextInt(pierce + 1));
             }
         }
 
         @Override
         public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
-            if (contract == YamaContract.FORFEIT_BREATH && damage > 0) {
-                SysState.of(player).runEnergy -= damage * 40; // approx
-            }
-            return damage;
+            return damage; // forfeit breath's drain on damage: the damage listener in register(), for every kind of hit
         }
 
         /** A floor spot at an offset from the arena centre, pulled in to stay at least two blocks inside the ring wall. */
@@ -521,7 +592,7 @@ final class ModernScripts {
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (stage >= 3) {
                 if (distance < 2.6) {
-                    melee(boss, target, BossMechanics.YAMA_MELEE_THROUGH_PRAYER_P3);
+                    melee(boss, target, BossMechanics.yamaMeleeThroughPrayer(stage, contract));
                     spawnFlares(boss, 1);
                     return null;
                 }
@@ -553,7 +624,7 @@ final class ModernScripts {
             }
             autosToSpecial--;
             if (distance < 2.6) {
-                melee(boss, target, contract == YamaContract.DIVINE_SEVERANCE ? 0 : BossMechanics.YAMA_MELEE_THROUGH_PRAYER);
+                melee(boss, target, BossMechanics.yamaMeleeThroughPrayer(stage, contract));
                 return null;
             }
             return fireStyle ? ModernBosses.YAMA_FIRE : ModernBosses.YAMA_SHADOW;
@@ -582,9 +653,9 @@ final class ModernScripts {
         }
 
         private void startSpecial(DataBossEntity boss, ServerPlayer target) {
-            autosToSpecial = 3;
+            autosToSpecial = BossMechanics.yamaAutosBeforeSpecial(contract);
             cooldown = attackDelay(boss, null) - 1;
-            hazard(boss, hazardWaves, stage >= 2 ? 2 : 1);
+            hazard(boss, hazardWaves, BossMechanics.yamaHazardSets(stage, contract));
             hazardWaves = !hazardWaves;
             if (!fireStyle && ++shadowSpecials % 2 == 0) {
                 BossFx.warn(boss, "Yama summons void flares! Destroy them before they explode.");
@@ -597,7 +668,8 @@ final class ModernScripts {
                 pending = stage >= 2 ? Special.STOMP : Special.GLYPH_SHADOW;
             }
             pendingAt = target.position();
-            pendingDue = now + (pending == Special.METEOR ? 5 : 4);
+            // phase 1's glyph specials land 6 ticks on (5 under a contract: wiki); phase 2's Meteor Strike 5, Shadow Stomp 4
+            pendingDue = now + (pending == Special.METEOR ? 5 : pending == Special.STOMP ? 4 : BossMechanics.yamaGlyphSpecialTicks(contract));
             BossFx.cast(boss, pending == Special.METEOR ? "Meteor" : pending == Special.STOMP ? "Stomp" : "Glyph", null, // round 43
                     (int) (pendingDue - now) * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK, 24);
             BossFx.warn(boss, switch (pending) {
@@ -645,6 +717,15 @@ final class ModernScripts {
         }
 
         private void spawnFlares(DataBossEntity boss, int count) {
+            spawnFlares(boss, count, false);
+        }
+
+        /**
+         * Void flares around the arena, at most four at a time; {@code reduced}: the 81-hitpoint flares the contracts of divine
+         * severance and familiar acquisition spawn all fight (OSRS Wiki, 4 June 2025: "Void flares that spawn with reduced
+         * health have had their health decreased from 83 to 81").
+         */
+        private void spawnFlares(DataBossEntity boss, int count, boolean reduced) {
             flares.removeIf(f -> !f.mob().isAlive());
             int room = 4 - flares.size();
             for (int i = 0; i < Math.min(count, room); i++) {
@@ -653,7 +734,9 @@ final class ModernScripts {
                     continue;
                 }
                 OWNED.put(m, this);
-                if (stage >= 3) {
+                if (reduced) {
+                    m.setHealth(m.getMaxHealth() * BossMechanics.CONTINUOUS_FLARE_HP / BossMechanics.VOID_FLARE_HP);
+                } else if (stage >= 3) {
                     m.setHealth(m.getMaxHealth() / 2); // 71 of 140 in phase 3
                 }
                 flares.add(new Flare(m, now + BossMechanics.VOID_FLARE_TICKS, m.getHealth()));
@@ -825,18 +908,23 @@ final class ModernScripts {
         private void exileTick(DataBossEntity boss) {
             boolean judgeAlive = judge != null && judge.isAlive();
             if (judgeAlive && now - exileStart < 300) {
-                if (now > exileStart && (now - exileStart) % BossMechanics.JUDGE_ATTACK_TICKS == 0) {
+                // every 5 ticks, one bomb; under a contract every 3 ticks, two bombs (OSRS Wiki "Yama/Strategies")
+                if (now > exileStart && (now - exileStart) % BossMechanics.yamaJudgeTicks(contract) == 0) {
                     judgeAttacks++;
                     for (ServerPlayer p : exilees) {
                         if (!p.isAlive()) {
                             continue;
                         }
                         UUID id = p.getUUID();
-                        namedStrike("fire_wave", boss, p.position(), 2, BossMechanics.JUDGE_FIRE_MAX, 1.3, ParticleTypes.FLAME, (hit, pos) -> {
-                            if (hit.contains(p)) {
-                                exileHits.merge(id, 1, Integer::sum);
-                            }
-                        });
+                        for (int bomb = 0; bomb < BossMechanics.yamaJudgeBombs(contract); bomb++) {
+                            // the second bomb lands a couple of blocks off the player (approx: where, the wiki doesn't say)
+                            Vec3 at = bomb == 0 ? p.position() : around(boss, p.position(), 2.5);
+                            namedStrike("fire_wave", boss, at, 2, BossMechanics.JUDGE_FIRE_MAX, 1.3, ParticleTypes.FLAME, (hit, pos) -> {
+                                if (hit.contains(p)) {
+                                    exileHits.merge(id, 1, Integer::sum);
+                                }
+                            });
+                        }
                         if (judgeAttacks == 5 || judgeAttacks == 13) {
                             hurt(boss, p, "cavern_shake", 5 + boss.getRandom().nextInt(3));
                             exileHits.merge(id, 1, Integer::sum);
@@ -864,7 +952,7 @@ final class ModernScripts {
             }
             exilees.clear();
             meleeStance = true;
-            autosToSpecial = 1;
+            autosToSpecial = Math.min(1, BossMechanics.yamaAutosBeforeSpecial(contract));
             cooldown = 3;
             if (--exilesQueued > 0) {
                 exileDelay = 4;
@@ -890,11 +978,17 @@ final class ModernScripts {
             List<ServerPlayer> players = BossFx.players(boss, 24);
             if (contract != null && target != null) {
                 if (contract == YamaContract.FORFEIT_BREATH) {
+                    // OSRS Wiki: 1% every 4 ticks, besides 1% a point of damage he deals; the player dies at 0%
                     for (ServerPlayer p : players) {
+                        if (intruder(p)) {
+                            continue;
+                        }
                         SysState.SysPlayer sp = SysState.of(p);
-                        sp.runEnergy -= 25; // approx: passive drain
+                        if (now % BossMechanics.FORFEIT_DRAIN_TICKS == 0) {
+                            sp.runEnergy = Math.max(0, sp.runEnergy - BossMechanics.FORFEIT_DRAIN);
+                        }
                         if (sp.runEnergy <= 0) {
-                            sp.runEnergy = 10000;
+                            sp.runEnergy = BossMechanics.RUN_ENERGY_FULL;
                             Msg.red(p, "You run out of breath and forfeit the contract!");
                             hurt(boss, p, "forfeit", 999);
                         }
@@ -908,8 +1002,8 @@ final class ModernScripts {
                         }
                     }
                 }
-                if (contract.continuousFlares && !exiled && now % 20 == 0) {
-                    spawnFlares(boss, 1);
+                if (contract.continuousFlares && !exiled && now % 20 == 0) { // approx: one every 20 ticks
+                    spawnFlares(boss, 1, true);
                 }
                 CombatAchievementService.flag(target, BossMechanics.FLAG_YAMA_CONTRACT);
             }
@@ -936,10 +1030,7 @@ final class ModernScripts {
                     if (g.on.contains(p.getUUID())) {
                         continue;
                     }
-                    int cost = BossMechanics.glyphCost(tiles(flat(boss.position(), g.pos)));
-                    if (contract == YamaContract.GLYPHIC_ATTENUATION) {
-                        cost *= 2;
-                    }
+                    int cost = BossMechanics.glyphCost(tiles(flat(boss.position(), g.pos))) * BossMechanics.yamaGlyphCostScale(contract);
                     if (g.fire) {
                         hurt(boss, p, "glyph_of_fire", cost);
                     } else {
@@ -1051,6 +1142,9 @@ final class ModernScripts {
 
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            synchronized (ACTIVE) {
+                ACTIVE.remove(this);
+            }
             flares.forEach(f -> f.mob().discard());
             if (judge != null) {
                 judge.discard();
@@ -1059,6 +1153,7 @@ final class ModernScripts {
                 // OSRS Wiki "Yama#Contracts": sigil contracts come back with their purifying sigil piece; acquisition
                 // contracts are used up and guarantee their reward (oathplate: the first piece the player isn't carrying).
                 // Only the player who showed Yama the contract receives it (the duo partner rolls the unique table only).
+                ServerPlayer slayer = killer; // who landed the kill: the boss engine rolled their pet, and rollLoot skipped them
                 ServerPlayer host = contractHost == null ? null : fighters.get(contractHost);
                 if (host != null && host.isAlive()) {
                     killer = host;
@@ -1067,7 +1162,16 @@ final class ModernScripts {
                     Inv.give(killer, contract.item, 1);
                     Msg.game(killer, "Yama returns your " + contract.displayName().toLowerCase(java.util.Locale.ROOT) + ".");
                 }
+                // The slayer's pet (the contract holder or their partner): the boss engine rolled the usual 1/2,500 with the
+                // kill; the familiar contract tops it up to 1/100, as rollLoot rolls 1/100 for every other fighter.
+                int extra = YamaLoot.killerExtraPetRate(contract);
+                if (extra > 0) {
+                    rollPet(slayer, extra, boss.getRandom()::nextInt);
+                }
                 String reward = contract.reward();
+                if (reward == null) {
+                    return; // the familiar contract's reward is its pet chance (and the standard table, rolled as usual)
+                }
                 if (contract == YamaContract.OATHPLATE_ACQUISITION) {
                     for (String piece : new String[]{"oathplate_legs", "oathplate_chest", "oathplate_helm"}) {
                         if (!Inv.has(killer, piece, 1)) {

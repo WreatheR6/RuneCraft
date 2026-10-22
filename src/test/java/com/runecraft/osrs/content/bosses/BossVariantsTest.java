@@ -24,6 +24,18 @@ class BossVariantsTest {
     }
 
     @Test
+    void awakenedBossesStandOutsideSlayerAndDrains() {
+        // OSRS Wiki "Awakened mode": immune to stat drains; the black mask and slayer helmet don't apply; Duke's slash +65.
+        assertTrue(AwakenedBosses.offTask(true));
+        assertFalse(AwakenedBosses.offTask(false));
+        assertTrue(AwakenedBosses.drainImmune(true));
+        assertFalse(AwakenedBosses.drainImmune(false));
+        assertEquals(65, AwakenedBosses.defenceBonus("duke_sucellus", com.runecraft.osrs.AttackType.SLASH));
+        assertEquals(null, AwakenedBosses.defenceBonus("duke_sucellus", com.runecraft.osrs.AttackType.STAB));
+        assertEquals(null, AwakenedBosses.defenceBonus("vardorvis", com.runecraft.osrs.AttackType.SLASH));
+    }
+
+    @Test
     void dt2DropRatesFollowTheWiki() {
         BossDef duke = ContentRegistry.boss("duke_sucellus");
         // Unique table 1/90: vestige 1/720, chromium 3/720, the Eye 1/720, each virtus piece 1/2160; orb 1/48.

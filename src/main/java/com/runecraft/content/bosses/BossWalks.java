@@ -1012,7 +1012,9 @@ public final class BossWalks {
         if (until(boss, d, 6, () -> !boss.isAlive()) < 0) {
             throw fail("Branda didn't fall with Eldric");
         }
-        return "fire wall doused, ranged boost, blast dodged on the safe spot, subdued and fell together";
+        // their cave below the Asgarnian Ice Dungeon: in by the hut, summoned at its stone, out again
+        String lair = LairWalk.visit(p, com.runecraft.osrs.content.bosses.RoyalTitansLoot.BRANDA);
+        return "fire wall doused, ranged boost, blast dodged on the safe spot, subdued and fell together; " + lair;
     }
 
     /**
@@ -1064,9 +1066,38 @@ public final class BossWalks {
                     + " Mining XP");
         }
         int herbloreXp = com.runecraft.player.Players.data(p).skills().xpTenths(com.runecraft.osrs.Skill.HERBLORE);
-        int made = DukePrep.ferment(p);
+        // The asylum's two vats: each takes one batch (six of each) and ferments it before the poison can be collected.
+        String[] vats = {"selftest_vat_west", "selftest_vat_east"};
+        for (String v : vats) {
+            DukePrep.clearVat(v);
+        }
+        int made = 0;
+        for (int round = 0; made < poisons && round < poisons; round++) {
+            for (String v : vats) {
+                DukePrep.useVat(p, v);
+            }
+            int inside = 0;
+            for (String v : vats) {
+                if (DukePrep.vatTicksLeft(v) > 0) {
+                    inside++;
+                }
+            }
+            if (inside == 0) {
+                throw fail("the vats took no batch (" + Inv.count(p, com.runecraft.osrs.content.bosses.DukeRules.SALAX_SALT) + " salt)");
+            }
+            if (DukePrep.useVat(p, vats[0]) != 0) {
+                throw fail("a vat gave its poison before it fermented");
+            }
+            d.ticks(boss, com.runecraft.osrs.content.bosses.DukeRules.FERMENT_TICKS + 1);
+            for (String v : vats) {
+                made += DukePrep.useVat(p, v);
+            }
+        }
+        for (String v : vats) {
+            DukePrep.clearVat(v);
+        }
         if (made < poisons) {
-            throw fail("the vat made " + made + " poisons, " + poisons + " needed");
+            throw fail("the vats made " + made + " poisons, " + poisons + " needed");
         }
         if (com.runecraft.player.Players.data(p).skills().xpTenths(com.runecraft.osrs.Skill.HERBLORE) - herbloreXp > made * 100) {
             throw fail("the vat gave more than 10 Herblore XP a poison");

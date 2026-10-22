@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "runecraft:item/contract_of_familiar_acquisition"
+  }
+}

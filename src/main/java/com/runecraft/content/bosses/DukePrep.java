@@ -30,7 +30,7 @@ final class DukePrep {
         com.runecraft.content.BlockHooks.register(DukeRules.ARDER_MUSHROOMS, (p, pos, state) -> pick(p, DukeRules.ARDER_MUSHROOM));
         com.runecraft.content.BlockHooks.register(DukeRules.MUSCA_MUSHROOMS, (p, pos, state) -> pick(p, DukeRules.MUSCA_MUSHROOM));
         com.runecraft.content.BlockHooks.register(DukeRules.SALT_PILE, (p, pos, state) -> mineSalt(p, pos));
-        com.runecraft.content.BlockHooks.register(DukeRules.VAT, (p, pos, state) -> ferment(p));
+        com.runecraft.content.BlockHooks.register(DukeRules.VAT, (p, pos, state) -> useVat(p, vatKey(p, pos)));
         com.runecraft.platform.UseItemCallback.EVENT.register((player, world, hand) -> {
             net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
             String id = Inv.idOf(stack);
@@ -157,21 +157,56 @@ final class DukePrep {
         return made;
     }
 
-    /** A fermentation vat: six salt and six of each powder make an arder-musca poison; returns how many were made. */
-    static int ferment(ServerPlayer p) {
-        int n = DukeRules.poisons(Inv.count(p, DukeRules.SALAX_SALT), Inv.count(p, DukeRules.ARDER_POWDER),
-                Inv.count(p, DukeRules.MUSCA_POWDER));
-        if (n <= 0) {
+    /**
+     * The fermentation vats by dimension and block (a vat is a block of the asylum). Each brews one poison at a time
+     * ({@link DukeRules.Vat}); vats are scenery, so a server restart empties them (approx: OSRS vats reset with the instance).
+     */
+    private static final Map<String, DukeRules.Vat> VATS = new java.util.HashMap<>();
+
+    /** A vat's key: its dimension and block position. */
+    static String vatKey(ServerPlayer p, BlockPos pos) {
+        return p.level().dimension().location() + "@" + pos.asLong();
+    }
+
+    /**
+     * Using a fermentation vat (OSRS Wiki "Arder-musca poison", "Duke Sucellus/Strategies"): an empty vat takes six salax
+     * salt, six arder powder and six musca powder for one poison and ferments them for {@link DukeRules#FERMENT_TICKS}; a
+     * finished batch is collected (10 Herblore XP) by using the vat again. Returns 1 when a poison was collected, else 0.
+     */
+    static int useVat(ServerPlayer p, String key) {
+        DukeRules.Vat vat = VATS.computeIfAbsent(key, k -> new DukeRules.Vat());
+        long now = ActionManager.gameTick();
+        if (vat.collect(now)) {
+            Inv.give(p, DukeRules.POISON, 1);
+            XpService.add(p, Skill.HERBLORE, DukeRules.POISON_XP);
+            Msg.game(p, "You collect an arder-musca poison from the vat.");
+            return 1;
+        }
+        if (!vat.empty()) {
+            Msg.game(p, "The mixture is still fermenting.");
+            return 0;
+        }
+        if (DukeRules.poisons(Inv.count(p, DukeRules.SALAX_SALT), Inv.count(p, DukeRules.ARDER_POWDER),
+                Inv.count(p, DukeRules.MUSCA_POWDER)) <= 0) {
             Msg.game(p, "The vat needs " + DukeRules.PER_POISON + " salax salt, arder powder and musca powder for a poison.");
             return 0;
         }
-        int take = n * DukeRules.PER_POISON;
-        Inv.remove(p, DukeRules.SALAX_SALT, take);
-        Inv.remove(p, DukeRules.ARDER_POWDER, take);
-        Inv.remove(p, DukeRules.MUSCA_POWDER, take);
-        Inv.give(p, DukeRules.POISON, n);
-        XpService.add(p, Skill.HERBLORE, DukeRules.POISON_XP * n); // (approx: all at once, OSRS 6 ticks each)
-        Msg.game(p, "The mixture ferments into " + n + " arder-musca poison" + (n > 1 ? "s." : "."));
-        return n;
+        Inv.remove(p, DukeRules.SALAX_SALT, DukeRules.PER_POISON);
+        Inv.remove(p, DukeRules.ARDER_POWDER, DukeRules.PER_POISON);
+        Inv.remove(p, DukeRules.MUSCA_POWDER, DukeRules.PER_POISON);
+        vat.fill(now);
+        Msg.game(p, "You add the salt and powders to the vat. The mixture begins to ferment.");
+        return 0;
+    }
+
+    /** Self-test: game ticks until a vat's batch is ready (0 when ready or empty). */
+    static long vatTicksLeft(String key) {
+        DukeRules.Vat vat = VATS.get(key);
+        return vat == null ? 0 : vat.ticksLeft(ActionManager.gameTick());
+    }
+
+    /** Self-test: empties a vat. */
+    static void clearVat(String key) {
+        VATS.remove(key);
     }
 }

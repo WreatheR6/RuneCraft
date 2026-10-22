@@ -178,6 +178,8 @@ class SolHereditTest {
         BossDef sol = ContentRegistry.boss(FortisColosseum.SOL_HEREDIT);
         assertNotNull(sol);
         assertEquals(SolHeredit.PHASES, sol.phases.stream().map(BossDef.Phase::belowPercent).toList());
+        // OSRS: Sol drops nothing; the Rewards Chest pays the run (round 44: the stale table was emptied).
+        assertTrue(sol.drops.isEmpty(), "Sol Heredit drops " + sol.drops);
         assertEquals(SolHeredit.PHASE_LINES, sol.phases.stream().map(BossDef.Phase::message).toList());
         for (BossDef.Phase p : sol.phases) {
             assertEquals(1.0, p.damageMultiplier(), 1e-9);

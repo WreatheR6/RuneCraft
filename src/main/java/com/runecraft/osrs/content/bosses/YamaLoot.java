@@ -80,9 +80,31 @@ public final class YamaLoot {
         return contribution < JUNK_SHARE;
     }
 
-    /** Whether the standard table is rolled under this contract (no contract, or none at all). */
+    /**
+     * Whether the standard table is rolled under this contract: with none, and under the contract of familiar acquisition
+     * (OSRS Wiki: "If the player is fighting Yama under any contract other than the Contract of familiar acquisition, the
+     * standard table will not be rolled").
+     */
     public static boolean standardTable(YamaContract contract) {
-        return contract == null;
+        return contract == null || contract == YamaContract.FAMILIAR_ACQUISITION;
+    }
+
+    /** Each fighter's 1/n chance of Yami: 1/2,500, or 1/100 under the contract of familiar acquisition (both fighters). */
+    public static int petRate(YamaContract contract) {
+        return contract == YamaContract.FAMILIAR_ACQUISITION ? BossMechanics.FAMILIAR_PET_RATE : PET;
+    }
+
+    /**
+     * The killer's extra pet roll under a contract: the boss engine rolls their usual 1/2,500 on the kill, so 1/n on top
+     * brings the total to {@link #petRate} (0: none).
+     */
+    public static int killerExtraPetRate(YamaContract contract) {
+        int rate = petRate(contract);
+        if (rate >= PET) {
+            return 0;
+        }
+        double p = (1.0 / rate - 1.0 / PET) / (1.0 - 1.0 / PET);
+        return (int) Math.round(1.0 / p);
     }
 
     /**
@@ -159,9 +181,12 @@ public final class YamaLoot {
         return contract == null ? new double[]{200 / 3.0, 100 / 3.0} : new double[]{75, 50};
     }
 
-    /** Whether a partner may join the fight under this contract (the catalyst, worm and shard acquisition contracts). */
+    /**
+     * Whether a partner may join the fight under this contract (the catalyst, worm, shard and familiar acquisition
+     * contracts).
+     */
     public static boolean duoAllowed(YamaContract contract) {
         return contract == null || contract == YamaContract.CATALYST_ACQUISITION || contract == YamaContract.WORM_ACQUISITION
-                || contract == YamaContract.SHARD_ACQUISITION;
+                || contract == YamaContract.SHARD_ACQUISITION || contract == YamaContract.FAMILIAR_ACQUISITION;
     }
 }

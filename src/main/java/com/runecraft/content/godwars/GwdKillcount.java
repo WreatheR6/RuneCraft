@@ -36,8 +36,11 @@ public final class GwdKillcount {
      * to 1/55..1/40 with the hard..grandmaster Combat Achievement tiers.
      */
     public static java.util.function.ToIntFunction<ServerPlayer> ecumenicalChance = p -> 60;
-    /** Most ecumenical keys a player may hold (3; 4 and 5 with the medium and hard Wilderness diaries in OSRS). // approx */
-    public static final int ECUMENICAL_KEY_CAP = 3;
+    /**
+     * Most ecumenical keys a player may hold ({@link GodWarsFactions#ecumenicalKeyCap}: 3; the systems module raises it to 4
+     * and 5 with the medium and hard Wilderness diaries).
+     */
+    public static java.util.function.ToIntFunction<ServerPlayer> ecumenicalCap = p -> GodWarsFactions.ecumenicalKeyCap(false, false);
     /** The Wilderness God Wars Dungeon (dungeons module, carved under its entrance at 3017, 3738): its OSRS tile box. */
     private static final int[] WILDERNESS_GWD = {3010, 3700, 3056, 3765};
     /** A bodyguard's frozen key piece during The Frozen Door (OSRS Wiki: 1/20). */
@@ -173,7 +176,7 @@ public final class GwdKillcount {
             Msg.game(player, "The bodyguard drops a piece of a frozen key!");
         }
         if (inWildernessGwd(entity) && entity.getRandom().nextInt(Math.max(1, ecumenicalChance.applyAsInt(player))) == 0) {
-            if (Inv.count(player, "ecumenical_key") >= ECUMENICAL_KEY_CAP) {
+            if (Inv.count(player, "ecumenical_key") >= ecumenicalCap.applyAsInt(player)) {
                 Msg.game(player, "You already have enough of these.");
             } else {
                 com.runecraft.combat.LootDrops.spawn(entity, Inv.stack("ecumenical_key", 1), player);

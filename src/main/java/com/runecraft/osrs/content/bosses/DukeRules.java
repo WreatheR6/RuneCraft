@@ -59,6 +59,53 @@ public final class DukeRules {
         return Math.min(salt, Math.min(arder, musca)) / PER_POISON;
     }
 
+    /**
+     * Game ticks a filled vat ferments before its poison can be collected (OSRS Wiki "Arder-musca poison": a 6-tick recipe;
+     * "Duke Sucellus/Strategies": "place them in both Fermentation Vats and let it ferment for several seconds before
+     * collecting two finished poisons").
+     */
+    public static final int FERMENT_TICKS = 6;
+
+    /**
+     * One fermentation vat: it takes one batch (six of each ingredient) at a time, ferments it for {@link #FERMENT_TICKS}
+     * and holds the finished poison until it is collected. The asylum has two, so two poisons brew at once.
+     */
+    public static final class Vat {
+        /** Game tick the batch inside is ready, or -1 when the vat is empty. */
+        private long readyAt = -1;
+
+        public boolean empty() {
+            return readyAt < 0;
+        }
+
+        /** Fills an empty vat at game tick {@code now}; false when it already holds a batch. */
+        public boolean fill(long now) {
+            if (!empty()) {
+                return false;
+            }
+            readyAt = now + FERMENT_TICKS;
+            return true;
+        }
+
+        public boolean ready(long now) {
+            return !empty() && now >= readyAt;
+        }
+
+        /** Game ticks until the batch is ready (0 when ready or empty). */
+        public long ticksLeft(long now) {
+            return empty() ? 0 : Math.max(0, readyAt - now);
+        }
+
+        /** Takes the finished poison out: true when there was one ready. */
+        public boolean collect(long now) {
+            if (!ready(now)) {
+                return false;
+            }
+            readyAt = -1;
+            return true;
+        }
+    }
+
     /** The poison count that wakes him. */
     public static int poisonsToWake(boolean awakened) {
         int t = tolerance(awakened);

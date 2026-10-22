@@ -112,6 +112,34 @@ class ClassicBossRulesTest {
     }
 
     @Test
+    void scurriusFoodPilesFollowTheWiki() {
+        // OSRS Wiki "Food Pile": three piles, north, south and east of his spawn, about the same distance out.
+        assertEquals(3, ClassicBosses.SCURRIUS_PILES.length);
+        int[] north = ClassicBosses.SCURRIUS_PILES[0];
+        int[] south = ClassicBosses.SCURRIUS_PILES[1];
+        int[] east = ClassicBosses.SCURRIUS_PILES[2];
+        assertTrue(north[1] < -5 && Math.abs(north[0]) <= 2, "north pile");
+        assertTrue(south[1] > 5 && Math.abs(south[0]) <= 2, "south pile");
+        assertTrue(east[0] > 5 && Math.abs(east[1]) <= 2, "east pile");
+        BossDef s = ContentRegistry.boss("scurrius");
+        for (int[] p : ClassicBosses.SCURRIUS_PILES) {
+            assertTrue(Math.hypot(p[0], p[1]) <= s.arenaRadius - 2, "inside the arena: " + p[0] + "," + p[1]);
+            // clear of the summoning stone (2 blocks inside the north wall)
+            assertFalse(p[0] == 0 && p[1] == -s.arenaRadius + 2, "on the summoning stone");
+        }
+        assertEquals(0, ClassicBosses.nearestPile(-1, -7));
+        assertEquals(1, ClassicBosses.nearestPile(0, 6));
+        assertEquals(2, ClassicBosses.nearestPile(7, 1));
+        // Players: full hitpoints once every ten minutes (1,000 ticks), not straight after an attack.
+        assertTrue(ClassicBosses.canEatPile(100, -1, -1));
+        assertFalse(ClassicBosses.canEatPile(1099, 100, -1));
+        assertTrue(ClassicBosses.canEatPile(1100, 100, -1));
+        assertFalse(ClassicBosses.canEatPile(1100, -1, 1098));
+        assertTrue(ClassicBosses.canEatPile(1100, -1, 1100 - ClassicBosses.FOOD_PILE_COMBAT_TICKS));
+        assertTrue(ContentRegistry.blocks().stream().anyMatch(b -> b.id().equals(ClassicBosses.SCURRIUS_FOOD_PILE)));
+    }
+
+    @Test
     void hesporiIsCutNotBlockedByPrayer() {
         assertEquals(2, ClassicBosses.hesporiPrayed(8, AttackType.RANGED, 8));
         assertEquals(1, ClassicBosses.hesporiPrayed(4, AttackType.RANGED, 8));

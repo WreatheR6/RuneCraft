@@ -191,8 +191,11 @@ public final class SysCombat {
         drainStat(target, Skill.DEFENCE, levels);
     }
 
+    /** Monsters immune to stat drains (other modules add theirs: the awakened Desert Treasure II bosses). */
+    public static java.util.function.Predicate<LivingEntity> drainImmune = t -> false;
+
     public static void drainStat(LivingEntity target, Skill skill, int levels) {
-        if (levels <= 0) {
+        if (levels <= 0 || !(target instanceof ServerPlayer) && drainImmune.test(target)) {
             return;
         }
         if (target instanceof ServerPlayer p) {

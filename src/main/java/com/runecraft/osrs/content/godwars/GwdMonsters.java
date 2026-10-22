@@ -141,9 +141,11 @@ public final class GwdMonsters {
                 .attack(AttackDef.of("bite", AttackType.STAB, 14, 2.5, 10))
                 .drops(followerDrops(Drop.always("vile_ashes"), Drop.of("clue_scroll_hard", 1, 1, 64)))
                 .model("gwd_hellhound").size(0.9f, 1.2f, 1.3f));
-        list.add(MonsterDef.of("gwd_gorak", "Gorak").level(149).stats(128, 130, 140, 140, 1, 1).speed(4) // approx.
-                .defenceBonus(40, 40, 40, 40, 40)
-                .attack(AttackDef.of("claws", AttackType.CRUSH, 16, 2.5, 10).special(Special.PRAYER_PIERCING, 0))
+        // OSRS Wiki (Gorak, GWD version): level 149, 128 hitpoints, no bonuses, typeless melee up to 14 that ignores
+        // protection prayers; each successful hit drains a random stat by 1-4 (GwdKillcount.goraksTouch).
+        list.add(MonsterDef.of("gwd_gorak", "Gorak").level(149).stats(128, 133, 126, 135, 1, 1).speed(4)
+                .defenceBonus(0, 0, 0, 0, 0)
+                .attack(AttackDef.of("claws", AttackType.CRUSH, 14, 2.5, 10).special(Special.PRAYER_PIERCING, 0))
                 .drops(followerDrops(Drop.always("bones"), Drop.of("death_rune", 5, 15, 8)))
                 .skin(0x6A5AA0, 0x4A3A80, 0x3A2A60, 0xC0C0E0).size(0.8f, 2.2f, 1.1f));
         list.add(MonsterDef.of("gwd_vampire", "Vampire").level(72).stats(60, 60, 60, 60, 1, 1).speed(4)
@@ -173,36 +175,68 @@ public final class GwdMonsters {
         list.add(MonsterDef.of("gwd_spiritual_warrior_zaros", "Spiritual warrior (Zaros)").level(158).stats(100, 190, 190, 100, 50, 1)
                 .speed(5).defenceBonus(100, 100, 80, 0, 250)
                 .attack(AttackDef.of("melee", AttackType.CRUSH, 20, 2.5, 10))
-                .drops(prisonDrops(Drop.always("bones"), Drop.herbs(16)))
+                .drops(prisonDrops(68, 23, Drop.of("air_rune", 150, 150, 64), Drop.of("chaos_rune", 1, 1, 43), Drop.of("mind_rune", 1, 1, 18),
+                        Drop.of("mud_rune", 15, 15, 18), Drop.of("nature_rune", 1, 1, 32), Drop.of("coins", 1, 1, 64),
+                        Drop.of("coins", 400, 499, 14), Drop.of("prayer_potion(2)", 1, 1, 14), Drop.of("super_attack(1)", 1, 1, 12),
+                        Drop.of("super_defence(1)", 1, 1, 64), Drop.of("super_strength(1)", 1, 1, 64),
+                        Drop.of("adamant_chainbody", 1, 1, 18), Drop.of("lobster", 1, 1, 128), Drop.of("nihil_shard", 2, 5, 128),
+                        Drop.of("potato_cactus", 1, 1, 18), Drop.of("clue_scroll_hard", 1, 1, 128)))
                 .slayer(68, "spiritual_creatures").skin(0xB0B0C8, purple, 0x3A2A4A, purple).size(0.6f, 1.95f, 1.1f));
         list.add(MonsterDef.of("gwd_spiritual_ranger_zaros", "Spiritual ranger (Zaros)").level(158).stats(110, 1, 1, 100, 100, 190)
                 .speed(5).defenceBonus(20, 0, 20, 300, 50)
                 .attack(AttackDef.of("arrow", AttackType.RANGED, 20, 10, 10).particle("minecraft:crit"))
-                .drops(prisonDrops(Drop.always("bones"), Drop.of("rune_arrow", 15, 30, 8)))
+                .drops(prisonDrops(68, 23, Drop.of("adamant_bolts", 15, 15, 18), Drop.of("chaos_rune", 1, 1, 43),
+                        Drop.of("nature_rune", 1, 1, 32), Drop.of("rune_arrow", 12, 12, 64), Drop.of("rune_arrow", 50, 50, 64),
+                        Drop.of("coins", 1, 1, 64), Drop.of("coins", 500, 500, 14), Drop.of("prayer_potion(2)", 1, 1, 14),
+                        Drop.of("ranging_potion(2)", 1, 1, 12), Drop.of("super_defence(1)", 1, 1, 64),
+                        Drop.of("blue_dragon_scale", 2, 2, 18), Drop.of("green_dhide_body", 1, 1, 18), Drop.of("nihil_shard", 2, 7, 128),
+                        Drop.of("uncut_diamond", 1, 1, 32), Drop.of("shark", 1, 1, 128), Drop.of("clue_scroll_hard", 1, 1, 128)))
                 .slayer(63, "spiritual_creatures").skin(0xB0B0C8, purple, 0x2A3A2A, purple).size(0.6f, 1.95f, 1.1f));
         list.add(MonsterDef.of("gwd_spiritual_mage_zaros", "Spiritual mage (Zaros)").level(182).stats(125, 1, 1, 100, 200, 1)
                 .speed(5).defenceBonus(420, 400, 420, 200, 0).attackBonus(0, 52, 0)
                 .attack(AttackDef.of("god spell", AttackType.MAGIC, 38, 10, 10).particle("minecraft:witch"))
-                .drops(prisonDrops(Drop.always("bones"), Drop.of("blood_rune", 20, 40, 8)))
+                .drops(prisonDrops(14, 46, Drop.of("air_rune", 250, 250, 18), Drop.of("astral_rune", 38, 98, 9),
+                        Drop.of("blood_rune", 25, 25, 64), Drop.of("lava_rune", 30, 60, 14), Drop.of("death_rune", 25, 25, 32),
+                        Drop.of("mud_rune", 40, 70, 18), Drop.of("smoke_rune", 100, 150, 64), Drop.of("soul_rune", 25, 25, 43),
+                        Drop.of("coins", 6900, 6942, 64), Drop.of("super_defence(3)", 1, 1, 64), Drop.of("super_restore(3)", 1, 1, 14),
+                        Drop.of("ancient_brew(2)", 1, 1, 12), Drop.of("ancient_brew(3)", 1, 1, 32), Drop.of("blood_essence", 1, 1, 128),
+                        Drop.of("nihil_shard", 5, 9, 128), Drop.of("dragon_boots", 1, 1, 128), Drop.of("clue_scroll_hard", 1, 1, 128)))
                 .slayer(83, "spiritual_creatures").skin(0xB0B0C8, purple, purple, 0xE0E0E0).size(0.6f, 1.95f, 1.1f));
         list.add(MonsterDef.of("gwd_blood_reaver", "Blood Reaver").level(174).stats(125, 1, 1, 100, 190, 1).speed(5)
                 .defenceBonus(20, 80, 120, 300, 55)
-                .attack(AttackDef.of("blood spell", AttackType.MAGIC, 20, 10, 10).particle("minecraft:damage_indicator"))
-                .drops(prisonDrops(Drop.of("blood_rune", 10, 30, 8)))
+                .attack(AttackDef.of("blood spell", AttackType.MAGIC, 20, 10, 10).special(Special.LIFESTEAL, 25) // approx: 25%
+                        .particle("minecraft:damage_indicator"))
+                .drops(prisonDrops(68, 23, Drop.always("malicious_ashes"), Drop.of("air_rune", 150, 150, 64), Drop.of("air_rune", 250, 250, 18),
+                        Drop.of("astral_rune", 25, 25, 9), Drop.of("blood_rune", 15, 15, 64), Drop.of("chaos_rune", 15, 15, 43),
+                        Drop.of("mind_rune", 20, 20, 32), Drop.of("mud_rune", 15, 15, 18), Drop.of("nature_rune", 15, 15, 32),
+                        Drop.of("coins", 1, 1, 64), Drop.of("coins", 500, 500, 14), Drop.of("magic_potion(1)", 1, 1, 12),
+                        Drop.of("super_defence(1)", 1, 1, 64), Drop.of("prayer_potion(2)", 1, 1, 14), Drop.of("blood_essence", 1, 1, 128),
+                        Drop.of("nihil_shard", 2, 7, 128), Drop.of("potato_cactus", 1, 1, 18), Drop.of("clue_scroll_hard", 1, 1, 112)))
                 .model("blood_reaver").size(0.8f, 1.6f, 1.1f));
     }
 
     /**
-     * Drops of the Ancient Prison's followers: a piece of ancient ceremonial robes 1/200 (1/1000 each, as Nex's mages; OSRS
-     * Wiki: every NPC of the prison but Nex drops them), coins and a hard clue (approx).
+     * Drops of the Ancient Prison's followers (OSRS Wiki, the Zaros drop tables of Spiritual warrior/ranger/mage and Blood
+     * Reaver): each creature's own lines ({@code extra}, its runes, potions, coins and hard clue) plus the lines they share:
+     * each piece of ancient ceremonial robes 1/640, 1,300-1,337 coins 6/128, 1-4 adamantite bars and 1-10 coal 8/128 (noted
+     * in OSRS), pure essence 8/128 ({@code essence}: 23, the mage 46), the herbs (avantoe 3.125/128, ranarr and snapdragon
+     * 2.5/128, torstol 1/{@code torstol}: 68, the mage 14) and the gem drop table 1/128. No bones: the spirituals are
+     * spectral and the reavers leave malicious ashes.
      */
-    private static Drop[] prisonDrops(Drop... extra) {
+    private static Drop[] prisonDrops(int torstol, int essence, Drop... extra) {
         List<Drop> d = new ArrayList<>(List.of(extra));
-        d.add(Drop.of("coins", 500, 2500, 4)); // approx
         for (String piece : new String[]{"mask", "top", "legs", "gloves", "boots"}) {
-            d.add(Drop.of("ancient_ceremonial_" + piece, 1, 1, 1000));
+            d.add(Drop.of("ancient_ceremonial_" + piece, 1, 1, 640));
         }
-        d.add(Drop.of("clue_scroll_hard", 1, 1, 128));
+        d.add(Drop.of("coins", 1300, 1337, 21));
+        d.add(Drop.of("adamantite_bar", 1, 4, 16));
+        d.add(Drop.of("coal", 1, 10, 16));
+        d.add(Drop.of("pure_essence", essence, essence, 16));
+        d.add(Drop.of("grimy_avantoe", 1, 1, 41));
+        d.add(Drop.of("grimy_ranarr_weed", 1, 1, 51));
+        d.add(Drop.of("grimy_snapdragon", 1, 1, 51));
+        d.add(Drop.of("grimy_torstol", 1, 1, torstol));
+        d.add(Drop.gems(128));
         return d.toArray(new Drop[0]);
     }
 
@@ -275,10 +309,14 @@ public final class GwdMonsters {
     }
 
     private static void minions(List<MonsterDef> list) {
-        // Nex: blood reavers summoned during Blood siphon.
-        list.add(MonsterDef.of("blood_reaver", "Blood reaver").level(122).stats(150, 100, 100, 80, 1, 1).speed(4) // approx.
-                .attack(AttackDef.of("melee", AttackType.SLASH, 12, 2.5, 10).special(Special.LIFESTEAL, 25))
-                .drops(Drop.always("bones")).size(0.8f, 1.6f, 1.1f));
+        // Nex: blood reavers summoned during Blood siphon. OSRS Wiki (Blood Reaver, Nex's chamber version): level 161, 150
+        // hitpoints, a Blood Rush-like spell up to 20 every 5 ticks that heals the reaver (25% of the damage, as blood spells:
+        // approx); damaging one heals its attacker half the damage (GwdKillcount). Defences from MonsterStatsTable.
+        list.add(MonsterDef.of("blood_reaver", "Blood Reaver").level(161).stats(150, 1, 1, 100, 190, 1).speed(5)
+                .defenceBonus(20, 80, 120, 300, 55)
+                .attack(AttackDef.of("blood spell", AttackType.MAGIC, 20, 10, 10).special(Special.LIFESTEAL, 25)
+                        .particle("minecraft:damage_indicator"))
+                .drops(Drop.always("malicious_ashes")).model("blood_reaver").size(0.8f, 1.6f, 1.1f));
         // Vet'ion / Calvar'ion hounds.
         list.add(MonsterDef.of("skeleton_hellhound", "Skeleton Hellhound").level(194).stats(80, 200, 160, 100, 1, 1).speed(4)
                 .defenceBonus(100, 100, 100, 100, 100)

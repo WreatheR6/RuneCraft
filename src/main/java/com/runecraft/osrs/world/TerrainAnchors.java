@@ -229,6 +229,9 @@ public final class TerrainAnchors {
         for (BossDef b : bosses) {
             int r = b.arenaRadius;
             ArenaLayout.Arena spot = ArenaLayout.of(b.id);
+            if (spot != null && spot.underground()) {
+                continue; // carved underground: no terrace (its structure's cover keeps rock over it)
+            }
             int[] fallback = ArenaLayout.defaultPosition(cx, cz, arena, r);
             int ax = spot != null ? spot.x() : fallback[0];
             int az = spot != null ? spot.z() : fallback[1];

@@ -32,6 +32,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Self-test walks of the classic bosses' mechanics ({@code boss:zulrah_rotation}, {@code boss:vorkath_specials},
@@ -596,9 +597,21 @@ final class ClassicBossWalks {
         try {
             now = tick(boss, p, now);
             boss.setHealth(boss.getMaxHealth() * 0.79f);
-            float h = boss.getHealth();
             now = tick(boss, p, now);
-            expect(s.phase == 2 && s.eating, "below 80% he didn't go to a food pile (phase " + s.phase + ")");
+            expect(s.phase == 2 && (s.heading || s.eating), "below 80% he didn't head for a food pile (phase " + s.phase + ")");
+            expect(s.pileIndex >= 0 && s.pileIndex < ClassicBosses.SCURRIUS_PILES.length, "no food pile chosen");
+            int[] po = ClassicBosses.SCURRIUS_PILES[s.pileIndex];
+            Vec3 pileAt = s.walkPile();
+            expect(pileAt != null && Math.abs(pileAt.x - (s.homeVec().x + po[0])) < 1.01 && Math.abs(pileAt.z - (s.homeVec().z + po[1])) < 1.01,
+                    "the pile isn't at one of the wiki's three spots: " + pileAt);
+            for (int i = 0; i < 14 && !s.eating; i++) {
+                now = tick(boss, p, now);
+                p.setHealth(p.getMaxHealth());
+            }
+            expect(s.eating, "he never reached the food pile");
+            expect(Math.hypot(boss.getX() - pileAt.x, boss.getZ() - pileAt.z) <= 1.6, "he eats away from the pile ("
+                    + Math.round(Math.hypot(boss.getX() - pileAt.x, boss.getZ() - pileAt.z)) + " blocks)");
+            float h = boss.getHealth();
             for (int i = 0; i < 40 && s.eating; i++) {
                 now = tick(boss, p, now);
                 p.setHealth(p.getMaxHealth());
@@ -610,7 +623,7 @@ final class ClassicBossWalks {
             // Still between 80% and 30%: after a spell of melee he goes back to a pile.
             boss.setHealth(boss.getMaxHealth() * 0.6f);
             int waited = 0;
-            for (; waited < ClassicBosses.SCURRIUS_EAT_AGAIN_TICKS + 10 && !s.eating; waited++) {
+            for (; waited < ClassicBosses.SCURRIUS_EAT_AGAIN_TICKS + 25 && !s.eating; waited++) {
                 now = tick(boss, p, now);
                 p.setHealth(p.getMaxHealth());
             }
@@ -640,6 +653,18 @@ final class ClassicBossWalks {
             }
             expect(s.waves == waves + 1 && rats.size() >= ClassicBosses.SCURRIUS_RATS, "a rat wave brought " + rats.size() + " rats");
             out.append("; bricks fell, a wave of ").append(rats.size()).append(" giant rats");
+            // The food piles feed players too: full hitpoints once every ten minutes, never straight after an attack.
+            ScurriusPiles.reset(p);
+            p.setHealth(Math.max(1f, p.getMaxHealth() / 4));
+            ScurriusPiles.attackedNow(p);
+            expect(!ScurriusPiles.eat(p), "a player under attack (his rats) ate from a food pile");
+            ScurriusPiles.reset(p);
+            expect(ScurriusPiles.eat(p) && p.getHealth() >= p.getMaxHealth() - 0.01f, "the food pile didn't heal the player to full");
+            p.setHealth(Math.max(1f, p.getMaxHealth() / 4));
+            expect(!ScurriusPiles.eat(p), "a player ate from the food pile twice within ten minutes");
+            ScurriusPiles.reset(p);
+            p.setHealth(p.getMaxHealth());
+            out.append("; the food pile healed the player (not under attack, once in ten minutes)");
             return out.toString();
         } finally {
             restore.run();

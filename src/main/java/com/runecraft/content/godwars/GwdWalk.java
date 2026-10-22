@@ -582,6 +582,25 @@ public final class GwdWalk {
         expect(here() == Area.NEX_CHAMBER, "couldn't step back into Nex's chamber");
         // The fight: Nex shields herself behind each mage in turn; the mage is killed, then she goes on.
         PlayerData data = Players.data(player);
+        // Umbra's Shadow Barrage lowers Attack by 15% once: a second hit on a drained Attack takes nothing more (OSRS Wiki,
+        // Shadow Barrage: "This effect does not stack")
+        DataBossEntity umbra = world.getEntitiesOfClass(DataBossEntity.class, nex.getBoundingBox().inflate(48, 12, 48),
+                e -> e.isAlive() && e.def() != null && "umbra".equals(e.def().id)).stream().findFirst().orElse(null);
+        expect(umbra != null, "Umbra isn't in Nex's chamber");
+        var skills = data.skills();
+        skills.setXpTenths(Skill.ATTACK, Math.max(skills.xpTenths(Skill.ATTACK), com.runecraft.osrs.Experience.xpForLevel(80) * 10));
+        skills.setBoost(Skill.ATTACK, 0);
+        int attack = skills.level(Skill.ATTACK);
+        umbra.script().onHitPlayer(umbra, player, 10, AttackType.MAGIC);
+        int drainedOnce = skills.currentLevel(Skill.ATTACK);
+        umbra.script().onHitPlayer(umbra, player, 10, AttackType.MAGIC);
+        umbra.script().onHitPlayer(umbra, player, 10, AttackType.MAGIC);
+        expect(drainedOnce == attack - GwdBosses.umbraDrain(attack, 0) && drainedOnce < attack,
+                "Umbra's barrage took Attack " + attack + " to " + drainedOnce);
+        expect(skills.currentLevel(Skill.ATTACK) == drainedOnce,
+                "Umbra's barrage stacked: Attack " + attack + " -> " + drainedOnce + " -> " + skills.currentLevel(Skill.ATTACK));
+        skills.setBoost(Skill.ATTACK, 0);
+        note("umbra drains attack " + attack + " -> " + drainedOnce + " once");
         int kcBefore = data.killCount("nex");
         int phases = 0;
         for (int round = 0; round < 400 && nex.isAlive(); round++) {

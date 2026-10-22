@@ -35,6 +35,9 @@ final class AwakenedService {
             DataBossService.onKilled(id, AwakenedService::killed);
             DataBossService.loot(id, AwakenedService::loot);
         }
+        // Awakened bosses are immune to stat drains (OSRS Wiki, "Awakened mode": dragon warhammer, elder maul, Arclight...).
+        com.runecraft.content.systems.SysCombat.drainImmune = com.runecraft.content.systems.SysCombat.drainImmune
+                .or(t -> t instanceof DataBossEntity b && AwakenedBosses.drainImmune(b.awakened()));
     }
 
     /**

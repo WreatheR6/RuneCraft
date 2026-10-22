@@ -22,7 +22,11 @@ public final class GwdBosses {
     }
 
     // --- Kree'arra ---
-    public static final AttackDef KREE_MELEE = AttackDef.of("talon swipe", AttackType.SLASH, 25, 3.5, 2); // wiki infobox: 25 (Melee)
+    /**
+     * Wiki infobox: 25 (Melee), "Magical melee": blocked by Protect from Melee, but his melee accuracy rolls against the
+     * player's magic defence (osrs.data.HybridStyles), as his wind blast is ranged magic (Magic against ranged defence).
+     */
+    public static final AttackDef KREE_MELEE = AttackDef.of("talon swipe", AttackType.SLASH, 25, 3.5, 2);
     public static final AttackDef KREE_TORNADO = AttackDef.of("tornado", AttackType.RANGED, 69, 24, 6)
             .special(Special.KNOCKBACK, 3).particle("minecraft:cloud");
     public static final AttackDef KREE_WIND = AttackDef.of("wind blast", AttackType.MAGIC, 21, 24, 3).particle("minecraft:sweep_attack");
@@ -116,7 +120,7 @@ public final class GwdBosses {
         // Nex: 3400 hitpoints (the script scales damage because Minecraft caps max health at 1024).
         list.add(BossDef.of("nex", "Nex").level(1001).stats(3400, 315, 200, 260, 230, 350).speed(4)
                 .attackBonus(200, 100, 150)
-                .defenceBonus(40, 140, 60, 300, 190) // approx.
+                .defenceBonus(40, 140, 60, 300, 190) // wiki/osrs-dps-calc (heavy ranged 150, light and standard 190)
                 .attack(NEX_SMOKE).attack(NEX_MELEE)
                 .phase(80, "Fumus, don't fail me!", 1.0, false, NEX_SHADOW, NEX_MELEE)
                 .phase(60, "Umbra, don't fail me!", 1.0, false, NEX_BLOOD, NEX_MELEE)
@@ -134,18 +138,38 @@ public final class GwdBosses {
                 .arena(16, "ice").category("God Wars Dungeon")
                 .flying().size(0.9f, 2.2f, 1.7f));
 
+        // OSRS Wiki infoboxes (Fumus, Umbra, Cruor, Glacies): level 285, 500 hitpoints, 200 Defence and Magic, +25 magic
+        // damage, a barrage up to 29 every 5 ticks; each is weak (+25) to one melee style and has +150 magic and +50 ranged
+        // defence (Umbra +25). Fumus's Smoke Barrage poisons (4), Umbra's Shadow Barrage lowers Attack by 15%
+        // (NexMinionScript), Cruor's Blood Barrage heals him (25% of the damage, as the spell: approx) and Glacies's Ice
+        // Barrage freezes for 6 ticks (Mod Ash).
         String[] names = {"Fumus", "Umbra", "Cruor", "Glacies"};
         AttackDef[] attacks = {
-                AttackDef.of("smoke", AttackType.MAGIC, 18, 20, 10).special(Special.POISON, 6).particle("minecraft:large_smoke"),
-                AttackDef.of("shadow", AttackType.RANGED, 18, 20, 10).particle("minecraft:squid_ink"),
-                AttackDef.of("blood", AttackType.MAGIC, 18, 20, 10).special(Special.LIFESTEAL, 25).particle("minecraft:damage_indicator"),
-                AttackDef.of("ice", AttackType.MAGIC, 18, 20, 10).special(Special.FREEZE, 6).particle("minecraft:snowflake")};
+                AttackDef.of("smoke", AttackType.MAGIC, 29, 20, 10).special(Special.POISON, 4).particle("minecraft:large_smoke"),
+                AttackDef.of("shadow", AttackType.MAGIC, 29, 20, 10).particle("minecraft:squid_ink"),
+                AttackDef.of("blood", AttackType.MAGIC, 29, 20, 10).special(Special.LIFESTEAL, 25).particle("minecraft:damage_indicator"),
+                AttackDef.of("ice", AttackType.MAGIC, 29, 20, 10).special(Special.FREEZE, 6).particle("minecraft:snowflake")};
+        int[][] defences = {{25, 100, 100, 150, 50}, {100, 100, 100, 150, 25}, {100, 25, 100, 150, 50}, {100, 100, 25, 150, 50}};
         for (int i = 0; i < 4; i++) {
-            list.add(BossDef.of(NEX_MINIONS[i], names[i]).level(285).stats(200, 1, 1, 150, 200, 200).speed(5)
-                    .defenceBonus(100, 100, 100, 100, 100)
+            int[] d = defences[i];
+            list.add(BossDef.of(NEX_MINIONS[i], names[i]).level(285).stats(500, 1, 1, 200, 200, 1).speed(5)
+                    .defenceBonus(d[0], d[1], d[2], d[3], d[4]).attackBonus(0, 0, 0)
                     .attack(attacks[i]) // OSRS: no bones; only the 1/200 ancient ceremonial robes (BossDropsTable)
                     .raidOnly().category("God Wars Dungeon").moveSpeed(0.0).flying().size(0.7f, 1.9f, 1.25f));
         }
         return list;
+    }
+
+    /** Umbra's Shadow Barrage lowers the Attack level of a player it hits by this share (OSRS Wiki, Umbra: 15%). */
+    public static final int UMBRA_ATTACK_DRAIN_PERCENT = 15;
+
+    /**
+     * The Attack levels Umbra's Shadow Barrage drains from a player with base Attack {@code level} and current boost
+     * {@code boost}: 15% of the base level, and nothing while their Attack is already drained (OSRS Wiki, Shadow Barrage:
+     * "reduces the target's Attack level by 15% if it has not already been drained. This effect does not stack ... and
+     * will not apply if the target's stats have already been drained from another source").
+     */
+    public static int umbraDrain(int level, int boost) {
+        return boost < 0 ? 0 : level * UMBRA_ATTACK_DRAIN_PERCENT / 100;
     }
 }

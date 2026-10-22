@@ -24,8 +24,9 @@ import net.minecraft.world.phys.Vec3;
  * back; phase 2's Meteor Strike outrun or Shadow Stomp blocked; the second exile at 33.3%; phase 3 with the glyphs gone and
  * half-health flares; the kill shared with a duo partner who rolls their own loot on their contribution. Then a second
  * challenge under the Contract of shard acquisition: exiles at 75% and 50%, no standard table, and the 45 shards for the
- * player who showed the contract. Last, a solo contract (divine severance): the partner walking in after the summon can't
- * hurt him by any path.
+ * player who showed the contract. A solo contract (divine severance): the partner walking in after the summon can't hurt
+ * him by any path. The Contract of familiar acquisition: the partner may join, no food, 81-hitpoint void flares all fight
+ * and the contract back on the kill. Last, forfeit breath's run energy drain on damage and over time.
  */
 public final class YamaWalk {
     private YamaWalk() {
@@ -47,6 +48,8 @@ public final class YamaWalk {
         ServerPlayer partner = com.runecraft.platform.FakePlayer.partner(world);
         DataBossEntity second = null;
         DataBossEntity third = null;
+        DataBossEntity fourth = null;
+        DataBossEntity fifth = null;
         partner.getInventory().clearContent(); // room for the partner's own loot
         try {
             Vec3 c = y.homeVec();
@@ -147,6 +150,118 @@ public final class YamaWalk {
                         + byOtherPath + " damage, contribution " + y3.contribution(partner) + ")");
             }
             log.add("solo contract: the late partner can't hurt Yama");
+            third.discard();
+
+            // a fourth challenge under the Contract of familiar acquisition (a partner may join; no healing consumables;
+            // 81-hitpoint void flares all fight; the contract comes back on a kill)
+            ModernScripts.Yama.walkOffer(p, YamaContract.FAMILIAR_ACQUISITION);
+            fourth = DataBossService.spawn(world, boss.blockPosition(), def, p);
+            if (fourth == null || !(fourth.script() instanceof ModernScripts.Yama y4)) {
+                throw fail("the familiar contract challenge didn't spawn Yama");
+            }
+            d.ticks(fourth, 2);
+            if (y4.walkContract() != YamaContract.FAMILIAR_ACQUISITION) {
+                throw fail("Yama ignored the familiar contract (" + y4.walkContract() + ")");
+            }
+            partner.teleportTo(world, c.x + 3, c.y, c.z + 6, 0, 0);
+            if (BossWalks.hit(fourth, partner, 300, AttackType.SLASH) <= 0) {
+                throw fail("the familiar contract's duo partner couldn't hurt Yama");
+            }
+            // no food under its terms
+            p.setHealth(p.getMaxHealth() / 2);
+            float before4 = p.getHealth();
+            net.minecraft.world.item.ItemStack shark = Inv.stack("shark", 1);
+            com.runecraft.osrs.ItemDef sharkDef = com.runecraft.registry.ModItems.def(shark);
+            if (ModernScripts.Yama.fightOf(p, YamaContract::noConsumables) == null) {
+                throw fail("the familiar contract's challenger isn't held to its terms");
+            }
+            com.runecraft.skill.ItemUses.use(p, shark, net.minecraft.world.InteractionHand.MAIN_HAND, sharkDef);
+            if (p.getHealth() > before4 + 0.01f || shark.getCount() != 1) {
+                throw fail("a player ate food under the familiar contract (" + before4 + " -> " + p.getHealth() + ")");
+            }
+            p.setHealth(p.getMaxHealth());
+            // the void flares it spawns all fight have 81 of 140 hitpoints
+            for (Mob f : y4.walkFlareMobs()) {
+                f.discard();
+            }
+            // (his own specials may bring full-health flares meanwhile: the reduced one is looked for among them)
+            float want = BossMechanics.CONTINUOUS_FLARE_HP / (float) BossMechanics.VOID_FLARE_HP;
+            boolean reduced = false;
+            for (int t = 0; t < 45 && !reduced; t++) {
+                d.ticks(fourth, 1);
+                for (Mob f : y4.walkFlareMobs()) {
+                    reduced |= Math.abs(f.getHealth() / f.getMaxHealth() - want) < 0.02f;
+                }
+            }
+            if (!reduced) {
+                throw fail("no 81-hitpoint void flare spawned on its own under the familiar contract");
+            }
+            for (Mob f : y4.walkFlareMobs()) {
+                CombatHandler.applyDamage(p, f, 500);
+            }
+            // the partner lands the kill: the contract still goes back to its holder, and both fighters have 1/100 at Yami
+            // (the slayer: the boss engine's 1/2,500 topped up by the script; the holder: rollLoot's 1/100)
+            int contracts = Inv.count(p, YamaContract.FAMILIAR_ACQUISITION.item);
+            int partnerContracts = Inv.count(partner, YamaContract.FAMILIAR_ACQUISITION.item);
+            y4.walkCredit(p, 1000); // the holder's share, past the junk threshold
+            for (int t = 0; t < 60 && fourth.isAlive(); t++) {
+                partner.setHealth(partner.getMaxHealth());
+                if (fourth.script().isVulnerable(fourth)) {
+                    BossWalks.hit(fourth, partner, 600, AttackType.SLASH);
+                }
+                if (fourth.isAlive()) {
+                    d.ticks(fourth, 1);
+                }
+            }
+            if (fourth.isAlive()) {
+                throw fail("the familiar contract's partner couldn't finish Yama (" + Math.round(fourth.getHealth()) + " health)");
+            }
+            if (Inv.count(p, YamaContract.FAMILIAR_ACQUISITION.item) != contracts + 1
+                    || Inv.count(partner, YamaContract.FAMILIAR_ACQUISITION.item) != partnerContracts) {
+                throw fail("the familiar contract wasn't returned to its holder on the partner's kill");
+            }
+            int topUp = YamaLoot.killerExtraPetRate(YamaContract.FAMILIAR_ACQUISITION);
+            if (!y4.walkPetRolls(partner).equals(List.of(topUp))) {
+                throw fail("the partner who landed the kill had pet rolls " + y4.walkPetRolls(partner) + " (expected the 1/" + topUp
+                        + " top-up of the engine's 1/" + YamaLoot.PET + ")");
+            }
+            if (!y4.walkPetRolls(p).equals(List.of(BossMechanics.FAMILIAR_PET_RATE))) {
+                throw fail("the contract holder had pet rolls " + y4.walkPetRolls(p) + " (expected one 1/"
+                        + BossMechanics.FAMILIAR_PET_RATE + ")");
+            }
+            double slayerChance = 1.0 - (1.0 - 1.0 / YamaLoot.PET) * (1.0 - 1.0 / topUp);
+            if (Math.abs(slayerChance - 1.0 / BossMechanics.FAMILIAR_PET_RATE) > 1e-4) {
+                throw fail("the slayer's pet chance is " + slayerChance + ", not 1/" + BossMechanics.FAMILIAR_PET_RATE);
+            }
+            log.add("familiar contract: the partner joins, no food, 81-hp flares, contract returned to the holder on the"
+                    + " partner's kill, 1/100 at Yami each");
+
+            // a fifth challenge under the Contract of forfeit breath: run energy drains 1% every 4 ticks and 1% a point of
+            // damage Yama deals
+            partner.teleportTo(world, c.x + 40, c.y, c.z + 40, 0, 0);
+            ModernScripts.Yama.walkOffer(p, YamaContract.FORFEIT_BREATH);
+            fifth = DataBossService.spawn(world, boss.blockPosition(), def, p);
+            if (fifth == null || !(fifth.script() instanceof ModernScripts.Yama y5) || y5.walkContract() != YamaContract.FORFEIT_BREATH) {
+                throw fail("the forfeit breath challenge didn't start");
+            }
+            com.runecraft.content.systems.SysState.SysPlayer sp = com.runecraft.content.systems.SysState.of(p);
+            sp.runEnergy = BossMechanics.RUN_ENERGY_FULL;
+            com.runecraft.combat.CombatHooks.nameAttack("walk_hit", AttackType.SLASH);
+            int dealt = CombatHandler.applyDamage(fifth, p, 12);
+            int afterHit = sp.runEnergy;
+            if (dealt <= 0 || afterHit > BossMechanics.RUN_ENERGY_FULL - dealt * BossMechanics.FORFEIT_DRAIN_PER_DAMAGE) {
+                throw fail("forfeit breath: a " + dealt + " hit left " + afterHit / 100.0 + "% run energy");
+            }
+            p.setHealth(p.getMaxHealth());
+            d.ticks(fifth, 8);
+            if (sp.runEnergy > afterHit - 2 * BossMechanics.FORFEIT_DRAIN) {
+                throw fail("forfeit breath: 8 ticks drained " + (afterHit - sp.runEnergy) / 100.0 + "% (2% expected)");
+            }
+            sp.runEnergy = BossMechanics.RUN_ENERGY_FULL;
+            log.add("forfeit breath: " + dealt + " damage took " + dealt + "% run energy, 1% every 4 ticks");
+            // his domain below the Chasm of Fire: in by the hut beside the chasm, summoned at its stone, out by the portal
+            partner.teleportTo(world, p.getX() + 40, p.getY(), p.getZ() + 40, 0, 0);
+            log.add(LairWalk.visit(p, "yama"));
             return String.join("; ", log);
         } finally {
             if (second != null && second.isAlive()) {
@@ -155,6 +270,13 @@ public final class YamaWalk {
             if (third != null && third.isAlive()) {
                 third.discard();
             }
+            if (fourth != null && fourth.isAlive()) {
+                fourth.discard();
+            }
+            if (fifth != null && fifth.isAlive()) {
+                fifth.discard();
+            }
+            com.runecraft.content.systems.SysState.of(p).runEnergy = BossMechanics.RUN_ENERGY_FULL;
             partner.getInventory().clearContent();
             Players.state(world.getServer()).remove(partner.getUUID()); // no fake partner's kill count left in the save
         }

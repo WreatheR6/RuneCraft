@@ -746,10 +746,13 @@ final class ClassicScripts {
      * each); he screeches for six giant rats now and then, at most twelve waves.
      */
     static final class Scurrius extends ScriptedBoss {
-        /** Food piles: block offsets from his arena's centre (approx: the four corners of the lair). */
-        private static final int[][] PILES = {{-6, -6}, {6, -6}, {-6, 6}, {6, 6}};
         int phase = 1;
         boolean eating;
+        /** On his way to a food pile (he walks or runs there; OSRS Wiki: "He will break free of any binds in the process"). */
+        boolean heading;
+        /** The pile he is eating at or heading for ({@link ClassicBosses#SCURRIUS_PILES}), or -1. */
+        int pileIndex = -1;
+        private int headingTicks;
         int bites;
         /** Game ticks until he goes back to a food pile in phase two (counted down once he has finished eating). */
         int eatAgainIn;
@@ -770,7 +773,7 @@ final class ClassicScripts {
 
         @Override
         protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
-            return phase == 1 || phase == 2 && !eating;
+            return phase == 1 || phase == 2 && !eating && !heading;
         }
 
         @Override
@@ -836,17 +839,32 @@ final class ClassicScripts {
             }
         }
 
-        private void startEating(DataBossEntity boss) {
+        /**
+         * He heads for one of his three food piles (OSRS Wiki: "The food pile selected is random, though usually one close to
+         * him. He may either walk or run towards the pile"): the nearest two times in three (approx), any otherwise. Binds
+         * and freezes break.
+         */
+        private void headForPile(DataBossEntity boss) {
             phase = 2;
+            Vec3 c = homeVec();
+            pileIndex = boss.getRandom().nextInt(3) < 2 ? ClassicBosses.nearestPile(boss.getX() - c.x, boss.getZ() - c.z)
+                    : boss.getRandom().nextInt(ClassicBosses.SCURRIUS_PILES.length);
+            int[] p = ClassicBosses.SCURRIUS_PILES[pileIndex];
+            pile = BossFx.ground(BossFx.world(boss), c.x + p[0], c.z + p[1], c.y);
+            heading = true;
+            headingTicks = 0;
+            boss.removeEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);
+            BossFx.say(boss, "Scurrius scurries towards a food pile!");
+        }
+
+        /** At the pile: ten eating animations, five of which heal him. */
+        private void startEating(DataBossEntity boss) {
+            heading = false;
             eating = true;
             bites = ClassicBosses.SCURRIUS_BITES;
-            biteTimer = 4;
-            int[] p = PILES[boss.getRandom().nextInt(PILES.length)];
-            Vec3 c = homeVec();
-            pile = BossFx.ground(BossFx.world(boss), c.x + p[0], c.z + p[1], c.y);
+            biteTimer = ClassicBosses.SCURRIUS_BITE_TICKS;
             boss.getNavigation().stop();
-            boss.teleportTo(pile.x, pile.y, pile.z);
-            BossFx.say(boss, "Scurrius scurries to a food pile and starts to eat!");
+            BossFx.say(boss, "Scurrius starts to eat from the food pile!");
         }
 
         @Override
@@ -858,24 +876,33 @@ final class ClassicScripts {
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             double hp = percent(boss);
             if (phase == 1 && hp <= ClassicBosses.SCURRIUS_EAT_BELOW) {
-                startEating(boss);
+                headForPile(boss);
             } else if (phase == 3 && hp > ClassicBosses.SCURRIUS_CENTRE_BELOW) {
-                startEating(boss); // healed above 30%: back to the food
-            } else if (phase == 2 && !eating && hp <= ClassicBosses.SCURRIUS_CENTRE_BELOW) {
+                headForPile(boss); // healed above 30%: back to the food
+            } else if (phase == 2 && !eating && !heading && hp <= ClassicBosses.SCURRIUS_CENTRE_BELOW) {
                 phase = 3;
                 Vec3 c = homeVec();
                 boss.getNavigation().stop();
                 boss.teleportTo(c.x, c.y, c.z);
                 BossFx.say(boss, "Scurrius scurries to the centre of his lair!");
-            } else if (phase == 2 && !eating && --eatAgainIn <= 0) {
-                startEating(boss); // "occasionally" back to a pile between 80% and 30%
+            } else if (phase == 2 && !eating && !heading && --eatAgainIn <= 0) {
+                headForPile(boss); // "occasionally" back to a pile between 80% and 30%
+            }
+            if (heading && pile != null) {
+                // walks (or runs) there; a pile out of reach of his path is reached anyway after a few seconds
+                if (flatDistance(boss.position(), pile) <= 1.5 || ++headingTicks > 10) {
+                    if (flatDistance(boss.position(), pile) > 1.5) {
+                        boss.teleportTo(pile.x, pile.y, pile.z);
+                    }
+                    startEating(boss);
+                }
             }
             if (eating) {
                 if (pile != null && now % 3 == 0) {
                     BossFx.world(boss).sendParticles(ParticleTypes.HAPPY_VILLAGER, pile.x, pile.y + 0.6, pile.z, 4, 0.5, 0.3, 0.5, 0);
                 }
                 if (--biteTimer <= 0) {
-                    biteTimer = 4; // approx: "every few seconds"
+                    biteTimer = ClassicBosses.SCURRIUS_BITE_TICKS;
                     int players = Math.max(1, BossFx.players(boss, 24).size());
                     int heal = (boss.getRandom().nextBoolean() ? 5 : 10) * players;
                     boss.heal(mcHp(boss, heal));
@@ -886,6 +913,25 @@ final class ClassicScripts {
                     }
                 }
             }
+        }
+
+        /** Steers him to the pile every Minecraft tick (after his attack goal and navigation have had their say). */
+        @Override
+        public void tick(DataBossEntity boss) {
+            super.tick(boss);
+            if (heading && pile != null && boss.isAlive()) {
+                boss.getNavigation().stop();
+                boss.getMoveControl().setWantedPosition(pile.x, pile.y, pile.z, 1.3);
+            }
+        }
+
+        private static double flatDistance(Vec3 a, Vec3 b) {
+            return Math.hypot(a.x - b.x, a.z - b.z);
+        }
+
+        /** Self-test: where the pile he eats at or heads for is. */
+        Vec3 walkPile() {
+            return pile;
         }
 
         @Override

@@ -49,6 +49,30 @@ public final class GodWarsWildernessHooks implements ModuleHooks {
         }
         GwdKillcount.registerStoneRedirect();
         GameEvents.onKill(GwdKillcount::onKill);
+        // Damaging a blood reaver heals the attacker half the damage dealt (OSRS Wiki, Blood Reaver).
+        com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
+            @Override
+            public void afterHit(net.minecraft.server.level.ServerPlayer player, net.minecraft.world.entity.LivingEntity target,
+                                 com.runecraft.osrs.AttackType type, int dealt) {
+                int heal = com.runecraft.osrs.content.godwars.GodWarsFactions.reaverLeech(
+                        GwdKillcount.creatureId(target, com.runecraft.combat.MonsterStats.of(target)), dealt);
+                if (heal > 0 && player.isAlive()) {
+                    player.heal(heal);
+                }
+            }
+        });
+        // A gorak's touch drains a random stat (not Hitpoints) by 1-4 on every hit that lands (OSRS Wiki, Gorak).
+        com.runecraft.combat.CombatHooks.addHurtListener((player, attacker, damage) -> {
+            if (damage <= 0 || attacker == null || !com.runecraft.osrs.content.godwars.GodWarsFactions.gorak(
+                    GwdKillcount.creatureId(attacker, com.runecraft.combat.MonsterStats.of(attacker)))) {
+                return;
+            }
+            var drain = com.runecraft.osrs.content.godwars.GodWarsFactions.goraksTouch(player.getRandom().nextInt(com.runecraft.osrs.Skill.count() - 1),
+                    player.getRandom().nextInt(4));
+            var skills = com.runecraft.player.Players.data(player).skills();
+            skills.setBoost(drain.skill(), Math.max(-skills.level(drain.skill()), skills.boost(drain.skill()) - drain.amount()));
+            com.runecraft.network.ServerNetworking.sync(player);
+        });
         GameEvents.onKill((player, entity, stats) -> GwdSpawner.onKill(entity));
         GwdDungeonHooks.register();
         GwdSpawner.register();

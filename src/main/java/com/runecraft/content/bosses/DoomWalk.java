@@ -152,8 +152,10 @@ public final class DoomWalk {
             if (DoomDelveService.heldLoot(p) != 0 || DoomDelveService.runLevel(p) != 0) {
                 throw fail("a death kept the run's loot (" + DoomDelveService.heldLoot(p) + " stacks)");
             }
+            // the delve below the Ruins of Mokhaiotl, entered from the Tonali Cavern; and the Maggot King's lair (no walk of its own)
+            String lairs = LairWalk.visit(p, DoomDelves.BOSS) + "; " + LairWalk.visit(p, "maggot_king");
             return "delves " + String.join("; ", log) + "; left with " + held + " stacks in the chest, claimed (" + tears
-                    + " demon tears), " + helped + ", a death forfeits the run";
+                    + " demon tears), " + helped + ", a death forfeits the run; " + lairs;
         } finally {
             for (DataBossEntity b : spawned) {
                 if (b.isAlive()) {

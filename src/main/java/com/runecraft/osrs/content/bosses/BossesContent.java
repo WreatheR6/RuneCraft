@@ -53,7 +53,14 @@ public final class BossesContent implements ContentModule {
                 b.model(b.id);
             }
         }
+        BossLairs.apply(all);
         return all;
+    }
+
+    /** The underground lairs (Yama, the Royal Titans, the Maggot King, Mokhaiotl): caves, arenas and entrance huts. */
+    @Override
+    public List<com.runecraft.osrs.world.StructureDef> structures() {
+        return BossLairs.structures(bosses());
     }
 
     @Override

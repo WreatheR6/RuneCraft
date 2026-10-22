@@ -188,6 +188,9 @@ public final class LandmarkBuilder {
             }
             int r = b.arenaRadius;
             com.runecraft.osrs.world.ArenaLayout.Arena spot = com.runecraft.osrs.world.ArenaLayout.of(b.id);
+            if (spot != null && spot.underground()) {
+                continue; // an underground lair: its cave, arena and stone are its module's structure (BossDef.lair)
+            }
             int[] fallback = com.runecraft.osrs.world.ArenaLayout.defaultPosition(cx, cz, arena, r);
             int ax = spot != null ? spot.x() : fallback[0];
             int az = spot != null ? spot.z() : fallback[1];

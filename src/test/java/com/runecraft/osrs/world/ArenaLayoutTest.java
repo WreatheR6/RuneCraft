@@ -25,7 +25,12 @@ class ArenaLayoutTest {
                 }
             }
         }
-        List<ArenaLayout.Arena> placed = new ArrayList<>(all.values());
+        List<ArenaLayout.Arena> placed = new ArrayList<>();
+        for (ArenaLayout.Arena a : all.values()) {
+            if (!a.underground()) { // the underground lairs are their module's own structures (BossLairsTest)
+                placed.add(a);
+            }
+        }
         int stuck = 0;
         for (int i = 0; i < placed.size(); i++) {
             ArenaLayout.Arena a = placed.get(i);
