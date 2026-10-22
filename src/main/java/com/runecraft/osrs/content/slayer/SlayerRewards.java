@@ -390,6 +390,35 @@ public final class SlayerRewards {
         return List.copyOf(out);
     }
 
+    /**
+     * A drop that is likelier when the creature is killed on a Slayer task (OSRS Wiki drop tables): 1 in {@code baseRarity}
+     * off task, 1 in {@code taskRarity} on task.
+     */
+    public record OnTaskDrop(String creature, String item, int baseRarity, int taskRarity) {
+        /**
+         * The chance of the extra roll made for an on-task kill on top of the creature's own table, so that the item comes
+         * at the on-task rate overall (approx: the extra roll is independent of the table's own roll).
+         */
+        public double extraChance() {
+            double base = 1.0 / baseRarity;
+            return (1.0 / taskRarity - base) / (1 - base);
+        }
+    }
+
+    /** Frost dragons' dragon metal sheet: 1/100, 1/40 on task (OSRS Wiki "Frost dragon", since 3 December 2025). */
+    public static final List<OnTaskDrop> ON_TASK_DROPS = List.of(new OnTaskDrop("frost_dragon", "dragon_metal_sheet", 100, 40));
+
+    /** The on-task drops of a creature (empty for most). */
+    public static List<OnTaskDrop> onTaskDrops(String creature) {
+        List<OnTaskDrop> out = new java.util.ArrayList<>();
+        for (OnTaskDrop d : ON_TASK_DROPS) {
+            if (d.creature().equals(creature)) {
+                out.add(d);
+            }
+        }
+        return out;
+    }
+
     /** "Duly Noted": whether a drop of {@code item} by {@code monsterId}, killed on task with the unlock, comes noted. */
     public static boolean dulyNoted(String monsterId, String item) {
         return "mithril_bar".equals(item) && monsterId != null && monsterId.startsWith("mithril_dragon");

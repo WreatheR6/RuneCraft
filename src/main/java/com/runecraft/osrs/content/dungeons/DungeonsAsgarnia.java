@@ -260,7 +260,10 @@ final class DungeonsAsgarnia {
     /**
      * Below Mudskipper Point (tile 3012, 3154): pirates and muggers by the entrance, hobgoblins to
      * the east, the frozen cavern of ice warriors and ice giants with the blurite rocks, and the
-     * skeletal wyverns' lair beyond the icy passage.
+     * skeletal wyverns' lair beyond the icy passage, with the task-only upper area up the icy steps
+     * by its entrance (OSRS Wiki "Asgarnian Ice Dungeon": fourteen more wyverns that Pieve lets only
+     * players on a skeletal wyvern task fight; added 21 January 2016). The dungeon is laid out by hand
+     * (not on cache tiles), so the upper area's place is approx.
      */
     static Dungeons.Dungeon iceDungeon() {
         Cave c = new Cave("dng_asgarnian_ice_dungeon", "Asgarnian Ice Dungeon", mc("packed_ice"), mc("snow_block"), mc("sea_lantern"));
@@ -276,6 +279,10 @@ final class DungeonsAsgarnia {
         c.room(lx + 10, lz - 70, lx + 70, lz - 20, f, 8, mc("packed_ice")); // ice warriors and ice giants
         c.hall(lx + 70, lz - 45, lx + 90, lz - 45, f, 3, 5);
         c.room(lx + 90, lz - 76, lx + 140, lz - 20, f, 10, mc("blue_ice")); // skeletal wyverns
+        // The icy steps up from the lair's north-west corner to the task-only upper area.
+        int up = f + 4;
+        c.stairs(lx + 98, lz - 76, 'n', f, up, 3, 5);
+        c.room(lx + 86, lz - 104, lx + 122, lz - 82, up, 7, mc("blue_ice"));
         c.carve();
         c.rocks(lx + 12, lz - 68, lx + 30, lz - 68, f + 1, 6, rc("blurite_rock"));
         for (int x = lx + 16; x <= lx + 64; x += 12) {
@@ -291,6 +298,9 @@ final class DungeonsAsgarnia {
         c.camp(lx + 22, lz - 4, lx + 42, lz + 18, f, 4, 25, "hobgoblin");
         c.camp(lx + 12, lz - 68, lx + 68, lz - 22, f, 7, 25, "ice_warrior", "ice_giant");
         c.camp(lx + 92, lz - 74, lx + 138, lz - 22, f, 4, 50, "skeletal_wyvern");
+        c.pillar(lx + 104, lz - 93, up, 7, mc("blue_ice"));
+        c.camp(lx + 88, lz - 102, lx + 120, lz - 84, up, 14, 50, "skeletal_wyvern");
+        c.taskOnly("skeletal_wyverns", "Pieve", lx + 86, lz - 104, lx + 122, lz - 82, up, 7);
         return c.build();
     }
 }

@@ -147,6 +147,62 @@ class TaskOnlyAreasTest {
     }
 
     @Test
+    void grimstoneFrostDragons() {
+        // OSRS Wiki "Grimstone Dungeon" (3 December 2025): the western cave's frost dragons are task-only, without a
+        // guardian but with their own line; the central cavern's and the chilled jellies are open to all.
+        String d = "dng_grimstone_dungeon";
+        assertEquals(Map.of("frost_dragon", 7), taskOnlyCaps(d, true));
+        assertEquals(Map.of("frost_dragon", 13, "chilled_jelly", 10), taskOnlyCaps(d, false));
+        Dungeons.TaskOnlyArea a = areaOf(d, "frost_dragon", true);
+        assertEquals("frost_dragons", a.task());
+        assertNull(a.guardian());
+        assertTrue(Dungeons.TASK_ONLY_LINES.get(d).startsWith("You feel a strange coldness"));
+        assertFalse(MultiCombat.isMultiAtBlock(a.centreX(), a.y1() + 1, a.centreZ()), "single-way");
+    }
+
+    @Test
+    void greatConchGryphonCaves() {
+        // OSRS Wiki "Gryphons (dungeon)": the south-eastern cave is task-only (Elder Kelmo), the north-western one open;
+        // the southern room of each (the south-western part of the eastern cave) is multicombat.
+        assertEquals(Map.of("gryphon", 18), taskOnlyCaps("dng_gryphon_cave_east", true));
+        assertTrue(taskOnlyCaps("dng_gryphon_cave_east", false).isEmpty());
+        assertEquals(Map.of("gryphon", 18), taskOnlyCaps("dng_gryphon_cave_west", false));
+        assertTrue(taskOnlyCaps("dng_gryphon_cave_west", true).isEmpty());
+        Dungeons.TaskOnlyArea a = areaOf("dng_gryphon_cave_east", "gryphon", true);
+        assertEquals("Elder Kelmo", a.guardian());
+        assertEquals("gryphons", a.task());
+    }
+
+    @Test
+    void asgarnianIceDungeonUpperArea() {
+        // OSRS Wiki "Asgarnian Ice Dungeon": fourteen more skeletal wyverns up the icy steps, task-only (Pieve).
+        String d = "dng_asgarnian_ice_dungeon";
+        assertEquals(Map.of("skeletal_wyvern", 14), taskOnlyCaps(d, true));
+        assertEquals(4, taskOnlyCaps(d, false).get("skeletal_wyvern"));
+        Dungeons.TaskOnlyArea a = areaOf(d, "skeletal_wyvern", true);
+        assertEquals("Pieve", a.guardian());
+        assertEquals("skeletal_wyverns", a.task());
+    }
+
+    @Test
+    void fremennikSlayerDungeonKurask() {
+        // OSRS Wiki "Fremennik Slayer Dungeon": 5 kurask in the open chamber, 9 in the task-only cavern (Jelly).
+        String d = "dng_fremennik_slayer_dungeon";
+        assertEquals(Map.of("kurask", 9), taskOnlyCaps(d, true));
+        assertEquals(5, taskOnlyCaps(d, false).get("kurask"));
+        Dungeons.TaskOnlyArea a = areaOf(d, "kurask", true);
+        assertEquals("Jelly", a.guardian());
+        assertEquals("kurask", a.task());
+    }
+
+    @Test
+    void chasmOfFireIsOpenToAll() {
+        // OSRS Wiki "Chasm of Fire": not task-only, with 9 lesser, 17 greater and 16 black demons.
+        assertEquals(Map.of("lesser_demon", 9, "greater_demon", 17, "black_demon", 16), taskOnlyCaps("dng_chasm_of_fire", false));
+        assertTrue(taskOnlyCaps("dng_chasm_of_fire", true).isEmpty());
+    }
+
+    @Test
     void everyAreaNamesARealTaskAndGuardian() {
         assertFalse(Dungeons.taskOnlyAreas().isEmpty());
         for (Dungeons.TaskOnlyArea a : Dungeons.taskOnlyAreas()) {

@@ -16,8 +16,9 @@ import static com.runecraft.osrs.content.slayer.Kit.stab;
 /**
  * Slayer monsters of the Sailing islands (round 44): frost dragons and gryphons, from their OSRS Wiki infoboxes and drop
  * tables (Kiyogitpy/osrs-wiki-data, July 2026; x/130 and x/128 rates rounded to 1 in n). They live in the dungeons module's
- * Grimstone Dungeon and the Great Conch's gryphon caves ({@code SeaSlayerDungeons}). Left out: the horn of plenty
- * (gryphons' tertiary, a Hunter item) and the frost dragons' better dragon metal sheet rate on task (1/40).
+ * Grimstone Dungeon and the Great Conch's gryphon caves ({@code SeaSlayerDungeons}). The frost dragons' better dragon metal
+ * sheet rate on task (1/40) is an extra roll ({@link SlayerRewards#ON_TASK_DROPS}). Left out: the horn of plenty (gryphons'
+ * tertiary, a Hunter item) and the icy dragonfire's freeze.
  */
 final class SeaSlayerMonsters {
     private SeaSlayerMonsters() {
@@ -28,7 +29,7 @@ final class SeaSlayerMonsters {
                 // Frost dragon dragonfire is icy in OSRS (a brief freeze when unprotected): not built.
                 m("frost_dragon", "Frost dragon", 202, 230, 180, 150, 150, 150, 1).speed(4).attack(stab(16))
                         .attack(Kit.dragonfire(50, 4)).defenceBonus(25, 90, 15, 50, 50).rangedDefence(70, 30).weakness("fire", 100)
-                        .drops(Drop.always("frost_dragon_bones"), Drop.of("dragon_metal_sheet", 1, 1, 100), // 1/40 on task in OSRS
+                        .drops(Drop.always("frost_dragon_bones"), Drop.of("dragon_metal_sheet", 1, 1, 100), // 1/40 on task: SlayerRewards.ON_TASK_DROPS
                                 Drop.of("rune_2h_sword", 1, 1, 65), Drop.of("rune_kiteshield", 1, 1, 65), Drop.of("rune_longsword", 1, 1, 65),
                                 Drop.of("rune_pickaxe", 1, 1, 65), Drop.of("adamant_platebody", 1, 1, 33), Drop.of("adamant_warhammer", 1, 1, 33),
                                 Drop.of("death_rune", 20, 30, 26), Drop.of("water_rune", 100, 200, 13), Drop.of("water_rune", 500, 500, 26),

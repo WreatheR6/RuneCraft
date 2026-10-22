@@ -831,5 +831,7 @@ public final class MonsterTraits {
         t("elder_custodian_stalker", 1, true, true, 250); // Elder custodian stalker
         t("skogre", 2, false, false, 71, "undead"); // Skogre
         t("rooster", 1, true, true, 7); // Rooster (2)
+        t("frost_dragon", 4, false, false, 235.5, "dragon", "fiery"); // Frost dragon (round 44)
+        t("gryphon", 2, false, false, 110); // Gryphon (round 44)
     }
 }

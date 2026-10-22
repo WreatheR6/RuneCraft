@@ -715,6 +715,13 @@ public final class SlayerService {
         if (master != null && master.wilderness() && random.nextInt(SlayerChests.larranKeyChance(stats.combatLevel())) == 0) {
             reward(player, entity, "larran_key", "A Larran's key falls to the floor.");
         }
+        // Drops that are likelier on task (frost dragons' dragon metal sheet, 1/100 -> 1/40): an extra roll on top of the table.
+        for (SlayerRewards.OnTaskDrop d : SlayerRewards.onTaskDrops(killed)) {
+            if (random.nextDouble() < d.extraChance()) {
+                com.runecraft.combat.LootDrops.spawn(entity, Inv.stack(d.item(), 1), player);
+                CollectionLog.obtain(player, d.item());
+            }
+        }
         // Superiors may also appear on the task's last kill (OSRS).
         if (superior == null && prof != null && p.unlocks.contains("bigger_and_badder")
                 && random.nextInt(com.runecraft.content.systems.CombatAchievementService.superiorChance(player, SlayerRewards.SUPERIOR_CHANCE)) == 0) {

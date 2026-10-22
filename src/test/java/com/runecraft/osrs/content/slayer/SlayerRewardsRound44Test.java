@@ -103,6 +103,21 @@ class SlayerRewardsRound44Test {
     }
 
     @Test
+    void frostDragonSheetsComeAtTheOnTaskRate() {
+        // OSRS Wiki "Frost dragon": dragon metal sheet 1/100, 1/40 on a Slayer task.
+        List<SlayerRewards.OnTaskDrop> drops = SlayerRewards.onTaskDrops("frost_dragon");
+        assertEquals(1, drops.size());
+        SlayerRewards.OnTaskDrop d = drops.get(0);
+        assertEquals("dragon_metal_sheet", d.item());
+        double overall = 1 - (1 - 1.0 / 100) * (1 - d.extraChance());
+        assertEquals(1.0 / 40, overall, 1e-12);
+        // the table's own line stays at 1/100
+        assertTrue(ContentRegistry.monster("frost_dragon").drops.stream()
+                .anyMatch(x -> x.item().equals("dragon_metal_sheet") && x.rarity() == 100));
+        assertTrue(SlayerRewards.onTaskDrops("blue_dragon").isEmpty());
+    }
+
+    @Test
     void runePouchHoldsThreeKindsOf16000() {
         Map<String, Integer> pouch = new HashMap<>();
         assertEquals(16_000, RunePouch.deposit(pouch, "death_rune", 20_000));

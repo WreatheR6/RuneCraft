@@ -194,8 +194,14 @@ final class DungeonsZeah {
     /**
      * The Chasm of Fire north-west of Shayzien (entrance tile 1433, 3671): a great shaft with three
      * ledges spiralling down - lesser demons, then greater demons, then black demons at the bottom -
-     * joined by ladders.
+     * joined by ladders. The wiki's spawn counts (OSRS Wiki "Chasm of Fire", July 2026: 9 lesser, 17
+     * greater, 16 black demons); single-way and open to all (no task needed). The ledges are laid out
+     * by hand, not on cache tiles.
      */
+    static final int CHASM_LESSER_DEMONS = 9;
+    static final int CHASM_GREATER_DEMONS = 17;
+    static final int CHASM_BLACK_DEMONS = 16;
+
     static Dungeons.Dungeon chasmOfFire() {
         Cave c = new Cave("dng_chasm_of_fire", "Chasm of Fire", mc("blackstone"), mc("polished_blackstone"), mc("shroomlight"));
         int ox = bx(1433);
@@ -219,9 +225,9 @@ final class DungeonsZeah {
         c.ladderUp(cx + 20, cz, floors[1], floors[0]);
         c.ladderUp(cx - 20, cz, floors[2], floors[1]);
         c.entrance(ox, oz, floors[0], mc("polished_blackstone_bricks"), mc("blackstone"), 'n');
-        c.camp(cx - 20, cz - 20, cx + 20, cz + 20, floors[0], 5, 25, "lesser_demon");
-        c.camp(cx - 20, cz - 20, cx + 20, cz + 20, floors[1], 4, 25, "greater_demon");
-        c.camp(cx - 20, cz - 20, cx + 20, cz + 20, floors[2], 3, 50, "black_demon");
+        c.camp(cx - 20, cz - 20, cx + 20, cz + 20, floors[0], CHASM_LESSER_DEMONS, 25, "lesser_demon");
+        c.camp(cx - 20, cz - 20, cx + 20, cz + 20, floors[1], CHASM_GREATER_DEMONS, 25, "greater_demon");
+        c.camp(cx - 20, cz - 20, cx + 20, cz + 20, floors[2], CHASM_BLACK_DEMONS, 50, "black_demon");
         return c.build();
     }
 }

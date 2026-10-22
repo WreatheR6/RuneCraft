@@ -238,7 +238,9 @@ final class DungeonsKandarin {
     /**
      * The Fremennik Slayer Dungeon south-east of Rellekka (entrance tile 2797, 3614): a chain of
      * caverns going deeper - cave crawlers, rock slugs, cockatrices, pyrefiends, basilisks, jellies,
-     * turoth and finally kurask.
+     * turoth and finally kurask, with the task-only kurask cavern beyond (OSRS Wiki: 9 kurask there
+     * against 5 in the open chamber, kept by Jelly the mountain troll). The chambers are laid out by
+     * hand, so the task-only cavern's place is approx.
      */
     static Dungeons.Dungeon fremennikSlayerDungeon() {
         Cave c = new Cave("dng_fremennik_slayer_dungeon", "Fremennik Slayer Dungeon", mc("stone"), mc("cobblestone"), mc("glowstone"));
@@ -261,6 +263,11 @@ final class DungeonsKandarin {
             px = nx;
             pz = nz;
         }
+        // The task-only kurask cavern south of the open kurask chamber.
+        int[] kurask = centres[chambers.length - 1];
+        c.hallZ(kurask[0], kurask[1] + 10, kurask[0], kurask[1] + 16, f, 3, 4);
+        int[] taskOnly = {kurask[0] - 14, kurask[1] + 16, kurask[0] + 14, kurask[1] + 38};
+        c.room(taskOnly[0], taskOnly[1], taskOnly[2], taskOnly[3], f, 7);
         c.carve();
         // The chasm between the pyrefiends and the basilisks.
         int[] py = centres[3];
@@ -275,6 +282,10 @@ final class DungeonsKandarin {
         // basilisks to the turoth.
         c.shortcut("fremennik_slayer_strange_floor", centres[0][0] + 10, centres[0][1] + 8, f, centres[3][0] - 10, centres[3][1] - 8, f);
         c.shortcut("fremennik_slayer_crevice", centres[4][0] + 10, centres[4][1] + 8, f, centres[6][0] - 10, centres[6][1] - 8, f);
+        c.pillar(kurask[0] - 6, kurask[1] + 27, f, 4, mc("mossy_cobblestone"));
+        c.pillar(kurask[0] + 6, kurask[1] + 27, f, 4, mc("cobblestone"));
+        c.camp(taskOnly[0] + 2, taskOnly[1] + 2, taskOnly[2] - 2, taskOnly[3] - 2, f, 9, 25, "kurask");
+        c.taskOnly("kurask", "Jelly", taskOnly[0], taskOnly[1], taskOnly[2], taskOnly[3], f, 7);
         c.entrance(ox, oz, f, mc("spruce_planks"), mc("cobblestone"), 'n');
         return c.build();
     }
